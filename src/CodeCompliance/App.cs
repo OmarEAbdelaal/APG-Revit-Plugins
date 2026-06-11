@@ -48,29 +48,62 @@ namespace CodeCompliance
             RibbonPanel panel = application.CreateRibbonPanel(TabName, PanelName);
             string assemblyPath = Assembly.GetExecutingAssembly().Location;
 
-            var checkButton = new PushButtonData(
+            panel.AddItem(new PushButtonData(
+                "CodeCompliance_EscapeStairs",
+                "Escape\nStairs",
+                assemblyPath,
+                "CodeCompliance.Commands.EscapeStairsCommand")
+            {
+                ToolTip = "Step 1: detect all stairs and mark which ones are escape stairs.",
+                LongDescription =
+                    "Lists every stair in the model and lets you tick the ones used for escape. " +
+                    "The choice is saved to the CC_IsEscapeStair parameter on each stair."
+            });
+
+            panel.AddItem(new PushButtonData(
+                "CodeCompliance_TravelPaths",
+                "Travel\nPaths",
+                assemblyPath,
+                "CodeCompliance.Commands.TravelPathsCommand")
+            {
+                ToolTip = "Step 2: create travel distance lines from rooms to escape stairs.",
+                LongDescription =
+                    "For every room on the active floor plan, creates a Path of Travel from the " +
+                    "most remote point of the room to the nearest escape stair. Paths route " +
+                    "automatically around walls and through doors. Run in a floor plan view."
+            });
+
+            panel.AddItem(new PushButtonData(
+                "CodeCompliance_EgressReport",
+                "Egress\nReport",
+                assemblyPath,
+                "CodeCompliance.Commands.EgressReportCommand")
+            {
+                ToolTip = "Step 3: measure paths, check door fire ratings, build schedules and report.",
+                LongDescription =
+                    "Measures each travel path, detects the doors it passes through and their fire " +
+                    "ratings, creates the egress schedules in the project, and exports an HTML + CSV report."
+            });
+
+            panel.AddSeparator();
+
+            panel.AddItem(new PushButtonData(
                 "CodeCompliance_FireFightingCheck",
-                "Run FF\nCheck",
+                "Model\nCheck",
                 assemblyPath,
                 "CodeCompliance.Commands.FireFightingCheckCommand")
             {
-                ToolTip = "Run a fire-fighting compliance check on the active model.",
-                LongDescription =
-                    "Scans the active model for fire-protection elements (sprinklers, pipes, " +
-                    "fittings, accessories and equipment) and reports a summary. " +
-                    "Detailed code-compliance rules will be added in upcoming versions."
-            };
-            panel.AddItem(checkButton);
+                ToolTip = "Count fire-protection elements in the active model (installation test)."
+            });
 
-            var aboutButton = new PushButtonData(
+            panel.AddItem(new PushButtonData(
                 "CodeCompliance_About",
                 "About",
                 assemblyPath,
                 "CodeCompliance.Commands.AboutCommand")
             {
                 ToolTip = "Information about the Code Compliance add-in."
-            };
-            panel.AddItem(aboutButton);
+            });
         }
     }
 }

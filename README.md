@@ -5,10 +5,6 @@ comprehensive review comments on plans.
 
 Supports **Revit 2024, 2025, 2026 and 2027** from a single code base.
 
-> **Status: foundation / proof of concept.** The current version installs into Revit, adds a
-> *Code Compliance* ribbon tab, and runs a small test command that counts the fire-protection
-> elements in the open model. The detailed compliance rule engine comes next.
-
 ## What you get right now
 
 After installing and starting Revit you will see a new ribbon tab:
@@ -16,10 +12,17 @@ After installing and starting Revit you will see a new ribbon tab:
 ```
 Code Compliance
 └── Fire Fighting (panel)
-    ├── Run FF Check   – counts sprinklers, pipes, fittings, accessories and equipment
-    │                    in the active model and shows a summary dialog
+    ├── Escape Stairs  – detect all stairs, tick which are escape stairs
+    │                    (saved to the CC_IsEscapeStair parameter)
+    ├── Travel Paths   – create Path of Travel lines from the most remote point of
+    │                    every room to the nearest escape stair, through doors
+    ├── Egress Report  – measure paths, detect fire ratings of doors on the routes,
+    │                    create schedules and export an HTML + CSV report
+    ├── Model Check    – counts fire-protection elements (installation test)
     └── About          – add-in version and info
 ```
+
+See [docs/EGRESS_WORKFLOW.md](docs/EGRESS_WORKFLOW.md) for the 3-step egress analysis guide.
 
 ## For end users: one-click installer
 
@@ -60,8 +63,19 @@ src/CodeCompliance/
     CodeCompliance.csproj           Multi-version project (one codebase, 4 Revit targets)
     App.cs                          IExternalApplication – builds the ribbon UI
     Commands/
-        FireFightingCheckCommand.cs Test command (element count summary)
+        EscapeStairsCommand.cs      Step 1: detect stairs + mark escape stairs
+        TravelPathsCommand.cs       Step 2: create travel distance paths
+        EgressReportCommand.cs      Step 3: schedules + HTML/CSV report
+        FireFightingCheckCommand.cs Element count summary (installation test)
         AboutCommand.cs             About dialog
+    Core/
+        EscapeStairService.cs       Stair detection + CC_IsEscapeStair parameter
+        EgressAnalysisService.cs    Path of Travel creation, lengths, doors on path
+    Reporting/
+        EgressReportWriter.cs       HTML + CSV export
+        ScheduleBuilder.cs          Revit schedules
+    UI/
+        EscapeStairsWindow.cs       Stair selection dialog (WPF)
 install/
     CodeCompliance.addin            Revit add-in manifest
     install.ps1                     Build + install for any/all Revit versions
@@ -94,9 +108,13 @@ versions. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - [x] Multi-version project skeleton (2024–2027)
 - [x] Ribbon UI + installable test command
 - [x] End-user installer (.exe) + CI build
-- [ ] Fire-fighting compliance rule engine (rules to be specified)
-- [ ] Review-comment reporting (on-plan annotations / exportable report)
-- [ ] Settings UI (code edition selection, project parameters)
+- [x] Escape stair detection & tagging (CC_IsEscapeStair parameter)
+- [x] Travel distance paths (room → escape stair, through doors)
+- [x] Door fire-rating detection on escape routes
+- [x] Egress schedules + HTML/CSV report
+- [ ] Pass/fail rules (max travel distance, required door ratings — values to be specified)
+- [ ] Two-exit / alternative route checks
+- [ ] Review-comment annotations on plans
 
 ## Author
 
