@@ -7,7 +7,23 @@
 - To build from source: **Visual Studio 2022 (17.8+)** or the .NET SDK 8+
   (no Revit SDK download needed — the Revit API references come from NuGet)
 
-## Option A — Build & install with Visual Studio (recommended for development)
+## Option A — Installer .exe (recommended for end users)
+
+1. Get `CodeComplianceSetup-<version>.exe`:
+   - from the repository's **Releases** page (attached automatically when a `v*` tag is
+     pushed), or
+   - from **Actions → Build installer → latest run → Artifacts** (built on every push
+     to the main branch), or
+   - build it locally: install [Inno Setup 6](https://jrsoftware.org/isdl.php)
+     (`winget install JRSoftware.InnoSetup`) and run
+     `powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1`.
+2. Double-click the .exe. No admin rights are required — it installs per-user.
+3. The installer detects which Revit versions (2024–2027) exist on the machine and
+   deploys the add-in only to those. If none are detected it installs for all versions,
+   ready for when Revit is installed.
+4. Uninstall later via Windows **Settings → Apps → Code Compliance - Fire Fighting**.
+
+## Option B — Build & install with Visual Studio (recommended for development)
 
 1. Open `CodeCompliance.sln`.
 2. In the toolbar configuration dropdown choose the configuration for your Revit version:
@@ -23,7 +39,7 @@
    `%APPDATA%\Autodesk\Revit\Addins\<version>\` automatically — there is no separate
    install step during development.
 
-## Option B — Install from the command line
+## Option C — Install from the command line
 
 From the repository root in a PowerShell window:
 

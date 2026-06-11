@@ -1,6 +1,7 @@
 # Build output
 [Bb]in/
 [Oo]bj/
+installer/output/
 
 # Visual Studio
 .vs/

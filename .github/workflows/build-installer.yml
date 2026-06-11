@@ -1,0 +1,41 @@
+name: Build installer
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    permissions:
+      contents: write # needed to attach the installer to releases on tag push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Builds all Revit targets (skipping any whose API package is unavailable)
+      # and compiles the Inno Setup installer. Inno Setup 6 is preinstalled on
+      # windows-latest runners.
+      - name: Build add-in and installer
+        shell: pwsh
+        run: ./installer/build-installer.ps1
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeComplianceSetup
+          path: installer/output/*.exe
+          if-no-files-found: error
+
+      - name: Attach installer to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/output/*.exe

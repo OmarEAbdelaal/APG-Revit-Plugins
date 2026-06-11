@@ -21,6 +21,19 @@ Code Compliance
     └── About          – add-in version and info
 ```
 
+## For end users: one-click installer
+
+Download `CodeComplianceSetup-<version>.exe` (from the GitHub **Releases** page, or from the
+**Actions → Build installer** workflow artifacts) and double-click it. No admin rights
+needed — the installer detects which Revit versions (2024–2027) are on the machine and
+deploys to those automatically. Uninstall from Windows **Settings → Apps** as usual.
+
+To build the installer yourself (needs [Inno Setup 6](https://jrsoftware.org/isdl.php)):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1
+```
+
 ## Quick start (Windows, Visual Studio 2022 or newer)
 
 1. Clone the repository and open `CodeCompliance.sln`.
@@ -53,6 +66,11 @@ install/
     CodeCompliance.addin            Revit add-in manifest
     install.ps1                     Build + install for any/all Revit versions
     uninstall.ps1                   Remove the add-in
+installer/
+    CodeCompliance.iss              Inno Setup script for the end-user setup.exe
+    build-installer.ps1             Builds all targets + compiles the installer
+.github/workflows/
+    build-installer.yml             CI: builds the setup.exe on every push / release tag
 docs/
     INSTALLATION.md                 Install, test and troubleshooting guide
     ARCHITECTURE.md                 How multi-version targeting works + roadmap
@@ -75,6 +93,7 @@ versions. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 - [x] Multi-version project skeleton (2024–2027)
 - [x] Ribbon UI + installable test command
+- [x] End-user installer (.exe) + CI build
 - [ ] Fire-fighting compliance rule engine (rules to be specified)
 - [ ] Review-comment reporting (on-plan annotations / exportable report)
 - [ ] Settings UI (code edition selection, project parameters)
