@@ -1,0 +1,42 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCompliance", "src\CodeCompliance\CodeCompliance.csproj", "{F3EDADCF-973E-4906-9B9F-835144EA27FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug R24|Any CPU = Debug R24|Any CPU
+		Debug R25|Any CPU = Debug R25|Any CPU
+		Debug R26|Any CPU = Debug R26|Any CPU
+		Debug R27|Any CPU = Debug R27|Any CPU
+		Release R24|Any CPU = Release R24|Any CPU
+		Release R25|Any CPU = Release R25|Any CPU
+		Release R26|Any CPU = Release R26|Any CPU
+		Release R27|Any CPU = Release R27|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R24|Any CPU.ActiveCfg = Debug R24|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R24|Any CPU.Build.0 = Debug R24|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R25|Any CPU.ActiveCfg = Debug R25|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R25|Any CPU.Build.0 = Debug R25|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R26|Any CPU.ActiveCfg = Debug R26|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R26|Any CPU.Build.0 = Debug R26|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R27|Any CPU.ActiveCfg = Debug R27|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Debug R27|Any CPU.Build.0 = Debug R27|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R24|Any CPU.ActiveCfg = Release R24|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R24|Any CPU.Build.0 = Release R24|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R25|Any CPU.ActiveCfg = Release R25|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R25|Any CPU.Build.0 = Release R25|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R26|Any CPU.ActiveCfg = Release R26|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R26|Any CPU.Build.0 = Release R26|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R27|Any CPU.ActiveCfg = Release R27|Any CPU
+		{F3EDADCF-973E-4906-9B9F-835144EA27FE}.Release R27|Any CPU.Build.0 = Release R27|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2DEF8BEE-93F2-4EFD-B254-1743C6B22783}
+	EndGlobalSection
+EndGlobal

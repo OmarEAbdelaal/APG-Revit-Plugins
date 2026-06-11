@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Code Compliance - Fire Fighting</Name>
+    <!-- Path is relative to the folder containing this .addin file -->
+    <Assembly>CodeCompliance\CodeCompliance.dll</Assembly>
+    <AddInId>a711296b-5f86-43bb-b927-f9f44a72e2a7</AddInId>
+    <FullClassName>CodeCompliance.App</FullClassName>
+    <VendorId>OEA</VendorId>
+    <VendorDescription>Omar E. Abdelaal, omar.e.abdelaal@gmail.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>

@@ -1,0 +1,91 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Multi-version Revit add-in project.
+    Pick a configuration to target a specific Revit version:
+      Debug R24 / Release R24  -> Revit 2024 (.NET Framework 4.8)
+      Debug R25 / Release R25  -> Revit 2025 (.NET 8)
+      Debug R26 / Release R26  -> Revit 2026 (.NET 8)
+      Debug R27 / Release R27  -> Revit 2027 (.NET 8)
+  -->
+
+  <PropertyGroup>
+    <RootNamespace>CodeCompliance</RootNamespace>
+    <AssemblyName>CodeCompliance</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- Allows building net8.0-windows targets on non-Windows CI agents -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Configurations>Debug R24;Debug R25;Debug R26;Debug R27;Release R24;Release R25;Release R26;Release R27</Configurations>
+    <Version>0.1.0</Version>
+    <Company>Omar E. Abdelaal</Company>
+    <Product>Code Compliance - Fire Fighting</Product>
+  </PropertyGroup>
+
+  <!-- Map each configuration to a Revit version and target framework -->
+  <PropertyGroup Condition="$(Configuration.Contains('R24'))">
+    <RevitVersion>2024</RevitVersion>
+    <TargetFramework>net48</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.Contains('R25'))">
+    <RevitVersion>2025</RevitVersion>
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.Contains('R26'))">
+    <RevitVersion>2026</RevitVersion>
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.Contains('R27'))">
+    <RevitVersion>2027</RevitVersion>
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <!-- Version-specific compile constant, e.g. REVIT2025, for API differences between versions -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);REVIT$(RevitVersion)</DefineConstants>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
+    <DebugType>full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Official Revit API assemblies repackaged on NuGet (no local Revit install needed to build).
+      The wildcard picks the latest package for the selected Revit version.
+      If the package for a brand-new Revit version is not on NuGet yet, replace these with
+      direct <Reference> items pointing at RevitAPI.dll / RevitAPIUI.dll in the Revit install folder.
+    -->
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    Dev convenience: after a successful build on Windows, deploy the add-in straight into
+    the current user's Revit Addins folder so you can just build and start Revit.
+  -->
+  <Target Name="DeployRevitAddin" AfterTargets="Build" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <PropertyGroup>
+      <AddinsDir>$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)</AddinsDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <AddinAssembly Include="$(OutputPath)$(AssemblyName).dll" />
+      <AddinAssembly Include="$(OutputPath)$(AssemblyName).pdb" Condition="Exists('$(OutputPath)$(AssemblyName).pdb')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AddinAssembly)" DestinationFolder="$(AddinsDir)\CodeCompliance" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\install\CodeCompliance.addin" DestinationFolder="$(AddinsDir)" />
+    <Message Importance="high" Text="Deployed CodeCompliance add-in to $(AddinsDir)" />
+  </Target>
+
+</Project>
