@@ -83,7 +83,7 @@ docs/
 | `* R24`       | 2024          | .NET Framework 4.8 |
 | `* R25`       | 2025          | .NET 8 |
 | `* R26`       | 2026          | .NET 8 |
-| `* R27`       | 2027          | .NET 8 |
+| `* R27`       | 2027          | .NET 10 |
 
 Each configuration compiles the same source against the matching Revit API NuGet packages
 and defines a `REVIT20XX` constant for the rare places where the API differs between

@@ -4,8 +4,9 @@
 
 - Windows 10/11
 - One or more of: Autodesk Revit 2024, 2025, 2026, 2027
-- To build from source: **Visual Studio 2022 (17.8+)** or the .NET SDK 8+
-  (no Revit SDK download needed — the Revit API references come from NuGet)
+- To build from source: **Visual Studio 2022 (17.8+)** or the .NET SDK
+  (SDK 8 for Revit 2024–2026 targets, SDK 10 for the Revit 2027 target;
+  no Revit SDK download needed — the Revit API references come from NuGet)
 
 ## Option A — Installer .exe (recommended for end users)
 
@@ -104,8 +105,11 @@ powershell -ExecutionPolicy Bypass -File install\uninstall.ps1 -RevitVersions 20
 - If the DLL was downloaded (not built locally), Windows may block it:
   right-click the DLL → Properties → check **Unblock**.
 
-**NuGet restore fails for a `R27` configuration**
-- The Revit 2027 API package may not be published on NuGet yet for very new releases.
-  In that case edit `src/CodeCompliance/CodeCompliance.csproj` and replace the two
-  `PackageReference` lines with direct references to `RevitAPI.dll` and `RevitAPIUI.dll`
-  from `C:\Program Files\Autodesk\Revit 2027\` (set `Private`/Copy Local to false).
+**NuGet restore fails for a configuration**
+- For a brand-new Revit release the API package may not be on NuGet yet. In that case
+  edit `src/CodeCompliance/CodeCompliance.csproj` and replace the two `PackageReference`
+  lines with direct references to `RevitAPI.dll` and `RevitAPIUI.dll` from
+  `C:\Program Files\Autodesk\Revit <version>\` (set `Private`/Copy Local to false).
+- A `NU1202` "not compatible" error means the target framework in the csproj doesn't
+  match what that Revit version requires (2024: net48, 2025/2026: net8.0-windows,
+  2027: net10.0-windows).

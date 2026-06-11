@@ -9,14 +9,15 @@ fire-fighting compliance rule engine can be plugged in without reworking the fou
 
 Revit versions differ in two ways that matter to an add-in:
 
-1. **Runtime**: Revit 2024 hosts .NET Framework 4.8; Revit 2025+ host .NET 8.
+1. **Runtime**: Revit 2024 hosts .NET Framework 4.8; Revit 2025/2026 host .NET 8;
+   Revit 2027 hosts .NET 10.
 2. **API surface**: small breaking changes between yearly releases.
 
 Both are handled in `src/CodeCompliance/CodeCompliance.csproj` through *build
 configurations* rather than separate projects:
 
 - Configurations `Debug|Release R24…R27` set `RevitVersion` (2024–2027) and the matching
-  `TargetFramework` (`net48` or `net8.0-windows`).
+  `TargetFramework` (`net48`, `net8.0-windows` or `net10.0-windows`).
 - Revit API references come from the `Nice3point.Revit.Api.*` NuGet packages with a
   version wildcard (`$(RevitVersion).*`), so no local Revit installation or SDK download
   is needed to compile.

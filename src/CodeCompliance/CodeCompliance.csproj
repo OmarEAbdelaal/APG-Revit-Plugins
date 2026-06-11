@@ -6,7 +6,7 @@
       Debug R24 / Release R24  -> Revit 2024 (.NET Framework 4.8)
       Debug R25 / Release R25  -> Revit 2025 (.NET 8)
       Debug R26 / Release R26  -> Revit 2026 (.NET 8)
-      Debug R27 / Release R27  -> Revit 2027 (.NET 8)
+      Debug R27 / Release R27  -> Revit 2027 (.NET 10)
   -->
 
   <PropertyGroup>
@@ -42,7 +42,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="$(Configuration.Contains('R27'))">
     <RevitVersion>2027</RevitVersion>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
   </PropertyGroup>
 
   <!-- Version-specific compile constant, e.g. REVIT2025, for API differences between versions -->
