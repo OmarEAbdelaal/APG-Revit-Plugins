@@ -85,6 +85,24 @@ namespace CodeCompliance
                     "ratings, creates the egress schedules in the project, and exports an HTML + CSV report."
             });
 
+            RibbonPanel parkingPanel = application.CreateRibbonPanel(TabName, "Parking");
+
+            parkingPanel.AddItem(new PushButtonData(
+                "CodeCompliance_ParkingRamp",
+                "Parking\nRamp",
+                assemblyPath,
+                "CodeCompliance.Commands.ParkingRampCommand")
+            {
+                ToolTip = "Create a code-compliant parking ramp from a drawn model line.",
+                LongDescription =
+                    "Draw a model line (straight ramp) or model arc (curved/helical ramp) in a plan " +
+                    "view, in the direction of travel going up, then run this command and select it. " +
+                    "Choose whether the line is the left edge, right edge or centerline, enter two of " +
+                    "the three key parameters (floor height h, slope S, total run R) and the third is " +
+                    "solved per Dubai Building Code Annex B, Tables B.9 / B.10. Compliance is checked " +
+                    "at the input step; the ramp with its transition zones is created as a DirectShape."
+            });
+
             panel.AddSeparator();
 
             panel.AddItem(new PushButtonData(
