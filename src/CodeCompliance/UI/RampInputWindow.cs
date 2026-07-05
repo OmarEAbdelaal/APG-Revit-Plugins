@@ -8,6 +8,17 @@ using CodeCompliance.Core;
 
 namespace CodeCompliance.UI
 {
+    /// <summary>A floor type the user can build the ramp with (UI-side DTO, no Revit types).</summary>
+    public class FloorTypeItem
+    {
+        public string Name { get; set; } = "";
+        public long Id { get; set; }
+        public double ThicknessM { get; set; }
+
+        public override string ToString()
+            => ThicknessM > 0 ? $"{Name}  ({ThicknessM:F2} m)" : Name;
+    }
+
     /// <summary>
     /// Input dialog for the parking ramp creator. Mirrors the standalone
     /// "Parking Ramp Calculator" app: the user picks the ramp type and the target
@@ -23,12 +34,13 @@ namespace CodeCompliance.UI
         private static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0x6D, 0x7A, 0x8A));
         private static readonly Brush Blue = new SolidColorBrush(Color.FromRgb(0x24, 0x71, 0xA3));
 
-        private readonly RampPathInfo _path;
+        private readonly RampPath _path;
+        private readonly bool _singleArc;
 
         private readonly ComboBox _typeBox;
         private readonly ComboBox _lanesBox;
         private readonly TextBox _laneWidthBox;
-        private readonly TextBox _slabBox;
+        private readonly ComboBox _floorTypeBox;
         private readonly Dictionary<RampLineLocation, RadioButton> _locationRadios = new Dictionary<RampLineLocation, RadioButton>();
         private readonly Dictionary<RampSolveTarget, RadioButton> _solveRadios = new Dictionary<RampSolveTarget, RadioButton>();
         private readonly TextBox _hBox;
@@ -44,17 +56,28 @@ namespace CodeCompliance.UI
         public RampCalcResult? Result { get; private set; }
         public int Lanes { get; private set; } = 1;
         public double LaneWidth { get; private set; }
-        public double SlabThickness { get; private set; } = 0.30;
         public RampLineLocation Location { get; private set; } = RampLineLocation.Center;
         public double TotalWidth => LaneWidth * Lanes;
+        public long FloorTypeId => (_floorTypeBox.SelectedItem as FloorTypeItem)?.Id ?? -1;
 
-        public RampInputWindow(RampPathInfo path)
+        /// <summary>Thickness of the chosen floor type (used for the loop clearance check).</summary>
+        public double SlabThickness
+        {
+            get
+            {
+                double t = (_floorTypeBox.SelectedItem as FloorTypeItem)?.ThicknessM ?? 0;
+                return t > 0 ? t : 0.30;
+            }
+        }
+
+        public RampInputWindow(RampPath path, IReadOnlyList<FloorTypeItem> floorTypes, long defaultFloorTypeId)
         {
             _path = path;
+            _singleArc = path.HasArc && path.Segments.Count == 1;
 
-            Title = "Code Compliance - Parking Ramp (Dubai BC Annex B, B.7.2.2)";
-            Width = 720;
-            Height = 640;
+            Title = "APG Plugins - Parking Ramp (Dubai BC Annex B, B.7.2.2)";
+            Width = 740;
+            Height = 660;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             ResizeMode = ResizeMode.CanResize;
 
@@ -65,11 +88,11 @@ namespace CodeCompliance.UI
 
             var header = new TextBlock
             {
-                Text = (path.IsArc
-                        ? $"Selected: arc, length {path.DrawnLength:F2} m, radius {path.DrawnRadius:F2} m. "
-                        : $"Selected: straight line, length {path.DrawnLength:F2} m. ") +
+                Text = $"Path: {path.Segments.Count} segment(s), drawn length {path.DrawnLength:F2} m" +
+                       (path.HasArc ? " (includes arcs). " : ". ") +
                        "Enter two of the three key parameters (h, S, R); the third is solved per " +
-                       "Dubai Building Code Annex B Tables B.9 / B.10. Compliance is checked before creation.",
+                       "Dubai Building Code Annex B Tables B.9 / B.10. The ramp is created as Floor " +
+                       "elements shaped with slab-shape (modify sub-elements) points.",
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 10)
             };
@@ -83,9 +106,15 @@ namespace CodeCompliance.UI
             root.Children.Add(body);
 
             // ── Left column: inputs ─────────────────────────────────────────────
-            var left = new StackPanel { Margin = new Thickness(0, 0, 10, 0) };
-            Grid.SetColumn(left, 0);
-            body.Children.Add(left);
+            var leftScroll = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+            Grid.SetColumn(leftScroll, 0);
+            body.Children.Add(leftScroll);
+            var left = new StackPanel();
+            leftScroll.Content = left;
 
             left.Children.Add(SectionHeader("Ramp configuration"));
 
@@ -108,10 +137,18 @@ namespace CodeCompliance.UI
             _laneWidthBox = NumberBox();
             left.Children.Add(_laneWidthBox);
 
-            left.Children.Add(FieldLabel("Slab thickness [m]"));
-            _slabBox = NumberBox();
-            _slabBox.Text = "0.30";
-            left.Children.Add(_slabBox);
+            left.Children.Add(FieldLabel("Floor type (ramp is built from floors)"));
+            _floorTypeBox = new ComboBox { Margin = new Thickness(0, 2, 0, 6) };
+            int selectedIndex = 0;
+            for (int i = 0; i < floorTypes.Count; i++)
+            {
+                _floorTypeBox.Items.Add(floorTypes[i]);
+                if (floorTypes[i].Id == defaultFloorTypeId)
+                    selectedIndex = i;
+            }
+            if (_floorTypeBox.Items.Count > 0)
+                _floorTypeBox.SelectedIndex = selectedIndex;
+            left.Children.Add(_floorTypeBox);
 
             left.Children.Add(SectionHeader("Drawn line represents"));
             var locPanel = new StackPanel { Orientation = Orientation.Horizontal };
@@ -131,7 +168,7 @@ namespace CodeCompliance.UI
             left.Children.Add(locPanel);
             left.Children.Add(new TextBlock
             {
-                Text = "Left/right are relative to the direction the line was drawn (direction of travel, going up).",
+                Text = "Left/right are relative to the direction the path was drawn (direction of travel, going up).",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Muted,
                 FontSize = 11,
@@ -205,11 +242,11 @@ namespace CodeCompliance.UI
             AddResultRow(right, "R", "Total horizontal run R");
             AddResultRow(right, "ratio", "Slope ratio (1 : n)");
             AddResultRow(right, "W", "Total ramp width W");
-            if (path.IsArc)
+            if (path.HasArc)
+                AddResultRow(right, "ri", "Min inner radius (from drawing)");
+            if (_singleArc)
             {
                 AddResultRow(right, "rc", "Centreline radius");
-                AddResultRow(right, "ri", "Inner radius");
-                AddResultRow(right, "ro", "Outer radius");
                 AddResultRow(right, "sweep", "Sweep angle");
                 AddResultRow(right, "Li", "Inner edge arc length");
                 AddResultRow(right, "Lo", "Outer edge arc length");
@@ -220,7 +257,7 @@ namespace CodeCompliance.UI
             AddComplianceRow(right, "width", "Min lane width");
             AddComplianceRow(right, "radius", "Min inner radius");
             AddComplianceRow(right, "clearance", "Min clearance 2.4 m");
-            AddComplianceRow(right, "length", "Drawn line vs computed R");
+            AddComplianceRow(right, "length", "Drawn path vs computed R");
 
             // ── Buttons ─────────────────────────────────────────────────────────
             var buttons = new StackPanel
@@ -231,8 +268,8 @@ namespace CodeCompliance.UI
             };
             _okButton = new Button
             {
-                Content = "Create ramp",
-                Width = 120,
+                Content = "Create ramp floors",
+                Width = 140,
                 Margin = new Thickness(0, 0, 8, 0),
                 IsEnabled = false,
                 IsDefault = true
@@ -255,7 +292,7 @@ namespace CodeCompliance.UI
 
         private IEnumerable<RampType> AllowedTypes()
         {
-            if (_path.IsArc)
+            if (_path.HasArc)
             {
                 yield return RampType.Curved;
                 yield return RampType.Helical;
@@ -310,7 +347,7 @@ namespace CodeCompliance.UI
                            : solve == RampSolveTarget.Slope ? _sBox : _rBox;
             solved.Text = "";
 
-            // When R is a known input, prefill it from the drawn line so the model
+            // When R is a known input, prefill it from the drawn path so the model
             // and the calculation agree by default.
             if (solve != RampSolveTarget.TotalRun && string.IsNullOrWhiteSpace(_rBox.Text))
             {
@@ -346,10 +383,8 @@ namespace CodeCompliance.UI
                     throw new RampCalcException("Enter a valid lane width.");
                 LaneWidth = laneWidth.Value;
 
-                double? slab = TryParse(_slabBox.Text);
-                if (!slab.HasValue || slab.Value <= 0)
-                    throw new RampCalcException("Enter a valid slab thickness.");
-                SlabThickness = slab.Value;
+                if (FloorTypeId < 0)
+                    throw new RampCalcException("Select a floor type.");
 
                 RampSolveTarget solve = SelectedSolveTarget;
                 double? h = solve == RampSolveTarget.FloorHeight ? null : RequireValue(_hBox, "h");
@@ -369,7 +404,7 @@ namespace CodeCompliance.UI
                 bool compliant = UpdateCompliance(res, regs);
                 _okButton.IsEnabled = compliant;
                 if (!compliant)
-                    _error.Text = "The design violates Table B.9 — adjust the inputs or redraw the line.";
+                    _error.Text = "The design violates Table B.9 — adjust the inputs or redraw the path.";
             }
             catch (RampCalcException ex)
             {
@@ -397,18 +432,23 @@ namespace CodeCompliance.UI
             SetResult("ratio", $"1 : {100.0 / res.S:F2}");
             SetResult("W", $"{w:F2} m  ({Lanes} x {LaneWidth:F2} m)");
 
-            if (_path.IsArc)
+            if (_path.HasArc)
             {
-                double rc = _path.CenterlineRadius(Location, w);
-                double ri = rc - w / 2.0;
-                double ro = rc + w / 2.0;
-                double theta = res.R / rc;
-                SetResult("rc", $"{rc:F2} m");
-                SetResult("ri", $"{ri:F2} m");
-                SetResult("ro", $"{ro:F2} m");
-                SetResult("sweep", $"{theta * 180.0 / Math.PI:F1} deg");
-                SetResult("Li", $"{ri * theta:F3} m");
-                SetResult("Lo", $"{ro * theta:F3} m");
+                double? ri = _path.MinInnerRadius(Location, w);
+                if (ri.HasValue)
+                    SetResult("ri", $"{ri.Value:F2} m");
+            }
+            if (_singleArc)
+            {
+                double rc = _path.SingleArcCenterlineRadius(Location, w) ?? 0;
+                if (rc > 0)
+                {
+                    double theta = res.R / rc;
+                    SetResult("rc", $"{rc:F2} m");
+                    SetResult("sweep", $"{theta * 180.0 / Math.PI:F1} deg");
+                    SetResult("Li", $"{(rc - w / 2.0) * theta:F3} m");
+                    SetResult("Lo", $"{(rc + w / 2.0) * theta:F3} m");
+                }
             }
         }
 
@@ -428,24 +468,24 @@ namespace CodeCompliance.UI
                         : $"FAIL  {LaneWidth:F2} m < {regs.MinLaneWidth:F1} m");
             ok &= widthOk;
 
-            if (_path.IsArc && regs.MinInnerRadius.HasValue)
+            double? minInner = _path.MinInnerRadius(Location, TotalWidth);
+            if (minInner.HasValue && regs.MinInnerRadius.HasValue)
             {
-                double ri = _path.InnerRadius(Location, TotalWidth);
-                bool radiusOk = ri >= regs.MinInnerRadius.Value - 1e-9;
+                bool radiusOk = minInner.Value >= regs.MinInnerRadius.Value - 1e-9;
                 SetCompliance("radius", radiusOk,
-                    radiusOk ? $"OK  {ri:F2} m >= {regs.MinInnerRadius.Value:F1} m"
-                             : $"FAIL  {ri:F2} m < {regs.MinInnerRadius.Value:F1} m");
+                    radiusOk ? $"OK  {minInner.Value:F2} m >= {regs.MinInnerRadius.Value:F1} m"
+                             : $"FAIL  {minInner.Value:F2} m < {regs.MinInnerRadius.Value:F1} m");
                 ok &= radiusOk;
             }
             else
             {
-                SetCompliance("radius", null, "N/A (straight ramp)");
+                SetCompliance("radius", null, "N/A (straight path)");
             }
 
-            if (_path.IsArc)
+            double? rcSingle = _path.SingleArcCenterlineRadius(Location, TotalWidth);
+            if (rcSingle.HasValue)
             {
-                double rc = _path.CenterlineRadius(Location, TotalWidth);
-                double? gap = RampCalculator.MinLoopClearance(res, rc, SlabThickness);
+                double? gap = RampCalculator.MinLoopClearance(res, rcSingle.Value, SlabThickness);
                 if (gap.HasValue)
                 {
                     bool clearOk = gap.Value >= regs.MinClearance - 1e-9;
@@ -468,12 +508,17 @@ namespace CodeCompliance.UI
             double diff = Math.Abs(drawn - res.R);
             if (diff <= 0.05)
             {
-                SetCompliance("length", true, "OK  line matches R");
+                SetCompliance("length", true, "OK  path matches R");
+            }
+            else if (drawn > res.R)
+            {
+                SetCompliance("length", null,
+                    $"Note: ramp stops at R = {res.R:F2} m (path is {drawn:F2} m)");
             }
             else
             {
                 SetCompliance("length", null,
-                    $"Note: ramp is built {res.R:F2} m along the line (drawn {drawn:F2} m)");
+                    $"Note: last segment extends to R = {res.R:F2} m (path is {drawn:F2} m)");
             }
 
             return ok;

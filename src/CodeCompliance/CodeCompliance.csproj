@@ -22,9 +22,10 @@
     <!-- Allows building net8.0-windows targets on non-Windows CI agents -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Configurations>Debug R24;Debug R25;Debug R26;Debug R27;Release R24;Release R25;Release R26;Release R27</Configurations>
-    <Version>0.3.0</Version>
-    <Company>Omar E. Abdelaal</Company>
-    <Product>Code Compliance - Fire Fighting</Product>
+    <Version>0.4.0</Version>
+    <Company>Omar Elsayed</Company>
+    <Authors>Omar Elsayed</Authors>
+    <Product>APG Plugins - Code Compliance</Product>
   </PropertyGroup>
 
   <!-- Map each configuration to a Revit version and target framework -->

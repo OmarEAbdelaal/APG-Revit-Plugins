@@ -19,15 +19,16 @@ namespace CodeCompliance.Commands
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
             string revitVersion = commandData.Application.Application.VersionNumber;
 
-            var dialog = new TaskDialog("About Code Compliance")
+            var dialog = new TaskDialog("About APG Plugins")
             {
-                MainInstruction = "Code Compliance - Fire Fighting",
+                MainInstruction = "APG Plugins - Code Compliance",
                 MainContent =
-                    "Reviews fire-fighting designs in Revit models against applicable codes " +
-                    "and produces comprehensive review comments on plans.\n\n" +
+                    "Reviews fire-fighting designs in Revit models against applicable codes, " +
+                    "produces comprehensive review comments on plans, and creates code-compliant " +
+                    "parking ramps (Dubai Building Code Annex B).\n\n" +
                     "Add-in version: " + assemblyVersion + "\n" +
                     "Running in Revit: " + revitVersion,
-                FooterText = "Author: Omar E. Abdelaal",
+                FooterText = "Author: Omar Elsayed",
                 CommonButtons = TaskDialogCommonButtons.Close
             };
             dialog.Show();

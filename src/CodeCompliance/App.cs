@@ -11,7 +11,7 @@ namespace CodeCompliance
     /// </summary>
     public class App : IExternalApplication
     {
-        private const string TabName = "Code Compliance";
+        private const string TabName = "APG Plugins";
         private const string PanelName = "Fire Fighting";
 
         public Result OnStartup(UIControlledApplication application)

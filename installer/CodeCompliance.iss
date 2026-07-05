@@ -8,7 +8,7 @@
 ;   - includes a normal Windows uninstaller (Settings > Apps)
 
 #define MyAppName "Code Compliance - Fire Fighting"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.4.0"
 #define MyAppPublisher "Omar E. Abdelaal"
 #define MyAppURL "https://github.com/OmarEAbdelaal/CodeCompliance_R_Plugin"
 #define BinRoot "..\src\CodeCompliance\bin"
