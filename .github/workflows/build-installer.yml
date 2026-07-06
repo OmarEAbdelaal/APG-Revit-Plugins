@@ -32,7 +32,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CodeComplianceSetup
+          name: APG-Revit-Plugins-Setup
           path: installer/output/*.exe
           if-no-files-found: error
 

@@ -1,16 +1,17 @@
-﻿; Inno Setup script for the Code Compliance - Fire Fighting Revit add-in.
-; Compile with Inno Setup 6 (ISCC.exe) after building the Release configurations,
-; or simply run installer\build-installer.ps1 which does both.
+﻿; Inno Setup script for the APG Revit Plugins suite (Code Compliance - Fire Fighting,
+; Ramp Creator). Compile with Inno Setup 6 (ISCC.exe) after building the Release
+; configurations, or simply run installer\build-installer.ps1 which does both.
 ;
-; The installer:
+; The single installer:
+;   - ships every plugin of the suite in one .exe
 ;   - needs NO admin rights (installs per-user under %APPDATA%)
 ;   - detects which Revit versions (2024-2027) are installed and deploys only to those
 ;   - includes a normal Windows uninstaller (Settings > Apps)
 
-#define MyAppName "Code Compliance - Fire Fighting"
-#define MyAppVersion "0.4.0"
-#define MyAppPublisher "Omar E. Abdelaal"
-#define MyAppURL "https://github.com/OmarEAbdelaal/CodeCompliance_R_Plugin"
+#define MyAppName "APG Revit Plugins"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "APG - Omar Elsayed"
+#define MyAppURL "https://github.com/OmarEAbdelaal/APG-Revit-Plugins"
 #define BinRoot "..\src\CodeCompliance\bin"
 #define ManifestFile "..\install\CodeCompliance.addin"
 
@@ -29,7 +30,8 @@ DisableDirPage=yes
 DisableProgramGroupPage=yes
 DisableReadyMemo=no
 OutputDir=output
-OutputBaseFilename=CodeComplianceSetup-{#MyAppVersion}
+OutputBaseFilename=APG-Revit-Plugins-Setup-{#MyAppVersion}
+SetupIconFile=apg.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -97,5 +99,6 @@ begin
   if CurStep = ssPostInstall then
     MsgBox('Installation complete.' + #13#10#13#10 +
            'Start Revit and choose "Always Load" when asked about the new add-in. ' +
-           'You will find a "Code Compliance" tab in the ribbon.', mbInformation, MB_OK);
+           'You will find an "APG Revit Plugins" tab in the ribbon with the ' +
+           'Code Compliance - Fire Fighting and Ramp Creator plugins.', mbInformation, MB_OK);
 end;

@@ -7,7 +7,7 @@ doors, exactly like the native Analyze → Path of Travel tool.
 ## The 3-step workflow
 
 ### Step 1 — Escape Stairs
-*Code Compliance → Escape Stairs*
+*APG Revit Plugins → Code Compliance – Fire Fighting → Escape Stairs*
 
 - Detects **all stairs** in the model and lists them (name, type, base level).
 - Tick the stairs that serve as escape stairs and press **Save**.
@@ -16,7 +16,7 @@ doors, exactly like the native Analyze → Path of Travel tool.
   can also see/edit it in the stair's Properties palette, tag it, or schedule it.
 
 ### Step 2 — Travel Paths
-*Code Compliance → Travel Paths* (run in a **floor plan view**)
+*APG Revit Plugins → Code Compliance – Fire Fighting → Travel Paths* (run in a **floor plan view**)
 
 For every placed room on the plan's level the plugin:
 
@@ -36,7 +36,7 @@ The plugin also ensures the Doors category is in Revit's route-analysis ignored 
 so **paths pass through doors** rather than treating them as walls.
 
 ### Step 3 — Egress Report
-*Code Compliance → Egress Report*
+*APG Revit Plugins → Code Compliance – Fire Fighting → Egress Report*
 
 - Measures the length of every plugin-created travel path (in meters).
 - Detects every **door each path passes through** and reads its **Fire Rating**

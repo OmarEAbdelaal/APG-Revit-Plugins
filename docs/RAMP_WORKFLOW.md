@@ -8,7 +8,7 @@ tags and hosts like any other floor.
 
 ## User workflow
 
-1. Click **Parking Ramp** on the *APG Plugins → Parking* panel and choose how to
+1. Click **Parking Ramp** on the *APG Revit Plugins → Ramp Creator* panel and choose how to
    define the path:
    - **Select drawn model lines** — pick one or more model lines/arcs forming
      the path (they are chained automatically; pick the line at the ramp start

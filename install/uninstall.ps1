@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Removes the Code Compliance add-in from the selected Revit versions.
+    Removes the APG Revit Plugins suite from the selected Revit versions.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File install\uninstall.ps1

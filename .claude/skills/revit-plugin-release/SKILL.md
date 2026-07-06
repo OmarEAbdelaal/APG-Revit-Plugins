@@ -1,7 +1,7 @@
 ---
 name: revit-plugin-release
 description: >
-  Build, version and ship the Code Compliance Revit plugin installer: CI artifacts,
+  Build, version and ship the APG Revit Plugins suite installer: CI artifacts,
   version bumps, GitHub releases, and user update instructions. Use when the user asks
   for an installer/.exe, a new version, a release, or how to install/update the plugin.
 ---
@@ -16,14 +16,14 @@ on `windows-latest`:
 1. `installer/build-installer.ps1` builds `Release R24/R25/R26/R27`
    (a failing target is skipped with a warning, not a hard failure — check the log).
 2. Inno Setup 6 (preinstalled on the runner) compiles `installer/CodeCompliance.iss`
-   → `CodeComplianceSetup-<version>.exe`.
-3. The exe is uploaded as artifact **CodeComplianceSetup** (GitHub zips artifacts).
+   → `APG-Revit-Plugins-Setup-<version>.exe` (one installer for the whole suite).
+3. The exe is uploaded as artifact **APG-Revit-Plugins-Setup** (GitHub zips artifacts).
 
 Get the download link for the user:
 - Find the run: GitHub MCP `actions_list` (method `list_workflow_runs`,
   `resource_id: build-installer.yml`, filter by branch).
 - Artifact id: `actions_list` (method `list_workflow_run_artifacts`, resource_id = run id).
-- User-facing URL: `https://github.com/OmarEAbdelaal/CodeCompliance_R_Plugin/actions/runs/<RUN_ID>/artifacts/<ARTIFACT_ID>`
+- User-facing URL: `https://github.com/OmarEAbdelaal/APG-Revit-Plugins/actions/runs/<RUN_ID>/artifacts/<ARTIFACT_ID>`
   (requires GitHub login; downloads a zip containing the .exe).
 
 Always verify in the job log: `Included Revit targets: Release R24, Release R25, Release R26, Release R27`
@@ -57,9 +57,9 @@ download link instead of an Actions artifact.
 ## User update instructions (standard reply)
 
 1. Close Revit (DLL is locked while running).
-2. Download the new `CodeComplianceSetup-<ver>.exe`, run it — it overwrites in place,
-   no uninstall needed.
-3. Start Revit, click **About** on the Code Compliance tab to confirm the version.
+2. Download the new `APG-Revit-Plugins-Setup-<ver>.exe`, run it — it overwrites in
+   place, no uninstall needed.
+3. Start Revit, click **About APG** on the APG Revit Plugins tab to confirm the version.
 
 Escape-stair choices and schedules live in the Revit model, so updates never lose user data.
 

@@ -29,10 +29,10 @@ namespace CodeCompliance.UI
     /// </summary>
     public class RampInputWindow : Window
     {
-        private static readonly Brush Green = new SolidColorBrush(Color.FromRgb(0x1E, 0x84, 0x49));
-        private static readonly Brush Red = new SolidColorBrush(Color.FromRgb(0xC0, 0x39, 0x2B));
-        private static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0x6D, 0x7A, 0x8A));
-        private static readonly Brush Blue = new SolidColorBrush(Color.FromRgb(0x24, 0x71, 0xA3));
+        private static readonly Brush Green = ApgTheme.Green;
+        private static readonly Brush Red = ApgTheme.Red;
+        private static readonly Brush Muted = ApgTheme.Muted;
+        private static readonly Brush Blue = ApgTheme.Accent;
 
         private readonly RampPath _path;
         private readonly bool _singleArc;
@@ -75,16 +75,25 @@ namespace CodeCompliance.UI
             _path = path;
             _singleArc = path.HasArc && path.Segments.Count == 1;
 
-            Title = "APG Plugins - Parking Ramp (Dubai BC Annex B, B.7.2.2)";
-            Width = 740;
-            Height = 660;
+            Title = "Parking Ramp – APG Revit Plugins";
+            Width = 760;
+            Height = 700;
+            MinWidth = 640;
+            MinHeight = 520;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             ResizeMode = ResizeMode.CanResize;
+            ApgTheme.Apply(this);
 
-            var root = new Grid { Margin = new Thickness(12) };
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var band = ApgTheme.CreateHeader("Parking Ramp Designer",
+                "Ramp Creator  ·  Dubai Building Code Annex B, B.7.2.2");
+            Grid.SetRow((FrameworkElement)band, 0);
+            root.Children.Add(band);
 
             var header = new TextBlock
             {
@@ -94,15 +103,16 @@ namespace CodeCompliance.UI
                        "Dubai Building Code Annex B Tables B.9 / B.10. The ramp is created as Floor " +
                        "elements shaped with slab-shape (modify sub-elements) points.",
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 10)
+                Foreground = Muted,
+                Margin = new Thickness(16, 10, 16, 8)
             };
-            Grid.SetRow(header, 0);
+            Grid.SetRow(header, 1);
             root.Children.Add(header);
 
-            var body = new Grid();
+            var body = new Grid { Margin = new Thickness(16, 0, 16, 0) };
             body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            Grid.SetRow(body, 1);
+            Grid.SetRow(body, 2);
             root.Children.Add(body);
 
             // ── Left column: inputs ─────────────────────────────────────────────
@@ -207,12 +217,8 @@ namespace CodeCompliance.UI
             _rBox = NumberBox();
             left.Children.Add(_rBox);
 
-            var calc = new Button
-            {
-                Content = "Calculate + check compliance",
-                Margin = new Thickness(0, 10, 0, 4),
-                Padding = new Thickness(0, 6, 0, 6)
-            };
+            Button calc = ApgTheme.PrimaryButton("Calculate + check compliance");
+            calc.Margin = new Thickness(0, 10, 0, 4);
             calc.Click += (_, _) => Calculate();
             left.Children.Add(calc);
 
@@ -264,26 +270,23 @@ namespace CodeCompliance.UI
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 10, 0, 0)
+                Margin = new Thickness(16, 10, 16, 14)
             };
-            _okButton = new Button
-            {
-                Content = "Create ramp floors",
-                Width = 140,
-                Margin = new Thickness(0, 0, 8, 0),
-                IsEnabled = false,
-                IsDefault = true
-            };
+            _okButton = ApgTheme.PrimaryButton("Create ramp floors");
+            _okButton.Margin = new Thickness(0, 0, 8, 0);
+            _okButton.IsEnabled = false;
+            _okButton.IsDefault = true;
             _okButton.Click += (_, _) =>
             {
                 Confirmed = true;
                 Close();
             };
-            var cancel = new Button { Content = "Cancel", Width = 90, IsCancel = true };
+            Button cancel = ApgTheme.SecondaryButton("Cancel");
+            cancel.IsCancel = true;
             cancel.Click += (_, _) => Close();
             buttons.Children.Add(_okButton);
             buttons.Children.Add(cancel);
-            Grid.SetRow(buttons, 2);
+            Grid.SetRow(buttons, 3);
             root.Children.Add(buttons);
 
             Content = root;
@@ -573,22 +576,9 @@ namespace CodeCompliance.UI
             return null;
         }
 
-        private static TextBlock SectionHeader(string text)
-        {
-            return new TextBlock
-            {
-                Text = text.ToUpperInvariant(),
-                FontWeight = FontWeights.Bold,
-                FontSize = 11,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x3A, 0x5C)),
-                Margin = new Thickness(0, 10, 0, 4)
-            };
-        }
+        private static TextBlock SectionHeader(string text) => ApgTheme.SectionHeader(text);
 
-        private static TextBlock FieldLabel(string text)
-        {
-            return new TextBlock { Text = text, Foreground = Muted, FontSize = 11, Margin = new Thickness(0, 2, 0, 0) };
-        }
+        private static TextBlock FieldLabel(string text) => ApgTheme.FieldLabel(text);
 
         private static TextBox NumberBox()
         {

@@ -1,6 +1,8 @@
-# CodeCompliance_R_Plugin — notes for Claude
+# APG-Revit-Plugins — notes for Claude
 
-Revit add-in (C#) checking fire-fighting code compliance. One codebase, four targets:
+The APG Revit Plugins suite (C#), author Omar Elsayed: one ribbon tab "APG Revit Plugins"
+with one panel per plugin — "Code Compliance – Fire Fighting" and "Ramp Creator" — and one
+installer for the whole suite. One codebase, four targets:
 Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
 
 ## Non-negotiables

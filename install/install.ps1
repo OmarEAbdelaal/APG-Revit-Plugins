@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Builds the Code Compliance add-in and installs it for the selected Revit versions.
+    Builds the APG Revit Plugins suite and installs it for the selected Revit versions.
 
 .DESCRIPTION
     For each requested Revit version this script:
@@ -71,5 +71,5 @@ foreach ($version in $RevitVersions) {
 }
 
 Write-Host ""
-Write-Host "Done. Start Revit - you should see a 'Code Compliance' ribbon tab." -ForegroundColor Green
+Write-Host "Done. Start Revit - you should see an 'APG Revit Plugins' ribbon tab." -ForegroundColor Green
 Write-Host "Revit will ask once whether to load the add-in; choose 'Always Load'."

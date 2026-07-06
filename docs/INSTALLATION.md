@@ -10,7 +10,7 @@
 
 ## Option A — Installer .exe (recommended for end users)
 
-1. Get `CodeComplianceSetup-<version>.exe`:
+1. Get `APG-Revit-Plugins-Setup-<version>.exe`:
    - from the repository's **Releases** page (attached automatically when a `v*` tag is
      pushed), or
    - from **Actions → Build installer → latest run → Artifacts** (built on every push
@@ -22,7 +22,7 @@
 3. The installer detects which Revit versions (2024–2027) exist on the machine and
    deploys the add-in only to those. If none are detected it installs for all versions,
    ready for when Revit is installed.
-4. Uninstall later via Windows **Settings → Apps → Code Compliance - Fire Fighting**.
+4. Uninstall later via Windows **Settings → Apps → APG Revit Plugins**.
 
 ## Option B — Build & install with Visual Studio (recommended for development)
 
@@ -71,13 +71,13 @@ Revit Addins folder of the **current user** (no admin rights needed).
 
 1. Start Revit. On first start a security dialog asks about the new add-in —
    choose **Always Load**.
-2. A **Code Compliance** tab should appear in the ribbon.
+2. An **APG Revit Plugins** tab should appear in the ribbon.
 3. Open any project (a model with fire-protection content gives a more interesting
    result, but any model works).
-4. Click **Run FF Check**. You should see a dialog titled *"Plugin is installed and
-   working."* listing counts of sprinklers, pipes, fittings, accessories and
-   mechanical equipment.
-5. Click **About** to verify the version info.
+4. Click **Model Check** on the *Code Compliance – Fire Fighting* panel. You should see
+   a dialog titled *"Plugin is installed and working."* listing counts of sprinklers,
+   pipes, fittings, accessories and mechanical equipment.
+5. Click **About APG** to verify the version info.
 
 If you see that dialog, the whole pipeline works (manifest → assembly load → ribbon →
 command → Revit API access) and the project is ready for the real compliance logic.
@@ -91,7 +91,7 @@ powershell -ExecutionPolicy Bypass -File install\uninstall.ps1 -RevitVersions 20
 
 ## Troubleshooting
 
-**The Code Compliance tab does not appear**
+**The APG Revit Plugins tab does not appear**
 - Confirm both the `.addin` file and the `CodeCompliance` folder exist under
   `%APPDATA%\Autodesk\Revit\Addins\<version>\` (paste that into Explorer's address bar).
 - Make sure the Revit version of the build matches the Revit you started

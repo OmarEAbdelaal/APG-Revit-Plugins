@@ -42,9 +42,11 @@ Revit startup
   └─ reads install/CodeCompliance.addin            (manifest)
        └─ loads CodeCompliance.dll
             └─ App : IExternalApplication           (App.cs)
-                 └─ creates ribbon tab "Code Compliance"
-                      ├─ Run FF Check → Commands.FireFightingCheckCommand
-                      └─ About        → Commands.AboutCommand
+                 └─ creates ribbon tab "APG Revit Plugins"
+                      ├─ panel "Code Compliance – Fire Fighting"
+                      │    Escape Stairs / Travel Paths / Egress Report / Model Check
+                      ├─ panel "Ramp Creator"  → Parking Ramp
+                      └─ panel "APG"           → About APG
 ```
 
 - `App` does **UI registration only** — no model logic lives there.
