@@ -1,6 +1,9 @@
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
+using CodeCompliance.Core;
 
 namespace CodeCompliance
 {
@@ -20,11 +23,16 @@ namespace CodeCompliance
         private const string RampPanelName = "Ramp Creator";
         private const string SuitePanelName = "APG";
 
+        private UIControlledApplication? _application;
+        private volatile UpdateInfo? _pendingUpdate;
+        private volatile bool _updateCheckDone;
+
         public Result OnStartup(UIControlledApplication application)
         {
             try
             {
                 CreateRibbon(application);
+                StartUpdateCheck(application);
                 return Result.Succeeded;
             }
             catch (Exception ex)
@@ -37,6 +45,56 @@ namespace CodeCompliance
         public Result OnShutdown(UIControlledApplication application)
         {
             return Result.Succeeded;
+        }
+
+        /// <summary>
+        /// Checks GitHub for a newer suite release in the background and, when one
+        /// is found, notifies once per version on Revit's UI thread (Idling event).
+        /// Never blocks startup; any failure (offline, rate limit) is silent.
+        /// </summary>
+        private void StartUpdateCheck(UIControlledApplication application)
+        {
+            _application = application;
+            application.Idling += OnIdlingShowUpdate;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    UpdateInfo? info = await UpdateChecker.CheckAsync().ConfigureAwait(false);
+                    if (info != null && info.IsNewer && !UpdateChecker.WasNotified(info.Latest))
+                        _pendingUpdate = info;
+                }
+                catch
+                {
+                    // never disturb Revit because of an update check
+                }
+                finally
+                {
+                    _updateCheckDone = true;
+                }
+            });
+        }
+
+        private void OnIdlingShowUpdate(object? sender, IdlingEventArgs e)
+        {
+            if (!_updateCheckDone)
+                return;
+
+            _application!.Idling -= OnIdlingShowUpdate;
+            UpdateInfo? info = _pendingUpdate;
+            _pendingUpdate = null;
+            if (info == null)
+                return;
+
+            try
+            {
+                UpdateChecker.MarkNotified(info.Latest);
+                new UI.UpdateWindow(info).ShowDialog();
+            }
+            catch
+            {
+                // notification is best effort only
+            }
         }
 
         private static void CreateRibbon(UIControlledApplication application)

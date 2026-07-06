@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using CodeCompliance.Core;
 
 namespace CodeCompliance.UI
 {
@@ -68,6 +69,38 @@ namespace CodeCompliance.UI
             linkRow.Children.Add(new TextBlock(link));
             info.Children.Add(linkRow);
             body.Children.Add(ApgTheme.Card(info));
+
+            body.Children.Add(ApgTheme.SectionHeader("Updates"));
+            var updatePanel = new DockPanel();
+            var updateStatus = new TextBlock
+            {
+                Text = "Updates are published on the GitHub releases page.",
+                Foreground = ApgTheme.Muted,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(10, 0, 0, 0)
+            };
+            var checkButton = ApgTheme.SecondaryButton("Check for updates");
+            DockPanel.SetDock(checkButton, Dock.Left);
+            checkButton.Click += async (_, _) =>
+            {
+                checkButton.IsEnabled = false;
+                updateStatus.Text = "Checking GitHub for a newer version...";
+                UpdateInfo? info = await UpdateChecker.CheckAsync();
+                if (info == null)
+                    updateStatus.Text = "Could not reach GitHub. Check your internet connection and try again.";
+                else if (info.IsNewer)
+                {
+                    updateStatus.Text = "Version " + info.Latest.ToString(3) + " is available.";
+                    new UpdateWindow(info).ShowDialog();
+                }
+                else
+                    updateStatus.Text = "You have the latest version (" + info.Current.ToString(3) + ").";
+                checkButton.IsEnabled = true;
+            };
+            updatePanel.Children.Add(checkButton);
+            updatePanel.Children.Add(updateStatus);
+            body.Children.Add(ApgTheme.Card(updatePanel));
 
             var buttons = new StackPanel
             {
