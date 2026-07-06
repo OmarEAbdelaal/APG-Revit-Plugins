@@ -108,7 +108,9 @@ namespace CodeCompliance.Commands
             }
 
             TaskDialog.Show("Parking Ramp",
-                $"Ramp created as {floorIds.Count} floor(s) with slab-shape points.\n\n" +
+                (floorIds.Count == 1
+                    ? "Ramp created as one continuous floor slab.\n\n"
+                    : $"Ramp created as {floorIds.Count} floor slabs (a helical sketch cannot sweep past ~170° per floor).\n\n") +
                 BuildSummary(calc, window) +
                 "\n\nAll Table B.9 checks passed at the input step. " +
                 "The full design data is stored in each floor's Comments parameter.");

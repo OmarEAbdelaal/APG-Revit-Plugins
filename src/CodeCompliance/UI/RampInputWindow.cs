@@ -100,8 +100,8 @@ namespace CodeCompliance.UI
                 Text = $"Path: {path.Segments.Count} segment(s), drawn length {path.DrawnLength:F2} m" +
                        (path.HasArc ? " (includes arcs). " : ". ") +
                        "Enter two of the three key parameters (h, S, R); the third is solved per " +
-                       "Dubai Building Code Annex B Tables B.9 / B.10. The ramp is created as Floor " +
-                       "elements shaped with slab-shape (modify sub-elements) points.",
+                       "Dubai Building Code Annex B Tables B.9 / B.10. The ramp is created as one " +
+                       "continuous floor slab shaped with slab-shape (modify sub-elements) points.",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Muted,
                 Margin = new Thickness(16, 10, 16, 8)
