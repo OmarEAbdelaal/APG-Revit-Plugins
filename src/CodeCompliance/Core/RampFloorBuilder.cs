@@ -35,24 +35,48 @@ namespace CodeCompliance.Core
     /// Adjacent pieces share their boundary stations, so the surface stays
     /// continuous.
     /// </summary>
+    /// <summary>One created ramp floor with its expected vertex elevations.</summary>
+    public sealed class RampFloorPiece
+    {
+        public RampFloorPiece(ElementId floorId, List<(double X, double Y, double ZFt)> targets)
+        {
+            FloorId = floorId;
+            Targets = targets;
+        }
+
+        public ElementId FloorId { get; }
+        public List<(double X, double Y, double ZFt)> Targets { get; }
+    }
+
     public static class RampFloorBuilder
     {
-        private const double MaxChunkSweep = 170.0 * Math.PI / 180.0; // max plan sweep per floor
-        private const double MaxArcPieceSweep = 30.0 * Math.PI / 180.0; // per boundary arc piece
+        private const double MaxChunkSweep = 170.0 * Math.PI / 180.0;   // max plan sweep per floor
+        private const double ArcPieceSweepExact = 30.0 * Math.PI / 180.0;  // per true-arc boundary piece
+        private const double ArcPieceSweepChord = 10.0 * Math.PI / 180.0;  // per chord in fallback mode
         private const double StationMergeTol = 0.01;                  // m, dedup stations
         private const double VertexMatchTol = 0.10;                   // m, vertex -> station matching
-        private const double ElevationTolFt = 0.02;                   // ~6 mm, final verification
         private const double MinEdgeLen = 0.002;                      // m, skip degenerate edges
 
-        /// <summary>Must run inside an open transaction. Returns the created floor ids.</summary>
-        public static IList<ElementId> Build(
+        /// <summary>~6 mm: max allowed deviation between vertex and computed profile.</summary>
+        public const double ElevationTolFt = 0.02;
+
+        /// <summary>
+        /// Must run inside an open transaction. Returns the created floors with
+        /// their target elevations (verify again AFTER committing — Revit may
+        /// revert a slab shape edit during commit failure processing).
+        /// With <paramref name="exactArcEdges"/> the boundary uses true arcs on the
+        /// drawn circles; otherwise arcs become fine chords (fallback for paths
+        /// whose exact-arc shape edit Revit rejects).
+        /// </summary>
+        public static IList<RampFloorPiece> Build(
             Document doc,
             RampPath path,
             RampCalcResult calc,
             double widthM,
             RampLineLocation location,
             ElementId floorTypeId,
-            double designOffsetM = 0)
+            double designOffsetM = 0,
+            bool exactArcEdges = true)
         {
             Level level = FindBaseLevel(doc, ToFeet(path.BaseElevation));
             double baseZFt = ToFeet(path.BaseElevation);
@@ -60,16 +84,37 @@ namespace CodeCompliance.Core
 
             List<(RampPathSegment Seg, double Start, double Len)> ranges =
                 SegmentRanges(path, location, widthM, designOffsetM);
-            List<double> stations = BuildStations(path, calc, location, widthM, designOffsetM, ranges);
+            List<double> stations = BuildStations(
+                path, calc, location, widthM, designOffsetM, ranges, exactArcEdges);
 
-            var created = new List<ElementId>();
+            var created = new List<RampFloorPiece>();
             foreach (List<double> chunk in ChunkStations(ranges, stations))
             {
                 created.Add(BuildOneFloor(
                     doc, calc, widthM, location, floorTypeId,
-                    level, baseZFt, heightOffsetFt, chunk, ranges, designOffsetM));
+                    level, baseZFt, heightOffsetFt, chunk, ranges, designOffsetM, exactArcEdges));
             }
             return created;
+        }
+
+        /// <summary>
+        /// Worst vertex deviation across the pieces, for use AFTER the creating
+        /// transaction committed. Returns a huge value when a floor lost its shape
+        /// edit entirely (Revit's "Slab Shape Edit failed" commit resolution).
+        /// </summary>
+        public static double PostCommitWorstError(Document doc, IList<RampFloorPiece> pieces)
+        {
+            double worst = 0;
+            foreach (RampFloorPiece piece in pieces)
+            {
+                if (!(doc.GetElement(piece.FloorId) is Floor floor))
+                    return double.MaxValue;
+                List<SlabShapeVertex> vertices = GetVertices(doc, floor, out _);
+                if (vertices.Count == 0)
+                    return double.MaxValue;
+                worst = Math.Max(worst, WorstError(vertices, piece.Targets));
+            }
+            return worst;
         }
 
         private static List<(RampPathSegment Seg, double Start, double Len)> SegmentRanges(
@@ -93,9 +138,11 @@ namespace CodeCompliance.Core
         /// </summary>
         private static List<double> BuildStations(
             RampPath path, RampCalcResult calc, RampLineLocation location, double widthM,
-            double designOffset, List<(RampPathSegment Seg, double Start, double Len)> ranges)
+            double designOffset, List<(RampPathSegment Seg, double Start, double Len)> ranges,
+            bool exactArcEdges)
         {
             var set = new SortedSet<double> { 0.0, calc.R };
+            double pieceSweep = exactArcEdges ? ArcPieceSweepExact : ArcPieceSweepChord;
 
             foreach (double zone in new[] { calc.X, calc.X + calc.XPrime })
                 if (zone > StationMergeTol && zone < calc.R - StationMergeTol)
@@ -110,7 +157,7 @@ namespace CodeCompliance.Core
                 if (seg is RampArcSegment arc)
                 {
                     double step = Clamp(
-                        arc.DesignRadius(location, widthM, designOffset) * MaxArcPieceSweep, 0.4, 8.0);
+                        arc.DesignRadius(location, widthM, designOffset) * pieceSweep, 0.3, 8.0);
                     double subdivEnd = last ? calc.R : segEnd; // last arc may extend to R
                     for (double s = start + step; s < subdivEnd - StationMergeTol; s += step)
                         if (s > StationMergeTol)
@@ -182,7 +229,7 @@ namespace CodeCompliance.Core
             public (double X, double Y) L0, LM, L1, R0, RM, R1;
         }
 
-        private static ElementId BuildOneFloor(
+        private static RampFloorPiece BuildOneFloor(
             Document doc,
             RampCalcResult calc,
             double widthM,
@@ -193,7 +240,8 @@ namespace CodeCompliance.Core
             double heightOffsetFt,
             List<double> stations,
             List<(RampPathSegment Seg, double Start, double Len)> ranges,
-            double designOffset)
+            double designOffset,
+            bool exactArcEdges)
         {
             int n = stations.Count;
 
@@ -205,7 +253,7 @@ namespace CodeCompliance.Core
                 (RampPathSegment seg, double segStart, double _) = RangeFor(ranges, (sa + sb) / 2.0);
                 double la = sa - segStart, lb = sb - segStart, lm = (la + lb) / 2.0;
 
-                var itv = new EdgeInterval { IsArc = seg.IsArc };
+                var itv = new EdgeInterval { IsArc = seg.IsArc && exactArcEdges };
                 (itv.L0.X, itv.L0.Y, itv.R0.X, itv.R0.Y) = seg.EdgesAt(la, location, widthM, designOffset);
                 (itv.L1.X, itv.L1.Y, itv.R1.X, itv.R1.Y) = seg.EdgesAt(lb, location, widthM, designOffset);
                 (itv.LM.X, itv.LM.Y, itv.RM.X, itv.RM.Y) = seg.EdgesAt(lm, location, widthM, designOffset);
@@ -261,8 +309,16 @@ namespace CodeCompliance.Core
                 targets.Add((itv.R1.X, itv.R1.Y, z1));
             }
 
-            ShapeFloor(doc, floor, targets);
-            return floor.Id;
+            // Cross-section split lines at every interior station: they force the
+            // slab surface into clean ruled strips between stations, which keeps
+            // Revit's shape engine stable on curved boundaries ("Slab Shape Edit
+            // failed" otherwise appears on long tangent-arc chains at commit).
+            var splits = new List<((double X, double Y) A, (double X, double Y) B)>();
+            for (int i = 0; i < intervals.Count - 1; i++)
+                splits.Add((intervals[i].L1, intervals[i].R1));
+
+            ShapeFloor(doc, floor, targets, splits);
+            return new RampFloorPiece(floor.Id, targets);
         }
 
         private static (RampPathSegment Seg, double Start, double Len) RangeFor(
@@ -344,7 +400,10 @@ namespace CodeCompliance.Core
         /// via ModifySubElement, calibrating the meaning of the offset argument at
         /// runtime and verifying the result.
         /// </summary>
-        private static void ShapeFloor(Document doc, Floor floor, List<(double X, double Y, double ZFt)> targets)
+        private static void ShapeFloor(
+            Document doc, Floor floor,
+            List<(double X, double Y, double ZFt)> targets,
+            List<((double X, double Y) A, (double X, double Y) B)> splits)
         {
             SlabShapeEditor editor = floor.GetSlabShapeEditor();
             if (!editor.IsEnabled)
@@ -356,6 +415,27 @@ namespace CodeCompliance.Core
                 throw new RampCalcException(
                     "Revit did not expose the floor's shape points (the chosen floor type may " +
                     "not support shape editing). Pick a regular floor type and try again.");
+
+            // Cross-section creases while the slab is still flat, connecting the
+            // paired boundary vertices at each interior station. Each split is
+            // best-effort — a failing one only loses that crease.
+            foreach (((double X, double Y) a, (double X, double Y) b) in splits)
+            {
+                SlabShapeVertex va = FindAt(vertices, ToFeet(a.X), ToFeet(a.Y));
+                SlabShapeVertex vb = FindAt(vertices, ToFeet(b.X), ToFeet(b.Y));
+                if (ReferenceEquals(va, vb))
+                    continue;
+                try
+                {
+                    AddSplitLine(editor, va, vb);
+                }
+                catch
+                {
+                    // keep going; the vertex pass still sets every elevation
+                }
+            }
+            doc.Regenerate();
+            vertices = GetVertices(doc, floor, out editor);
 
             // ── Calibrate: what does ModifySubElement(vertex, offset) actually do? ──
             // The floor is flat, so under any semantics the first call behaves as
@@ -394,6 +474,17 @@ namespace CodeCompliance.Core
                     "The ramp surface could not be matched to the computed profile " +
                     "(worst deviation {0:F0} mm). No ramp was created.",
                     UnitUtils.ConvertFromInternalUnits(worst, UnitTypeId.Millimeters)));
+        }
+
+        private static void AddSplitLine(SlabShapeEditor editor, SlabShapeVertex a, SlabShapeVertex b)
+        {
+#if REVIT2024 || REVIT2025
+#pragma warning disable CS0618 // DrawSplitLine deprecated in 2025, renamed later
+            editor.DrawSplitLine(a, b);
+#pragma warning restore CS0618
+#else
+            editor.AddSplitLine(a, b);
+#endif
         }
 
         private static void ApplyPass(
