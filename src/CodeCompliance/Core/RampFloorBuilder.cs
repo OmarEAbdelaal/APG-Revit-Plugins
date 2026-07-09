@@ -10,18 +10,25 @@ namespace CodeCompliance.Core
     /// ("Modify Sub Elements"), so the result is a real floor that schedules, tags
     /// and hosts like any other floor.
     ///
-    /// Strategy (chosen for robustness across Revit 2024-2027):
-    /// 1. Every station where the surface creases (ramp start/end, the two
-    ///    transition-zone boundaries, path kinks, arc tessellation points) becomes a
-    ///    BOUNDARY VERTEX of the floor sketch, so the whole profile is controlled by
-    ///    corner vertices only — no interior points are drawn at all.
-    /// 2. All vertex elevations are applied through one mechanism,
-    ///    SlabShapeEditor.ModifySubElement. Because the meaning of its offset value
-    ///    has version/context quirks, the builder first calibrates it on one probe
-    ///    vertex (measuring what a known offset actually does), then applies all
-    ///    vertices, then verifies every vertex against the computed profile and
-    ///    corrects any residual error. If the surface still does not match, it
-    ///    throws instead of silently leaving a twisted slab.
+    /// Geometry:
+    /// - The sketch follows the drawn path exactly: straight parts become Lines and
+    ///   curved parts become true Arcs with the real edge radii (long curves are
+    ///   split into several arc pieces, each still on the exact circle, so the
+    ///   slope profile can be controlled along the curve).
+    /// - Mixed paths (straight / curve / straight / curve / ...) build as ONE
+    ///   floor; kinked line-line joints are mitered, joints involving an arc get a
+    ///   tiny connector edge if the drawn pieces are not tangent.
+    /// - Stationing (and therefore the slope profile) runs along the DESIGN LINE:
+    ///   the centreline of the innermost lane for multi-lane curved ramps, which is
+    ///   the code-governing line — not the overall ramp centre.
+    ///
+    /// Elevations:
+    /// - Every crease station (start/end, transition-zone boundaries, joints, arc
+    ///   subdivisions) is a boundary VERTEX of the sketch. All vertex elevations go
+    ///   through SlabShapeEditor.ModifySubElement, whose offset semantics are
+    ///   calibrated at runtime on a probe vertex; afterwards every vertex is
+    ///   verified against the computed profile and corrected, and the command fails
+    ///   loudly rather than leaving a wrong surface.
     ///
     /// Only a helical path that sweeps far around (plan footprint would overlap
     /// itself) is split into several floors — a Revit sketch cannot self-intersect.
@@ -31,10 +38,11 @@ namespace CodeCompliance.Core
     public static class RampFloorBuilder
     {
         private const double MaxChunkSweep = 170.0 * Math.PI / 180.0; // max plan sweep per floor
-        private const double ArcStationStep = 7.5 * Math.PI / 180.0;  // arc tessellation angle
+        private const double MaxArcPieceSweep = 30.0 * Math.PI / 180.0; // per boundary arc piece
         private const double StationMergeTol = 0.01;                  // m, dedup stations
         private const double VertexMatchTol = 0.10;                   // m, vertex -> station matching
         private const double ElevationTolFt = 0.02;                   // ~6 mm, final verification
+        private const double MinEdgeLen = 0.002;                      // m, skip degenerate edges
 
         /// <summary>Must run inside an open transaction. Returns the created floor ids.</summary>
         public static IList<ElementId> Build(
@@ -43,32 +51,49 @@ namespace CodeCompliance.Core
             RampCalcResult calc,
             double widthM,
             RampLineLocation location,
-            ElementId floorTypeId)
+            ElementId floorTypeId,
+            double designOffsetM = 0)
         {
             Level level = FindBaseLevel(doc, ToFeet(path.BaseElevation));
             double baseZFt = ToFeet(path.BaseElevation);
             double heightOffsetFt = baseZFt - level.Elevation;
 
-            List<double> stations = BuildStations(path, calc, location, widthM);
-            var created = new List<ElementId>();
+            List<(RampPathSegment Seg, double Start, double Len)> ranges =
+                SegmentRanges(path, location, widthM, designOffsetM);
+            List<double> stations = BuildStations(path, calc, location, widthM, designOffsetM, ranges);
 
-            foreach (List<double> chunk in ChunkStations(path, stations, location, widthM))
+            var created = new List<ElementId>();
+            foreach (List<double> chunk in ChunkStations(ranges, stations))
             {
                 created.Add(BuildOneFloor(
-                    doc, path, calc, widthM, location, floorTypeId,
-                    level, baseZFt, heightOffsetFt, chunk));
+                    doc, calc, widthM, location, floorTypeId,
+                    level, baseZFt, heightOffsetFt, chunk, ranges, designOffsetM));
             }
-
             return created;
         }
 
+        private static List<(RampPathSegment Seg, double Start, double Len)> SegmentRanges(
+            RampPath path, RampLineLocation location, double widthM, double designOffset)
+        {
+            var ranges = new List<(RampPathSegment, double, double)>();
+            double offset = 0;
+            foreach (RampPathSegment seg in path.Segments)
+            {
+                double len = seg.CenterlineLength(location, widthM, designOffset);
+                ranges.Add((seg, offset, len));
+                offset += len;
+            }
+            return ranges;
+        }
+
         /// <summary>
-        /// All centreline stations that need a boundary vertex: ramp start/end,
-        /// transition-zone boundaries, segment joints, and tessellation stations
-        /// along arcs (a floor sketch edge is straight, so arcs become fine chords).
+        /// All design-line stations that need a boundary vertex: ramp start/end,
+        /// transition-zone boundaries, segment joints, and subdivision stations
+        /// along arcs (max ~30° of sweep per boundary arc piece).
         /// </summary>
         private static List<double> BuildStations(
-            RampPath path, RampCalcResult calc, RampLineLocation location, double widthM)
+            RampPath path, RampCalcResult calc, RampLineLocation location, double widthM,
+            double designOffset, List<(RampPathSegment Seg, double Start, double Len)> ranges)
         {
             var set = new SortedSet<double> { 0.0, calc.R };
 
@@ -76,35 +101,31 @@ namespace CodeCompliance.Core
                 if (zone > StationMergeTol && zone < calc.R - StationMergeTol)
                     set.Add(zone);
 
-            double offset = 0;
-            for (int i = 0; i < path.Segments.Count; i++)
+            for (int i = 0; i < ranges.Count; i++)
             {
-                RampPathSegment seg = path.Segments[i];
-                double len = seg.CenterlineLength(location, widthM);
-                double segEnd = Math.Min(offset + len, calc.R);
+                (RampPathSegment seg, double start, double len) = ranges[i];
+                double segEnd = Math.Min(start + len, calc.R);
+                bool last = i == ranges.Count - 1;
 
                 if (seg is RampArcSegment arc)
                 {
-                    double step = Clamp(arc.CenterlineRadius(location, widthM) * ArcStationStep, 0.4, 3.0);
-                    for (double s = offset + step; s < segEnd - StationMergeTol; s += step)
-                        set.Add(s);
-                    // The last segment may be extended beyond the drawn path up to R.
-                    if (i == path.Segments.Count - 1)
-                        for (double s = segEnd + step; s < calc.R - StationMergeTol; s += step)
+                    double step = Clamp(
+                        arc.DesignRadius(location, widthM, designOffset) * MaxArcPieceSweep, 0.4, 8.0);
+                    double subdivEnd = last ? calc.R : segEnd; // last arc may extend to R
+                    for (double s = start + step; s < subdivEnd - StationMergeTol; s += step)
+                        if (s > StationMergeTol)
                             set.Add(s);
                 }
 
-                if (offset + len > StationMergeTol && offset + len < calc.R - StationMergeTol)
-                    set.Add(offset + len); // joint between segments
-                offset += len;
-                if (offset >= calc.R)
+                if (start + len > StationMergeTol && start + len < calc.R - StationMergeTol)
+                    set.Add(start + len); // joint between segments
+                if (start >= calc.R)
                     break;
             }
 
-            // Dedup stations closer than the merge tolerance.
             var result = new List<double>();
             foreach (double s in set)
-                if (result.Count == 0 || s - result[result.Count - 1] > StationMergeTol)
+                if (s <= calc.R + 1e-9 && (result.Count == 0 || s - result[result.Count - 1] > StationMergeTol))
                     result.Add(s);
             if (result[result.Count - 1] < calc.R - StationMergeTol)
                 result.Add(calc.R);
@@ -116,31 +137,24 @@ namespace CodeCompliance.Core
 
         /// <summary>
         /// Splits the station list into floor pieces only when the path turns so far
-        /// that one sketch would overlap itself in plan (helical ramps). Adjacent
-        /// chunks share a boundary station. Straight paths yield a single chunk.
+        /// that one sketch would overlap itself in plan (helical ramps). Straight
+        /// and moderately curved paths yield a single chunk = one floor slab.
         /// </summary>
         private static IEnumerable<List<double>> ChunkStations(
-            RampPath path, List<double> stations, RampLineLocation location, double widthM)
+            List<(RampPathSegment Seg, double Start, double Len)> ranges, List<double> stations)
         {
-            // Cumulative plan turn (radians) contributed by arcs up to each station.
             double[] turn = new double[stations.Count];
-            double offset = 0;
-            var arcRanges = new List<(double S0, double S1, double InvR)>();
-            foreach (RampPathSegment seg in path.Segments)
-            {
-                double len = seg.CenterlineLength(location, widthM);
-                if (seg is RampArcSegment arc)
-                    arcRanges.Add((offset, offset + len, 1.0 / arc.CenterlineRadius(location, widthM)));
-                offset += len;
-            }
             for (int i = 1; i < stations.Count; i++)
             {
                 double s0 = stations[i - 1], s1 = stations[i], sweep = 0;
-                foreach ((double a0, double a1, double invR) in arcRanges)
+                foreach ((RampPathSegment seg, double start, double len) in ranges)
                 {
-                    double lo = Math.Max(s0, a0), hi = Math.Min(s1, a1);
-                    if (hi > lo)
-                        sweep += (hi - lo) * invR;
+                    if (!(seg is RampArcSegment arc))
+                        continue;
+                    double rd = arc.DrawnRadius; // sweep angle is radius-independent along the same arc
+                    double lo = Math.Max(s0, start), hi = Math.Min(s1, start + len);
+                    if (hi > lo && len > 1e-9)
+                        sweep += (hi - lo) / len * (arc.DrawnLength / rd);
                 }
                 turn[i] = turn[i - 1] + sweep;
             }
@@ -161,9 +175,15 @@ namespace CodeCompliance.Core
                 yield return chunk;
         }
 
+        /// <summary>One boundary piece between two consecutive stations.</summary>
+        private sealed class EdgeInterval
+        {
+            public bool IsArc;
+            public (double X, double Y) L0, LM, L1, R0, RM, R1;
+        }
+
         private static ElementId BuildOneFloor(
             Document doc,
-            RampPath path,
             RampCalcResult calc,
             double widthM,
             RampLineLocation location,
@@ -171,43 +191,56 @@ namespace CodeCompliance.Core
             Level level,
             double baseZFt,
             double heightOffsetFt,
-            List<double> stations)
+            List<double> stations,
+            List<(RampPathSegment Seg, double Start, double Len)> ranges,
+            double designOffset)
         {
-            // ── Boundary points: mitered offsets of the centreline polyline ─────
             int n = stations.Count;
-            var center = new (double X, double Y)[n];
-            for (int i = 0; i < n; i++)
+
+            // ── Edge geometry per interval, from each segment's exact frame ─────
+            var intervals = new List<EdgeInterval>();
+            for (int i = 0; i < n - 1; i++)
             {
-                (double lx, double ly, double rx, double ry) = path.EdgesAt(stations[i], location, widthM);
-                center[i] = ((lx + rx) / 2.0, (ly + ry) / 2.0);
+                double sa = stations[i], sb = stations[i + 1];
+                (RampPathSegment seg, double segStart, double _) = RangeFor(ranges, (sa + sb) / 2.0);
+                double la = sa - segStart, lb = sb - segStart, lm = (la + lb) / 2.0;
+
+                var itv = new EdgeInterval { IsArc = seg.IsArc };
+                (itv.L0.X, itv.L0.Y, itv.R0.X, itv.R0.Y) = seg.EdgesAt(la, location, widthM, designOffset);
+                (itv.L1.X, itv.L1.Y, itv.R1.X, itv.R1.Y) = seg.EdgesAt(lb, location, widthM, designOffset);
+                (itv.LM.X, itv.LM.Y, itv.RM.X, itv.RM.Y) = seg.EdgesAt(lm, location, widthM, designOffset);
+                intervals.Add(itv);
             }
 
-            double half = widthM / 2.0;
-            var left = new (double X, double Y)[n];
-            var right = new (double X, double Y)[n];
-            for (int i = 0; i < n; i++)
+            // ── Miter kinked line-line joints so they share one clean vertex ────
+            for (int j = 1; j < intervals.Count; j++)
             {
-                (double dx, double dy) = DirectionAt(center, i);
-                (double mx, double my, double scale) = MiterNormal(center, i, dx, dy);
-                double off = half * scale;
-                left[i] = (center[i].X + mx * off, center[i].Y + my * off);
-                right[i] = (center[i].X - mx * off, center[i].Y - my * off);
+                EdgeInterval a = intervals[j - 1], b = intervals[j];
+                if (a.IsArc || b.IsArc)
+                    continue; // arcs must keep their exact endpoints on the circle
+                a.L1 = b.L0 = Miter(a.L0, a.L1, b.L0, b.L1, widthM);
+                a.R1 = b.R0 = Miter(a.R0, a.R1, b.R0, b.R1, widthM);
             }
 
             // ── Sketch loop: up the left edge, across the end, back down the right ─
-            var loop = new CurveLoop();
-            var loopPts = new List<XYZ>();
-            for (int i = 0; i < n; i++)
-                loopPts.Add(ToXyz(left[i].X, left[i].Y, level.Elevation));
-            for (int i = n - 1; i >= 0; i--)
-                loopPts.Add(ToXyz(right[i].X, right[i].Y, level.Elevation));
-            for (int i = 0; i < loopPts.Count; i++)
+            double zSketch = level.Elevation;
+            var curves = new List<Curve>();
+            XYZ loopStart = ToXyz(intervals[0].L0, zSketch);
+            XYZ cursor = loopStart;
+            foreach (EdgeInterval itv in intervals)
+                cursor = AppendEdge(curves, cursor, itv.L0, itv.LM, itv.L1, itv.IsArc, zSketch);
+            cursor = AppendLine(curves, cursor, ToXyz(intervals[intervals.Count - 1].R1, zSketch));
+            for (int i = intervals.Count - 1; i >= 0; i--)
             {
-                XYZ a = loopPts[i];
-                XYZ b = loopPts[(i + 1) % loopPts.Count];
-                if (a.DistanceTo(b) > 0.01)
-                    loop.Append(Line.CreateBound(a, b));
+                EdgeInterval itv = intervals[i];
+                cursor = AppendEdge(curves, cursor, itv.R1, itv.RM, itv.R0, itv.IsArc, zSketch);
             }
+            if (cursor.DistanceTo(loopStart) > ToFeet(MinEdgeLen))
+                curves.Add(Line.CreateBound(cursor, loopStart));
+
+            var loop = new CurveLoop();
+            foreach (Curve c in curves)
+                loop.Append(c);
 
             Floor floor = Floor.Create(doc, new List<CurveLoop> { loop }, floorTypeId, level.Id);
             Parameter offsetParam = floor.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
@@ -215,17 +248,95 @@ namespace CodeCompliance.Core
                 offsetParam.Set(heightOffsetFt);
             doc.Regenerate();
 
-            // ── Target elevation per boundary point ─────────────────────────────
+            // ── Target elevation per boundary vertex position ───────────────────
             var targets = new List<(double X, double Y, double ZFt)>();
-            for (int i = 0; i < n; i++)
+            for (int i = 0; i < intervals.Count; i++)
             {
-                double z = baseZFt + ToFeet(calc.HeightAt(stations[i]));
-                targets.Add((left[i].X, left[i].Y, z));
-                targets.Add((right[i].X, right[i].Y, z));
+                double z0 = baseZFt + ToFeet(calc.HeightAt(stations[i]));
+                double z1 = baseZFt + ToFeet(calc.HeightAt(stations[i + 1]));
+                EdgeInterval itv = intervals[i];
+                targets.Add((itv.L0.X, itv.L0.Y, z0));
+                targets.Add((itv.R0.X, itv.R0.Y, z0));
+                targets.Add((itv.L1.X, itv.L1.Y, z1));
+                targets.Add((itv.R1.X, itv.R1.Y, z1));
             }
 
             ShapeFloor(doc, floor, targets);
             return floor.Id;
+        }
+
+        private static (RampPathSegment Seg, double Start, double Len) RangeFor(
+            List<(RampPathSegment Seg, double Start, double Len)> ranges, double s)
+        {
+            for (int i = ranges.Count - 1; i >= 0; i--)
+                if (s >= ranges[i].Start - 1e-9)
+                    return ranges[i];
+            return ranges[0];
+        }
+
+        /// <summary>
+        /// Appends one edge piece (true arc or line). If the previous piece does not
+        /// end exactly where this one starts (non-tangent joint at an arc), a small
+        /// connector line bridges the gap so the loop stays continuous.
+        /// </summary>
+        private static XYZ AppendEdge(
+            List<Curve> curves, XYZ cursor,
+            (double X, double Y) start, (double X, double Y) mid, (double X, double Y) end,
+            bool isArc, double zSketch)
+        {
+            double minLenFt = ToFeet(MinEdgeLen);
+            XYZ pStart = ToXyz(start, zSketch);
+            XYZ pMid = ToXyz(mid, zSketch);
+            XYZ pEnd = ToXyz(end, zSketch);
+
+            if (cursor.DistanceTo(pStart) > minLenFt)
+            {
+                curves.Add(Line.CreateBound(cursor, pStart));
+                cursor = pStart;
+            }
+            if (cursor.DistanceTo(pEnd) <= minLenFt)
+                return cursor;
+
+            if (isArc && pMid.DistanceTo(cursor) > minLenFt && pMid.DistanceTo(pEnd) > minLenFt
+                && Line.CreateBound(cursor, pEnd).Distance(pMid) > 1e-5)
+            {
+                curves.Add(Arc.Create(cursor, pEnd, pMid));
+            }
+            else
+            {
+                curves.Add(Line.CreateBound(cursor, pEnd));
+            }
+            return pEnd;
+        }
+
+        private static XYZ AppendLine(List<Curve> curves, XYZ cursor, XYZ target)
+        {
+            if (cursor.DistanceTo(target) > ToFeet(MinEdgeLen))
+            {
+                curves.Add(Line.CreateBound(cursor, target));
+                return target;
+            }
+            return cursor;
+        }
+
+        /// <summary>
+        /// Intersection of two edge lines at a kinked joint; falls back to the
+        /// shared point when the legs are parallel or the miter shoots too far.
+        /// </summary>
+        private static (double X, double Y) Miter(
+            (double X, double Y) a0, (double X, double Y) a1,
+            (double X, double Y) b0, (double X, double Y) b1,
+            double widthM)
+        {
+            double d1x = a1.X - a0.X, d1y = a1.Y - a0.Y;
+            double d2x = b1.X - b0.X, d2y = b1.Y - b0.Y;
+            double cross = d1x * d2y - d1y * d2x;
+            if (Math.Abs(cross) < 1e-9)
+                return a1; // parallel legs: endpoints already coincide
+            double t = ((b0.X - a0.X) * d2y - (b0.Y - a0.Y) * d2x) / cross;
+            double px = a0.X + t * d1x, py = a0.Y + t * d1y;
+            double dev = Math.Sqrt((px - a1.X) * (px - a1.X) + (py - a1.Y) * (py - a1.Y));
+            return dev <= 3.0 * widthM ? (px, py) : a1; // clamp extreme spikes
         }
 
         /// <summary>
@@ -375,56 +486,6 @@ namespace CodeCompliance.Core
             return best;
         }
 
-        /// <summary>Unit travel direction of the centreline polyline at point i.</summary>
-        private static (double X, double Y) DirectionAt((double X, double Y)[] c, int i)
-        {
-            int a = Math.Max(0, i - 1);
-            int b = Math.Min(c.Length - 1, i + 1);
-            double dx = c[b].X - c[a].X, dy = c[b].Y - c[a].Y;
-            double len = Math.Sqrt(dx * dx + dy * dy);
-            if (len < 1e-9)
-                return (1, 0);
-            return (dx / len, dy / len);
-        }
-
-        /// <summary>
-        /// Left-pointing miter normal at point i with its length scale (1 on straight
-        /// runs, 1/cos(phi/2) at kinks so the ramp keeps its width, clamped for very
-        /// sharp corners).
-        /// </summary>
-        private static (double X, double Y, double Scale) MiterNormal(
-            (double X, double Y)[] c, int i, double dirX, double dirY)
-        {
-            // Normals of the two adjacent legs.
-            (double ax, double ay) = LegDirection(c, Math.Max(0, i - 1), i);
-            (double bx, double by) = LegDirection(c, i, Math.Min(c.Length - 1, i + 1));
-            double nax = -ay, nay = ax, nbx = -by, nby = bx;
-            double mx = nax + nbx, my = nay + nby;
-            double mlen = Math.Sqrt(mx * mx + my * my);
-            if (mlen < 1e-9)
-                return (-dirY, dirX, 1.0); // straight or degenerate
-            mx /= mlen;
-            my /= mlen;
-            double cosHalf = mx * nax + my * nay;
-            double scale = cosHalf > 0.4 ? 1.0 / cosHalf : 2.5; // clamp sharp kinks
-            return (mx, my, scale);
-        }
-
-        private static (double X, double Y) LegDirection((double X, double Y)[] c, int a, int b)
-        {
-            if (a == b)
-            {
-                // Endpoint: only one leg exists; reuse it.
-                if (b + 1 < c.Length) b = b + 1;
-                else a = a - 1;
-            }
-            double dx = c[b].X - c[a].X, dy = c[b].Y - c[a].Y;
-            double len = Math.Sqrt(dx * dx + dy * dy);
-            if (len < 1e-9)
-                return (1, 0);
-            return (dx / len, dy / len);
-        }
-
         private static Level FindBaseLevel(Document doc, double baseZFt)
         {
             var levels = new FilteredElementCollector(doc)
@@ -445,8 +506,8 @@ namespace CodeCompliance.Core
         private static double Clamp(double v, double lo, double hi)
             => v < lo ? lo : v > hi ? hi : v;
 
-        private static XYZ ToXyz(double xM, double yM, double zFt)
-            => new XYZ(ToFeet(xM), ToFeet(yM), zFt);
+        private static XYZ ToXyz((double X, double Y) ptM, double zFt)
+            => new XYZ(ToFeet(ptM.X), ToFeet(ptM.Y), zFt);
 
         private static double ToFeet(double meters)
             => UnitUtils.ConvertToInternalUnits(meters, UnitTypeId.Meters);

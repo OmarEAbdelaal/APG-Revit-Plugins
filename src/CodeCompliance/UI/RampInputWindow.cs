@@ -58,6 +58,13 @@ namespace CodeCompliance.UI
         public double LaneWidth { get; private set; }
         public RampLineLocation Location { get; private set; } = RampLineLocation.Center;
         public double TotalWidth => LaneWidth * Lanes;
+
+        /// <summary>
+        /// Signed lateral offset (m, + = left of travel) of the slope/stationing
+        /// reference line: the centreline of the innermost lane for multi-lane
+        /// curved ramps (the code-governing line), 0 otherwise.
+        /// </summary>
+        public double DesignOffset { get; private set; }
         public long FloorTypeId => (_floorTypeBox.SelectedItem as FloorTypeItem)?.Id ?? -1;
 
         /// <summary>Thickness of the chosen floor type (used for the loop clearance check).</summary>
@@ -142,6 +149,15 @@ namespace CodeCompliance.UI
                 _lanesBox.Items.Add(nLanes);
             _lanesBox.SelectedIndex = 0;
             left.Children.Add(_lanesBox);
+            left.Children.Add(new TextBlock
+            {
+                Text = "For multi-lane curved ramps, slope and run are measured along the " +
+                       "centreline of the innermost lane (nearest the inner curve).",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Muted,
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
 
             left.Children.Add(FieldLabel("Lane width [m]  (min per Table B.9)"));
             _laneWidthBox = NumberBox();
@@ -355,9 +371,15 @@ namespace CodeCompliance.UI
             if (solve != RampSolveTarget.TotalRun && string.IsNullOrWhiteSpace(_rBox.Text))
             {
                 double w = EstimateTotalWidth();
-                _rBox.Text = _path.CenterlineLength(SelectedLocation, w)
+                _rBox.Text = _path.CenterlineLength(SelectedLocation, w, EstimateDesignOffset(w))
                     .ToString("F3", CultureInfo.InvariantCulture);
             }
+        }
+
+        private double EstimateDesignOffset(double totalWidth)
+        {
+            int lanes = _lanesBox.SelectedItem is int n ? n : 1;
+            return _path.DesignOffsetFor(SelectedLocation, totalWidth, lanes);
         }
 
         private double EstimateTotalWidth()
@@ -388,6 +410,8 @@ namespace CodeCompliance.UI
 
                 if (FloorTypeId < 0)
                     throw new RampCalcException("Select a floor type.");
+
+                DesignOffset = _path.DesignOffsetFor(Location, TotalWidth, Lanes);
 
                 RampSolveTarget solve = SelectedSolveTarget;
                 double? h = solve == RampSolveTarget.FloorHeight ? null : RequireValue(_hBox, "h");
@@ -444,9 +468,11 @@ namespace CodeCompliance.UI
             if (_singleArc)
             {
                 double rc = _path.SingleArcCenterlineRadius(Location, w) ?? 0;
-                if (rc > 0)
+                double rd = _path.SingleArcDesignRadius(Location, w, DesignOffset) ?? rc;
+                if (rc > 0 && rd > 0)
                 {
-                    double theta = res.R / rc;
+                    // Sweep follows the design line (inner-lane centreline when multi-lane).
+                    double theta = res.R / rd;
                     SetResult("rc", $"{rc:F2} m");
                     SetResult("sweep", $"{theta * 180.0 / Math.PI:F1} deg");
                     SetResult("Li", $"{(rc - w / 2.0) * theta:F3} m");
@@ -485,7 +511,7 @@ namespace CodeCompliance.UI
                 SetCompliance("radius", null, "N/A (straight path)");
             }
 
-            double? rcSingle = _path.SingleArcCenterlineRadius(Location, TotalWidth);
+            double? rcSingle = _path.SingleArcDesignRadius(Location, TotalWidth, DesignOffset);
             if (rcSingle.HasValue)
             {
                 double? gap = RampCalculator.MinLoopClearance(res, rcSingle.Value, SlabThickness);
@@ -507,7 +533,7 @@ namespace CodeCompliance.UI
                 SetCompliance("clearance", null, "Verify 2.4 m headroom above ramp");
             }
 
-            double drawn = _path.CenterlineLength(Location, TotalWidth);
+            double drawn = _path.CenterlineLength(Location, TotalWidth, DesignOffset);
             double diff = Math.Abs(drawn - res.R);
             if (diff <= 0.05)
             {

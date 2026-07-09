@@ -80,7 +80,7 @@ namespace CodeCompliance.Commands
                 {
                     floorIds = RampFloorBuilder.Build(
                         doc, path, calc, window.TotalWidth, window.Location,
-                        new ElementId(window.FloorTypeId));
+                        new ElementId(window.FloorTypeId), window.DesignOffset);
                 }
                 catch (Exception ex)
                 {
@@ -230,10 +230,11 @@ namespace CodeCompliance.Commands
             return string.Format(ci,
                 "Dubai BC Annex B B.7.2.2 | {0} ramp, {1} lane(s) x {2:F2} m | " +
                 "h = {3:F3} m, S = {4:F2}%, T = {5:F2}%, X = {6:F2} m, X' = {7:F2} m, R = {8:F3} m | " +
-                "path = {9}",
+                "path = {9}{10}",
                 calc.Type, window.Lanes, window.LaneWidth,
                 calc.H, calc.S, calc.T, calc.X, calc.XPrime, calc.R,
-                window.Location);
+                window.Location,
+                window.DesignOffset != 0 ? " | slope measured on inner-lane centreline" : "");
         }
 
         /// <summary>Allows picking only straight or arc model/detail lines.</summary>

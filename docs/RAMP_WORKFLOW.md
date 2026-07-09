@@ -6,6 +6,14 @@ Parking Ramp Calculator app. The ramp is built from native **Floor elements**
 shaped with slab-shape ("Modify Sub Elements") points, so the result schedules,
 tags and hosts like any other floor.
 
+The floor sketch follows the drawn geometry exactly: straight parts are straight
+edges and curved parts are **true arcs with the ramp's real radii** (long curves
+are split into several arc pieces, each still on the exact circle). Mixed paths
+(straight / curve / straight / curve / ...) build as **one continuous slab**.
+For **multi-lane curved ramps**, the slope and total run are measured along the
+**centreline of the innermost lane** (nearest the inner curve) — the
+code-governing line — not the overall ramp centre.
+
 ## User workflow
 
 1. Click **Parking Ramp** on the *APG Revit Plugins → Ramp Creator* panel and choose how to
