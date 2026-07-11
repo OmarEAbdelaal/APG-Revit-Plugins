@@ -21,6 +21,7 @@ namespace CodeCompliance
         public const string TabName = "APG Revit Plugins";
         private const string FireFightingPanelName = "Code Compliance – Fire Fighting";
         private const string RampPanelName = "Ramp Creator";
+        private const string AnnotationPanelName = "Magic Annotation";
         private const string SuitePanelName = "APG";
 
         private UIControlledApplication? _application;
@@ -157,6 +158,20 @@ namespace CodeCompliance
                 "the three key parameters (floor height h, slope S, total run R) and the third is " +
                 "solved per Dubai Building Code Annex B, Tables B.9 / B.10. Compliance is checked " +
                 "at the input step; the ramp with its transition zones is created as Floor elements."));
+
+            // ── Plugin 3: Magic Annotation ──────────────────────────────────────
+            RibbonPanel annotationPanel = application.CreateRibbonPanel(TabName, AnnotationPanelName);
+
+            annotationPanel.AddItem(Button(
+                "CodeCompliance_MagicAnnotation", "Magic\nAnnotation",
+                assemblyPath, "CodeCompliance.Commands.MagicAnnotationCommand", "MagicAnnotation",
+                "Annotate the active plan, section or elevation view in one step.",
+                "Places the annotations you tick in a checklist: overall/grid/opening dimensions " +
+                "(level dimensions in sections and elevations), room/door/window/wall tags, spot " +
+                "elevations at stairs and ramps, ramp slope notes and stair path arrows — all " +
+                "positioned to avoid clashing with existing annotations, in a single undo step. " +
+                "Re-running the command replaces what it placed before, and stairs, ramps and wet " +
+                "areas that deserve a callout are listed as suggestions."));
 
             // ── Suite panel ─────────────────────────────────────────────────────
             RibbonPanel suitePanel = application.CreateRibbonPanel(TabName, SuitePanelName);

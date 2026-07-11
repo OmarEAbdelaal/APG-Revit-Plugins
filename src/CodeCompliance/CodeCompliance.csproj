@@ -22,11 +22,11 @@
     <!-- Allows building net8.0-windows targets on non-Windows CI agents -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Configurations>Debug R24;Debug R25;Debug R26;Debug R27;Release R24;Release R25;Release R26;Release R27</Configurations>
-    <Version>1.2.1</Version>
+    <Version>1.3.0</Version>
     <Company>APG</Company>
     <Authors>Omar Elsayed</Authors>
     <Product>APG Revit Plugins</Product>
-    <Description>APG Revit Plugins suite: Code Compliance – Fire Fighting, and Ramp Creator (Dubai Building Code Annex B). Author: Omar Elsayed.</Description>
+    <Description>APG Revit Plugins suite: Code Compliance – Fire Fighting, Ramp Creator (Dubai Building Code Annex B), and Magic Annotation. Author: Omar Elsayed.</Description>
     <Copyright>© APG — Omar Elsayed</Copyright>
   </PropertyGroup>
 

@@ -49,6 +49,10 @@ namespace CodeCompliance.UI
                 "Ramp Creator",
                 "Creates code-compliant parking ramps from a drawn path per Dubai Building Code " +
                 "Annex B (Tables B.9 / B.10), with live compliance checking before anything is built.")));
+            body.Children.Add(ApgTheme.Card(PluginEntry(
+                "Magic Annotation",
+                "Annotates a plan, section or elevation view in one step: dimensions, tags, spot " +
+                "elevations, ramp slopes and stair arrows — placed clash-free, replaceable on re-run.")));
 
             body.Children.Add(ApgTheme.SectionHeader("Company & author"));
             var info = new StackPanel();

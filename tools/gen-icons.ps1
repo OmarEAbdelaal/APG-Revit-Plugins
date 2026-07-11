@@ -167,6 +167,26 @@ $null = New-Icon "ParkingRamp" {
     $g.FillPolygon($wb, @((P (0.44*$s) (0.20*$s)); (P (0.62*$s) (0.24*$s)); (P (0.50*$s) (0.40*$s))))
 }
 
+# Magic Annotation: dimension line with end ticks + a sparkle
+$null = New-Icon "MagicAnnotation" {
+    param($g, $s)
+    $pen = New-Pen $White (0.07 * $s)
+    # dimension line with witness lines
+    $g.DrawLine($pen, [float](0.14*$s), [float](0.72*$s), [float](0.86*$s), [float](0.72*$s))
+    $g.DrawLine($pen, [float](0.14*$s), [float](0.60*$s), [float](0.14*$s), [float](0.84*$s))
+    $g.DrawLine($pen, [float](0.86*$s), [float](0.60*$s), [float](0.86*$s), [float](0.84*$s))
+    # oblique dimension ticks
+    $g.DrawLine($pen, [float](0.08*$s), [float](0.78*$s), [float](0.20*$s), [float](0.66*$s))
+    $g.DrawLine($pen, [float](0.80*$s), [float](0.78*$s), [float](0.92*$s), [float](0.66*$s))
+    $pen.Dispose()
+    # four-point sparkle above the line
+    $cx = 0.50 * $s; $cy = 0.32 * $s; $r = 0.20 * $s; $w = 0.055 * $s
+    $g.FillPolygon($wb, @(
+        (P $cx ($cy - $r)); (P ($cx + $w) ($cy - $w)); (P ($cx + $r) $cy); (P ($cx + $w) ($cy + $w));
+        (P $cx ($cy + $r)); (P ($cx - $w) ($cy + $w)); (P ($cx - $r) $cy); (P ($cx - $w) ($cy - $w))
+    ))
+}
+
 # About: white info circle
 $null = New-Icon "About" {
     param($g, $s)
