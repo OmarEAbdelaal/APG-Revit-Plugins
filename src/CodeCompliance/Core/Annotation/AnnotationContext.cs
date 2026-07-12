@@ -80,13 +80,14 @@ namespace CodeCompliance.Core.Annotation
         /// <summary>Reserve the view bounding boxes of annotations already in the view.</summary>
         public void SeedFromExisting()
         {
+            // Note: RoomTag is not collectible via OfClass — SpatialElementTag is the
+            // native class that covers room/space/area tags.
             var types = new List<Type>
             {
                 typeof(IndependentTag),
                 typeof(TextNote),
                 typeof(Dimension),
-                typeof(SpotDimension),
-                typeof(Autodesk.Revit.DB.Architecture.RoomTag)
+                typeof(SpatialElementTag)
             };
             foreach (Type type in types)
             {

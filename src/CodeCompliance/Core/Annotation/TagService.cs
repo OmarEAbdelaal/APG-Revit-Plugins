@@ -23,9 +23,13 @@ namespace CodeCompliance.Core.Annotation
 
         public static void AddRoomTags(AnnotationContext ctx)
         {
+            // RoomTag is not collectible via OfClass; collect the native SpatialElementTag
+            // class and keep the room tags.
             var taggedRooms = new HashSet<long>();
-            var existingTags = new FilteredElementCollector(ctx.Doc, ctx.View.Id).OfClass(typeof(RoomTag));
-            foreach (RoomTag tag in existingTags.Cast<RoomTag>())
+            var existingTags = new FilteredElementCollector(ctx.Doc, ctx.View.Id)
+                .OfClass(typeof(SpatialElementTag))
+                .OfType<RoomTag>();
+            foreach (RoomTag tag in existingTags)
                 if (tag.Room != null)
                     taggedRooms.Add(tag.Room.Id.Value);
 
