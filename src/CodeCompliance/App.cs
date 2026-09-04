@@ -21,6 +21,7 @@ namespace CodeCompliance
     {
         public const string TabName = "APG Revit Plugins";
         private const string FireFightingPanelName = "Code Compliance – Fire Fighting";
+        private const string DmPanelName = "DM BIM Compliance";
         private const string RampPanelName = "Ramp Creator";
         private const string AnnotationPanelName = "Magic Annotation";
         private const string McpPanelName = "Revit MCP";
@@ -219,7 +220,28 @@ namespace CodeCompliance
                 "Count fire-protection elements in the active model (installation test).",
                 null));
 
-            // ── Plugin 2: Ramp Creator ──────────────────────────────────────────
+            // ── Plugin 2: DM BIM Compliance (Dubai Municipality e-submission) ──
+            RibbonPanel dmPanel = application.CreateRibbonPanel(TabName, DmPanelName);
+
+            dmPanel.AddItem(Button(
+                "CodeCompliance_DmCompliance", "DM\nCompliance",
+                assemblyPath, "CodeCompliance.Commands.DmComplianceCommand", "DmCompliance",
+                "Audit the model against the Dubai Municipality BIM e-submission requirements.",
+                "Checks the open model against the Dubai BIM Standard: project, site and building " +
+                "attributes, level naming and the gate level, rooms, usage codes and unit data, the " +
+                "Appendix B element attributes and DM's own IDS rule set, object naming, " +
+                "geo-referencing and export readiness. The dashboard lists every element that has to " +
+                "be modified and the type of modification, frames them in a 3D section box, and gives " +
+                "you the prompt that lets Claude fix them over the Revit MCP connection."));
+
+            dmPanel.AddItem(Button(
+                "CodeCompliance_DmReport", "DM\nReport",
+                assemblyPath, "CodeCompliance.Commands.DmReportCommand", "DmReport",
+                "Run the DM compliance audit and export the report without opening the dashboard.",
+                "Writes an HTML dashboard, a CSV of every finding with its element ids and a text " +
+                "file with all Revit MCP fix prompts to Documents\\CodeCompliance."));
+
+            // ── Plugin 3: Ramp Creator ──────────────────────────────────────────
             RibbonPanel rampPanel = application.CreateRibbonPanel(TabName, RampPanelName);
 
             rampPanel.AddItem(Button(
@@ -233,7 +255,7 @@ namespace CodeCompliance
                 "solved per Dubai Building Code Annex B, Tables B.9 / B.10. Compliance is checked " +
                 "at the input step; the ramp with its transition zones is created as Floor elements."));
 
-            // ── Plugin 3: Magic Annotation ──────────────────────────────────────
+            // ── Plugin 4: Magic Annotation ──────────────────────────────────────
             RibbonPanel annotationPanel = application.CreateRibbonPanel(TabName, AnnotationPanelName);
 
             annotationPanel.AddItem(Button(
@@ -247,7 +269,7 @@ namespace CodeCompliance
                 "Re-running the command replaces what it placed before, and stairs, ramps and wet " +
                 "areas that deserve a callout are listed as suggestions."));
 
-            // ── Plugin 4: Revit MCP (Claude ↔ Revit) ────────────────────────────
+            // ── Plugin 5: Revit MCP (Claude ↔ Revit) ────────────────────────────
             RibbonPanel mcpPanel = application.CreateRibbonPanel(TabName, McpPanelName);
 
             mcpPanel.AddItem(Button(

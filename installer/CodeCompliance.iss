@@ -1,5 +1,5 @@
 ﻿; Inno Setup script for the APG Revit Plugins suite (Code Compliance - Fire Fighting,
-; Ramp Creator, Magic Annotation, Revit MCP). Compile with Inno Setup 6 (ISCC.exe) after building the Release
+; DM BIM Compliance, Ramp Creator, Magic Annotation, Revit MCP). Compile with Inno Setup 6 (ISCC.exe) after building the Release
 ; configurations, or simply run installer\build-installer.ps1 which does both.
 ;
 ; The single installer:
@@ -9,7 +9,7 @@
 ;   - includes a normal Windows uninstaller (Settings > Apps)
 
 #define MyAppName "APG Revit Plugins"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "1.5.0"
 #define MyAppPublisher "APG - Omar Elsayed"
 #define MyAppURL "https://github.com/OmarEAbdelaal/APG-Revit-Plugins"
 #define BinRoot "..\src\CodeCompliance\bin"

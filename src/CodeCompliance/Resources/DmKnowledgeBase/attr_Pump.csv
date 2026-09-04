@@ -1,0 +1,15 @@
+Pump (IfcPump),,,,,,"Predefined Type , IFC 2x3","Predefined Type, IFC 4",object type override data samples,
+Description: A pump is a device which imparts mechanical work on fluids or slurries to move them through a channel or pipeline. A typical use of a pump is to circulate chilled water or heating hot water in a building services distribution system.,,,,,,"
+CIRCULATOR, ENDSUCTION, SPLITCASE, VERTICALINLINE, VERTICALTURBINE","
+CIRCULATOR, ENDSUCTION, SPLITCASE, SUBMERSIBLEPUMP, SUMPPUMP, VERTICALINLINE, VERTICALTURBINE",/,
+Attribute,IFC Reference,Property Set,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,_,YES,Text,SUMPPUMP,Y,Y,Y,
+GrossWeight,GrossWeight,Qto_PumpBaseQuantities,YES,Number (unit in Kg),50,Y,Y,Y,
+NominalRotationSpeed,NominalRotationSpeed,Pset_PumpTypeCommon,YES,Number (unit In rpm),1150,N,Y,Y,
+NetPositiveSuctionHead,NetPositiveSuctionHead,Pset_PumpTypeCommon,YES,Number,20,N,Y,Y,
+TemperatureRange,TemperatureRange,Pset_PumpTypeCommon,YES,Number (unit in ° F),300,N,Y,Y,
+ConnectionSize,ConnectionSize,Pset_PumpTypeCommon,YES,Number (unit in meter),0.15,N,N,Y,
+FlowResistanceRange,FlowResistanceRange,Pset_PumpTypeCommon,YES,Number,50,N,N,Y,
+FlowRateRange,FlowRateRange,Pset_PumpTypeCommon,YES,Number,20,N,N,Y,
+ImpellerDiameter,ImpellerDiameter,Pset_PumpOccurrence,NO,Number (unit in meter),1,N,N,Y,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,YES,Text,,Y,Y,Y,

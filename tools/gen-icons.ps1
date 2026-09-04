@@ -157,6 +157,39 @@ $null = New-Icon "ModelCheck" {
     $pen.Dispose()
 }
 
+# DM Compliance: white shield with a blue check (Dubai Municipality compliance)
+$null = New-Icon "DmCompliance" {
+    param($g, $s)
+    $pts = @(
+        (P (0.50*$s) (0.09*$s)); (P (0.86*$s) (0.23*$s)); (P (0.86*$s) (0.50*$s));
+        (P (0.80*$s) (0.66*$s)); (P (0.68*$s) (0.80*$s)); (P (0.50*$s) (0.93*$s));
+        (P (0.32*$s) (0.80*$s)); (P (0.20*$s) (0.66*$s)); (P (0.14*$s) (0.50*$s));
+        (P (0.14*$s) (0.23*$s))
+    )
+    $g.FillPolygon($wb, $pts)
+    $pen = New-Pen $ApgBlue (0.095 * $s)
+    $g.DrawLines($pen, @((P (0.33*$s) (0.50*$s)); (P (0.45*$s) (0.63*$s)); (P (0.69*$s) (0.36*$s))))
+    $pen.Dispose()
+}
+
+# DM Report: white document with blue lines and a check
+$null = New-Icon "DmReport" {
+    param($g, $s)
+    $g.FillPolygon($wb, @(
+        (P (0.24*$s) (0.12*$s)); (P (0.68*$s) (0.12*$s)); (P (0.78*$s) (0.24*$s));
+        (P (0.78*$s) (0.88*$s)); (P (0.24*$s) (0.88*$s))
+    ))
+    $pen = New-Pen $ApgBlue (0.05 * $s)
+    foreach ($i in 0..2) {
+        $y = (0.34 + 0.13 * $i) * $s
+        $g.DrawLine($pen, [float](0.33*$s), [float]$y, [float](0.62*$s), [float]$y)
+    }
+    $pen.Dispose()
+    $pen2 = New-Pen $ApgBlue (0.075 * $s)
+    $g.DrawLines($pen2, @((P (0.33*$s) (0.73*$s)); (P (0.42*$s) (0.81*$s)); (P (0.66*$s) (0.58*$s))))
+    $pen2.Dispose()
+}
+
 # Parking Ramp: white ramp wedge with a rising arrow
 $null = New-Icon "ParkingRamp" {
     param($g, $s)
