@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using CodeCompliance.Core;
+using CodeCompliance.Core.Mcp;
 
 namespace CodeCompliance
 {
@@ -22,11 +23,14 @@ namespace CodeCompliance
         private const string FireFightingPanelName = "Code Compliance – Fire Fighting";
         private const string RampPanelName = "Ramp Creator";
         private const string AnnotationPanelName = "Magic Annotation";
+        private const string McpPanelName = "Revit MCP";
         private const string SuitePanelName = "APG";
 
         private UIControlledApplication? _application;
         private volatile UpdateInfo? _pendingUpdate;
         private volatile bool _updateCheckDone;
+        private volatile McpUpdateResult? _mcpUpdate;
+        private volatile bool _mcpUpdateDone;
 
         public Result OnStartup(UIControlledApplication application)
         {
@@ -34,6 +38,7 @@ namespace CodeCompliance
             {
                 CreateRibbon(application);
                 StartUpdateCheck(application);
+                StartMcpAutoStart(application);
                 return Result.Succeeded;
             }
             catch (Exception ex)
@@ -45,13 +50,23 @@ namespace CodeCompliance
 
         public Result OnShutdown(UIControlledApplication application)
         {
+            try
+            {
+                if (McpSocketService.Instance.IsRunning)
+                    McpSocketService.Instance.Stop();
+            }
+            catch
+            {
+                // never block Revit shutdown
+            }
             return Result.Succeeded;
         }
 
         /// <summary>
-        /// Checks GitHub for a newer suite release in the background and, when one
-        /// is found, notifies once per version on Revit's UI thread (Idling event).
-        /// Never blocks startup; any failure (offline, rate limit) is silent.
+        /// Checks GitHub for a newer suite release and, when the Revit MCP connector is
+        /// installed, for newer MCP server / command sets (installed silently). Results are
+        /// shown once on Revit's UI thread (Idling event). Never blocks startup; failures
+        /// (offline, rate limit) are silent.
         /// </summary>
         private void StartUpdateCheck(UIControlledApplication application)
         {
@@ -74,28 +89,87 @@ namespace CodeCompliance
                     _updateCheckDone = true;
                 }
             });
+            Task.Run(async () =>
+            {
+                try
+                {
+                    McpUpdateResult result = await McpInstaller.AutoUpdateAsync(McpSettings.Load()).ConfigureAwait(false);
+                    if (result.Status == McpUpdateStatus.Updated)
+                        _mcpUpdate = result;
+                }
+                catch
+                {
+                    // best effort only
+                }
+                finally
+                {
+                    _mcpUpdateDone = true;
+                }
+            });
         }
 
         private void OnIdlingShowUpdate(object? sender, IdlingEventArgs e)
         {
-            if (!_updateCheckDone)
+            if (!_updateCheckDone || !_mcpUpdateDone)
                 return;
 
             _application!.Idling -= OnIdlingShowUpdate;
+
             UpdateInfo? info = _pendingUpdate;
             _pendingUpdate = null;
-            if (info == null)
-                return;
+            if (info != null)
+            {
+                try
+                {
+                    UpdateChecker.MarkNotified(info.Latest);
+                    new UI.UpdateWindow(info).ShowDialog();
+                }
+                catch
+                {
+                    // notification is best effort only
+                }
+            }
 
-            try
+            McpUpdateResult? mcp = _mcpUpdate;
+            _mcpUpdate = null;
+            if (mcp != null)
             {
-                UpdateChecker.MarkNotified(info.Latest);
-                new UI.UpdateWindow(info).ShowDialog();
+                try
+                {
+                    TaskDialog.Show("Revit MCP updated",
+                        mcp.Message + "\n\nRestart Claude Desktop so it loads the new MCP server. " +
+                        "The new Revit commands are used the next time the MCP server is switched on.");
+                }
+                catch
+                {
+                    // best effort only
+                }
             }
-            catch
+        }
+
+        /// <summary>
+        /// Starts the MCP socket service when Revit is fully initialized, if the user enabled
+        /// auto-start in MCP Setup. ApplicationInitialized runs in a valid API context, which
+        /// the command sets need to create their ExternalEvents.
+        /// </summary>
+        private static void StartMcpAutoStart(UIControlledApplication application)
+        {
+            application.ControlledApplication.ApplicationInitialized += (sender, args) =>
             {
-                // notification is best effort only
-            }
+                try
+                {
+                    McpSettings settings = McpSettings.Load();
+                    if (!settings.AutoStart)
+                        return;
+                    if (!(sender is Autodesk.Revit.ApplicationServices.Application app))
+                        return;
+                    McpSocketService.Instance.Start(new UIApplication(app), settings);
+                }
+                catch (Exception ex)
+                {
+                    McpLog.Error("MCP auto-start failed", ex);
+                }
+            };
         }
 
         private static void CreateRibbon(UIControlledApplication application)
@@ -172,6 +246,27 @@ namespace CodeCompliance
                 "positioned to avoid clashing with existing annotations, in a single undo step. " +
                 "Re-running the command replaces what it placed before, and stairs, ramps and wet " +
                 "areas that deserve a callout are listed as suggestions."));
+
+            // ── Plugin 4: Revit MCP (Claude ↔ Revit) ────────────────────────────
+            RibbonPanel mcpPanel = application.CreateRibbonPanel(TabName, McpPanelName);
+
+            mcpPanel.AddItem(Button(
+                "CodeCompliance_McpServer", "MCP\nServer",
+                assemblyPath, "CodeCompliance.Commands.McpServerCommand", "McpServer",
+                "Switch the Revit MCP server on or off so Claude can read and drive this Revit session.",
+                "Starts a local JSON-RPC service (port 8080 by default) that the Revit MCP server " +
+                "launched by Claude Desktop connects to. While it is on, Claude can query the model, " +
+                "create and modify elements, tag, color, export data and run C# code in Revit. " +
+                "Click again to switch it off."));
+
+            mcpPanel.AddItem(Button(
+                "CodeCompliance_McpSetup", "MCP\nSetup",
+                assemblyPath, "CodeCompliance.Commands.McpSetupCommand", "McpSetup",
+                "Install or update the MCP server and Revit command sets from GitHub and configure Claude Desktop.",
+                "One-stop setup: downloads the latest Revit MCP server (Node.js) and Revit command " +
+                "sets from github.com/OmarEAbdelaal/revit-mcp, writes the Claude Desktop configuration, " +
+                "shows Node.js and connection status and lets you choose which commands Claude may use. " +
+                "Updates are installed automatically on Revit startup."));
 
             // ── Suite panel ─────────────────────────────────────────────────────
             RibbonPanel suitePanel = application.CreateRibbonPanel(TabName, SuitePanelName);

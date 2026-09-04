@@ -22,11 +22,11 @@
     <!-- Allows building net8.0-windows targets on non-Windows CI agents -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Configurations>Debug R24;Debug R25;Debug R26;Debug R27;Release R24;Release R25;Release R26;Release R27</Configurations>
-    <Version>1.3.1</Version>
+    <Version>1.4.0</Version>
     <Company>APG</Company>
     <Authors>Omar Elsayed</Authors>
     <Product>APG Revit Plugins</Product>
-    <Description>APG Revit Plugins suite: Code Compliance – Fire Fighting, Ramp Creator (Dubai Building Code Annex B), and Magic Annotation. Author: Omar Elsayed.</Description>
+    <Description>APG Revit Plugins suite: Code Compliance – Fire Fighting, Ramp Creator (Dubai Building Code Annex B), Magic Annotation and Revit MCP (Claude connector). Author: Omar Elsayed.</Description>
     <Copyright>© APG — Omar Elsayed</Copyright>
   </PropertyGroup>
 
@@ -73,12 +73,20 @@
     -->
     <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
     <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+    <!--
+      Revit MCP module: JSON-RPC and configuration files. Revit ships Newtonsoft.Json 13 in its
+      program folder, so it is compile-time only here (nothing is copied next to the add-in).
+    -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
     <!-- HttpClient for the update checker (implicit on the .NET 8/10 targets) -->
     <Reference Include="System.Net.Http" />
+    <!-- ZipFile for the Revit MCP installer (implicit on the .NET 8/10 targets) -->
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
 
   <!--

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates all APG Revit Plugins brand assets (ribbon icons, dialog wordmarks,
     installer icon) from code, so the repo needs no binary source files.
@@ -185,6 +185,45 @@ $null = New-Icon "MagicAnnotation" {
         (P $cx ($cy - $r)); (P ($cx + $w) ($cy - $w)); (P ($cx + $r) $cy); (P ($cx + $w) ($cy + $w));
         (P $cx ($cy + $r)); (P ($cx - $w) ($cy + $w)); (P ($cx - $r) $cy); (P ($cx - $w) ($cy - $w))
     ))
+}
+
+# MCP Server: white plug (two prongs + body + cable) - the Claude <-> Revit connection
+$null = New-Icon "McpServer" {
+    param($g, $s)
+    $pen = New-Pen $White (0.09 * $s)
+    # prongs
+    $g.DrawLine($pen, [float](0.38*$s), [float](0.12*$s), [float](0.38*$s), [float](0.34*$s))
+    $g.DrawLine($pen, [float](0.62*$s), [float](0.12*$s), [float](0.62*$s), [float](0.34*$s))
+    # cable
+    $g.DrawLine($pen, [float](0.50*$s), [float](0.70*$s), [float](0.50*$s), [float](0.90*$s))
+    $pen.Dispose()
+    # body: rounded block
+    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $x = 0.24*$s; $y = 0.32*$s; $w = 0.52*$s; $h = 0.40*$s; $r = 0.10*$s
+    $path.AddArc([float]$x, [float]$y, [float](2*$r), [float](2*$r), 180, 90)
+    $path.AddArc([float]($x+$w-2*$r), [float]$y, [float](2*$r), [float](2*$r), 270, 90)
+    $path.AddArc([float]($x+$w-2*$r), [float]($y+$h-2*$r), [float](2*$r), [float](2*$r), 0, 90)
+    $path.AddArc([float]$x, [float]($y+$h-2*$r), [float](2*$r), [float](2*$r), 90, 90)
+    $path.CloseFigure()
+    $g.FillPath($wb, $path); $path.Dispose()
+}
+
+# MCP Setup: white gear
+$null = New-Icon "McpSetup" {
+    param($g, $s)
+    $cx = 0.50*$s; $cy = 0.50*$s; $ro = 0.36*$s; $ri = 0.27*$s
+    $pts = @()
+    for ($i = 0; $i -lt 16; $i++) {
+        $a = ($i / 16.0) * 2 * [math]::PI
+        $rr = if ($i % 2 -eq 0) { $ro } else { $ri }
+        $pts += (P ($cx + $rr * [math]::Cos($a)) ($cy + $rr * [math]::Sin($a)))
+        $a2 = (($i + 0.5) / 16.0) * 2 * [math]::PI
+        $pts += (P ($cx + $rr * [math]::Cos($a2)) ($cy + $rr * [math]::Sin($a2)))
+    }
+    $g.FillPolygon($wb, $pts)
+    $bp = New-Object System.Drawing.SolidBrush($ApgBlue)
+    $g.FillEllipse($bp, [float]($cx - 0.12*$s), [float]($cy - 0.12*$s), [float](0.24*$s), [float](0.24*$s))
+    $bp.Dispose()
 }
 
 # About: white info circle

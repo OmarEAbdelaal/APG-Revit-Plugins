@@ -78,6 +78,7 @@ Revit Addins folder of the **current user** (no admin rights needed).
    a dialog titled *"Plugin is installed and working."* listing counts of sprinklers,
    pipes, fittings, accessories and mechanical equipment.
 5. Click **About APG** to verify the version info.
+6. To connect Claude to Revit, follow [REVIT_MCP.md](REVIT_MCP.md) (MCP Setup button).
 
 If you see that dialog, the whole pipeline works (manifest → assembly load → ribbon →
 command → Revit API access) and the project is ready for the real compliance logic.

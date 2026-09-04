@@ -1,7 +1,7 @@
 # APG Revit Plugins
 
 The **APG** suite of Revit add-ins, by **Omar Elsayed**. One codebase, one ribbon tab,
-one installer — currently shipping two plugins, with more to come.
+one installer — currently shipping four plugins, with more to come.
 
 Supports **Revit 2024, 2025, 2026 and 2027** from a single code base.
 
@@ -23,12 +23,19 @@ APG Revit Plugins (tab)
 │   └── Parking Ramp   – draw a line/arc, enter two of {h, S, R}, get a
 │                        code-compliant ramp (Dubai Building Code Annex B,
 │                        Tables B.9 / B.10) built as Floor elements
+├── Revit MCP (panel)
+│   ├── MCP Server     – switch the in-Revit JSON-RPC service on/off so Claude
+│   │                    (Desktop / Code) can read and drive the open model
+│   └── MCP Setup      – install/update the MCP server + Revit command sets from
+│                        GitHub, configure Claude Desktop, choose the commands
 └── APG (panel)
     └── About APG      – suite version, plugins, author and contact
 ```
 
 Guides: [docs/EGRESS_WORKFLOW.md](docs/EGRESS_WORKFLOW.md) (fire-fighting egress analysis),
-[docs/RAMP_WORKFLOW.md](docs/RAMP_WORKFLOW.md) (parking ramp creator).
+[docs/RAMP_WORKFLOW.md](docs/RAMP_WORKFLOW.md) (parking ramp creator),
+[docs/ANNOTATION_WORKFLOW.md](docs/ANNOTATION_WORKFLOW.md) (magic annotation),
+[docs/REVIT_MCP.md](docs/REVIT_MCP.md) (connect Claude to Revit).
 
 ## For end users: one installer for the whole suite
 
@@ -76,12 +83,21 @@ src/CodeCompliance/
         EgressReportCommand.cs      CC-FF step 3: schedules + HTML/CSV report
         FireFightingCheckCommand.cs CC-FF: element count summary (installation test)
         ParkingRampCommand.cs       Ramp Creator: code-compliant parking ramps
+        McpServerCommand.cs         Revit MCP: switch the socket service on/off
+        McpSetupCommand.cs          Revit MCP: install/update from GitHub, Claude config
         AboutCommand.cs             About the suite
     Core/                           Model logic (no UI)
         EscapeStairService.cs       Stair detection + CC_IsEscapeStair parameter
         EgressAnalysisService.cs    Path of Travel creation, lengths, doors on path
         RampCalculator.cs           Dubai BC Annex B ramp math (Tables B.9/B.10)
         RampPath.cs / RampFloorBuilder.cs  Ramp geometry + floor creation
+        UpdateChecker.cs            Suite update notifications (GitHub releases)
+        Mcp/                        Revit MCP module (no Revit SDK dependency)
+            McpSocketService.cs     TCP JSON-RPC 2.0 endpoint for the MCP server
+            McpCommandHost.cs       Loads command-set DLLs by reflection, built-in commands
+            McpInstaller.cs         Downloads server + command sets from GitHub releases,
+                                    auto-update, Claude Desktop configuration
+            McpSettings.cs / McpPaths.cs / McpLog.cs
     Reporting/
         EgressReportWriter.cs       HTML + CSV export
         ScheduleBuilder.cs          Revit schedules
@@ -90,6 +106,7 @@ src/CodeCompliance/
         AboutWindow.cs              Suite about dialog
         EscapeStairsWindow.cs       Stair selection dialog
         RampInputWindow.cs          Ramp design + live compliance dialog
+        McpSetupWindow.cs           Revit MCP setup / status dialog
 install/
     CodeCompliance.addin            Revit add-in manifest
     install.ps1 / uninstall.ps1     Build + (un)install for any/all Revit versions
@@ -135,6 +152,9 @@ versions. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - [x] APG Revit Plugins ribbon tab + branding + single installer (.exe) + CI build
 - [x] Code Compliance – Fire Fighting: escape stairs, travel paths, fire ratings, reports
 - [x] Ramp Creator: Dubai BC Annex B parking ramps as floors
+- [x] Magic Annotation: one-step view annotation
+- [x] Revit MCP: Claude ↔ Revit connector with auto-updating server and command sets
+      (server + commands live in [OmarEAbdelaal/revit-mcp](https://github.com/OmarEAbdelaal/revit-mcp))
 - [ ] Fire Fighting: pass/fail rules (max travel distance, required door ratings)
 - [ ] Fire Fighting: two-exit / alternative route checks
 - [ ] Review-comment annotations on plans

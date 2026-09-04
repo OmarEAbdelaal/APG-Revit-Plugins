@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,6 +53,11 @@ namespace CodeCompliance.UI
                 "Magic Annotation",
                 "Annotates a plan, section or elevation view in one step: dimensions, tags, spot " +
                 "elevations, ramp slopes and stair arrows — placed clash-free, replaceable on re-run.")));
+
+            body.Children.Add(ApgTheme.Card(PluginEntry(
+                "Revit MCP",
+                "Connects Claude (Desktop / Code) to Revit through the Model Context Protocol: an in-Revit " +
+                "JSON-RPC server plus an MCP server and command sets installed and updated from GitHub.")));
 
             body.Children.Add(ApgTheme.SectionHeader("Company & author"));
             var info = new StackPanel();
