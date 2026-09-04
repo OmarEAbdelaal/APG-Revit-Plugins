@@ -5,6 +5,13 @@ on:
     branches: [main, master, "claude/**"]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: >-
+          Publish a GitHub release with this tag (e.g. v1.5.0) and attach the installer.
+          The tag is created on the branch this workflow runs from. Leave empty to only build.
+        required: false
+        default: ""
 
 jobs:
   installer:
@@ -41,3 +48,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: installer/output/*.exe
+
+      # Lets a release be published without pushing a tag from a workstation
+      # (Actions ▸ Build installer ▸ Run workflow ▸ fill in the tag).
+      - name: Publish release from a manual run
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/output/*.exe
+          tag_name: ${{ inputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ inputs.release_tag }}
+          generate_release_notes: true

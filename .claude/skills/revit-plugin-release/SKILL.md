@@ -39,10 +39,18 @@ users can verify which build they run.
 
 ## Publishing a public release
 
-Push a tag matching `v*` (e.g. `v0.2.0`) — the workflow attaches the exe to a GitHub
-Release automatically (`softprops/action-gh-release`, needs the existing
-`contents: write` permission). Use this when the user wants a permanent public
-download link instead of an Actions artifact.
+Two ways, both ending in a GitHub Release with the exe attached
+(`softprops/action-gh-release`, needs the existing `contents: write` permission):
+
+- **From a workstation**: push a tag matching `v*` (e.g. `v1.5.0`).
+- **From this session**: tag pushes are refused by the egress policy (HTTP 403 on
+  `refs/tags/**` — branch pushes are fine), so dispatch the workflow instead and let it
+  create the tag: GitHub MCP `actions_run_trigger` with method `run_workflow`,
+  `workflow_id: build-installer.yml`, `ref: main`, `inputs: { release_tag: "v1.5.0" }`.
+  Verify afterwards with `get_release_by_tag`.
+
+Use either when the user wants a permanent public download link instead of an Actions
+artifact.
 
 ## Installer behaviour (Inno Setup, `installer/CodeCompliance.iss`)
 
