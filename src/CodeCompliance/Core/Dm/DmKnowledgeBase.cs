@@ -129,6 +129,23 @@ namespace CodeCompliance.Core.Dm
         public static string Source { get { EnsureLoaded(); return _source; } }
 
         /// <summary>
+        /// The IFC4 PredefinedType enumerations DM lists for an element table, as published
+        /// (comma separated), or "" when the table names none.
+        /// </summary>
+        public static string PredefinedTypes(string table)
+        {
+            EnsureLoaded();
+            return _predefinedTypes.TryGetValue(table, out string? value) ? value : "";
+        }
+
+        /// <summary>DM's ObjectTypeOverride samples for an element table, as published.</summary>
+        public static string ObjectTypeOverrides(string table)
+        {
+            EnsureLoaded();
+            return _objectTypeOverrides.TryGetValue(table, out string? value) ? value : "";
+        }
+
+        /// <summary>
         /// Appendix B attributes for one element table, e.g. "Wall", "Door", "Room_Spaces".
         /// Empty list when the table is unknown.
         /// </summary>
