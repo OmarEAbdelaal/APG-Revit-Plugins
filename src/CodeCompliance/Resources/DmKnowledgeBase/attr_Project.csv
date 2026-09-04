@@ -1,0 +1,7 @@
+Project (IfcProject),,,,,,,,,
+"IfcProject indicates the undertaking of some design, engineering, construction, or maintenance activities leading towards a product.
+Note: Occupancy Number should describe total calculated number of occupants in the building",,,,,,,,,
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits
+ConstructionMode,ConstructionMode,Pset_ProjectCommon,IFC Standard Property.,YES,Text,New construction,-,Required,-
+ParcelId,ParcelId,Building Permit,The land parcel Id.,YES,Number ,111111,-,Required,-
+BIMStandardVersion,BIMStandardVersion,Building Permit,The current version of the DB BIM standard. E.g. 1.3.,YES,Text,1.4.0,-,Required,-

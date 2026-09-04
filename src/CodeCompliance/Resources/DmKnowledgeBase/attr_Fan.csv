@@ -1,0 +1,12 @@
+Fan (IfcFan) ,,,,,,"Predefined Type , IFC 2x3","Predefined Type, IFC 4",Object type override data samples,
+"Description: An IfcFan is a device which imparts mechanical work on a gas. A typical usage of a fan is to induce airflow in a building services air distribution system.
+",,,,,,"CENTRIFUGALFORWARDCURVED, CENTRIFUGALRADIAL, CENTRIFUGALBACKWARDINCLINEDCURVED, CENTRIFUGALAIRFOIL, TUBEAXIAL, VANEAXIAL, PROPELLORAXIAL","CENTRIFUGALFORWARDCURVED, CENTRIFUGALRADIAL, CENTRIFUGALBACKWARDINCLINEDCURVED, CENTRIFUGALAIRFOIL, TUBEAXIAL, VANEAXIAL, PROPELLORAXIAL",/,
+Attribute,IFC Reference,Property Set,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,_,YES,Text,VANEAXIAL,Y,Y,Y,
+Status,Status,Pset_FanTypeCommon,YES,Text,"New, Existing",Y,Y,Y,
+NominalTotalPressure,NominalTotalPressure,Pset_FanTypeCommon,YES,Number (unit in Pa),100,N,N,Y,
+NominalStaticPressure,NominalStaticPressure,Pset_FanTypeCommon,YES,Number  (unit in Pa),150,N,N,Y,
+OperationTemperatureRange,OperationTemperatureRange,Pset_FanTypeCommon,YES,Number (unit in ° F),300,N,N,Y,
+DischargeType,DischargeType,Pset_FanOccurrence,YES,Text,AxialFlow,N,N,Y,
+MotorPosition,MotorPosition,Pset_FanOccurrence,YES,Text,angle,N,N,Y,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,YES,Text,,Y,Y,Y,

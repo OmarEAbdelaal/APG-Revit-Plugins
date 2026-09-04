@@ -1,0 +1,8 @@
+Sensor (IfcSensor) ,,,,,,"Predefined Type , IFC 2x3","Predefined Type, IFC 4",object type override data samples,
+Description: An IfcSensor is a device that measures a physical quantity and converts it into a signal which can be read by an observer or by an instrument,,,,,,"CO2SENSOR, FIRESENSOR, FLOWSENSOR, GASSENSOR, HEATSENSOR, HUMIDITYSENSOR,  LIGHTSENSOR, MOISTURESENSOR, MOVEMENTSENSOR, PRESSURESENSOR, SMOKESENSOR, SOUNDSENSOR, TEMPERATURESENSOR","COSENSOR, CO2SENSOR, CONDUCTANCESENSOR, CONTACTSENSOR, FIRESENSOR, FLOWSENSOR, FROSTSENSOR, GASSENSOR, HEATSENSOR, HUMIDITYSENSOR, IDENTIFIERSENSOR, IONCONCENTRATIONSENSOR, LEVELSENSOR, LIGHTSENSOR, MOISTURESENSOR, MOVEMENTSENSOR, PHSENSOR, PRESSURESENSOR, RADIATIONSENSOR, RADIOACTIVITYSENSOR, SMOKESENSOR, SOUNDSENSOR, TEMPERATURESENSOR, WINDSENSOR ",/,
+Attribute,IFC Reference,Property Set,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,_,YES,Text,IDENTIFIERSENSOR,Y,Y,Y,
+Status,Status,Pset_SensorTypeCommon,YES,Text,"New, Existing",Y,Y,Y,
+IfcMaterial,IfcMaterial,Building Permit,YES,Text,Gupsum ,Y,Y,Y,
+Color,Color,Building Permit,YES,Text,Grey,N,N,Y,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,YES,Text,,Y,Y,Y,

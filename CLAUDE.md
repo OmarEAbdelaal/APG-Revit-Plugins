@@ -1,8 +1,8 @@
 # APG-Revit-Plugins — notes for Claude
 
 The APG Revit Plugins suite (C#), author Omar Elsayed: one ribbon tab "APG Revit Plugins"
-with one panel per plugin — "Code Compliance – Fire Fighting", "Ramp Creator",
-"Magic Annotation" and "Revit MCP" — and one installer for the whole suite. One codebase, four targets:
+with one panel per plugin — "Code Compliance – Fire Fighting", "DM BIM Compliance",
+"Ramp Creator", "Magic Annotation" and "Revit MCP" — and one installer for the whole suite. One codebase, four targets:
 Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
 
 ## Non-negotiables
@@ -40,3 +40,17 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
 - Newtonsoft.Json is compile-time only (`ExcludeAssets="runtime"`): Revit ships it.
 - Local builds work when a .NET SDK is present (`dotnet build -c "Release R24"` etc.);
   otherwise rely on CI as before.
+
+## DM BIM Compliance module (src/CodeCompliance/Core/Dm, docs/DM_COMPLIANCE_WORKFLOW.md)
+
+- Audits an open model against the Dubai Municipality BIM e-submission requirements and is
+  strictly read-only; `DmHighlightService` is the only part that writes (it creates the
+  "CC - DM Compliance 3D" view and its section box).
+- **The rules are data, not code**: `Resources/DmKnowledgeBase/*` holds DM's IDS rule set,
+  the Appendix B attribute matrices and the Appendix C usage codes, embedded in the DLL and
+  overridable from `Documents\CodeCompliance\DMKnowledgeBase`. DM revises the standard every
+  1-3 months — update the data files, do not hardcode rules in C#.
+- `DmAuditService` (+ `.Elements.cs`) produces `DmFinding`s that carry element ids, the type
+  of modification and a ready-made Revit MCP prompt built by `DmPromptBuilder`.
+- Category ↔ IFC entity ↔ Appendix B table mapping lives in `DmRuleCatalog`; add a category
+  there rather than in the audit code.

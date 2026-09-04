@@ -1,0 +1,4 @@
+Topography (IfcSite),,,,,,,,,
+"A site is a defined area of land, possibly covered with water, on which the project construction is to be completed. A site may be used to erect, retrofit or turn down building(s), or for other construction related developments.",,,,,,,,,
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits
+GateLevel,GateLevel,Building Permit,The Gate level elevation value.,YES,Number(unit in m),50,-,Required,-

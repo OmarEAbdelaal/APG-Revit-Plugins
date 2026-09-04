@@ -1,0 +1,97 @@
+Building Type,Master Usage (Occupancy),Main Usage (OccupancyUse),OccupancyUsageCode,Source (for internal use)
+Private Villa,Residential,Private Villa,PV_01_01,DM_GIS_BDDS_v5.3
+Investment Villa,Residential,Investment Villas,IV_01_01,DM_GIS_BDDS_v5.3
+Multi Storey,Residential,Residential Apartments,MS_01_01,DM_GIS_BDDS_v5.3
+Multi Storey,Residential,Labour Accomodation,MS_01_02,DM_GIS_BDDS_v5.3
+Multi Storey,Residential,Employees Accomodation,MS_01_03,DM_GIS_BDDS_v5.3
+Multi Storey,Residential,Students Accommodation,MS_01_04,DM_GIS_BDDS_v5.3
+Multi Storey,Residential,Investment Villas Within A Building,MS_01_05,DM_GIS_BDDS_v5.3
+Multi Storey,Hospitality,Hotel,MS_02_01,DM_GIS_BDDS_v5.3
+Multi Storey,Hospitality,Hotel Apartments ,MS_02_02,DM_GIS_BDDS_v5.3
+Multi Storey,Hospitality,Hotel Villas ,MS_02_03,DM_GIS_BDDS_v5.3
+Multi Storey,Hospitality,Resort,MS_02_04,DM_GIS_BDDS_v5.3
+Multi Storey,Commercial,Shopping Center,MS_03_01,DM_GIS_BDDS_v5.3
+Multi Storey,Commercial,Shops,MS_03_02,DM_GIS_BDDS_v5.3
+Multi Storey,Commercial,Showrooms,MS_03_03,DM_GIS_BDDS_v5.3
+Multi Storey,Commercial,Offices,MS_03_04,DM_GIS_BDDS_v5.3
+Multi Storey,Commercial,Bank,MS_03_05,DM_GIS_BDDS_v5.3
+Multi Storey,Health Service,Hospital,MS_04_01,DM_GIS_BDDS_v5.3
+Multi Storey,Health Service,Medical Center,MS_04_02,DM_GIS_BDDS_v5.3
+Multi Storey,Health Service,Clinic,MS_04_03,DM_GIS_BDDS_v5.3
+Multi Storey,Health Service,Vet Hospital,MS_04_04,DM_GIS_BDDS_v5.3
+Multi Storey,Health Service,Vet Clinic,MS_04_05,DM_GIS_BDDS_v5.3
+Multi Storey,Parking,Parking (Building),MS_05_01,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Workshops,IN_01_01,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Warehouses,IN_01_02,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Factory,IN_01_03,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Garage ,IN_01_04,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Contracting Sites ,IN_01_05,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Garageer (Fishing Facility),IN_01_06,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Kitchen,IN_01_07,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Press,IN_01_08,DM_GIS_BDDS_v5.3
+Industrial Building,Industrial,Open Shed,IN_01_09,DM_GIS_BDDS_v5.3
+Public Building,Educational,Nursery ,PB_01_01,DM_GIS_BDDS_v5.3
+Public Building,Educational,School,PB_01_02,DM_GIS_BDDS_v5.3
+Public Building,Educational,Early Learning Center,PB_01_03,DM_GIS_BDDS_v5.3
+Public Building,Educational,University ,PB_01_04,DM_GIS_BDDS_v5.3
+Public Building,Educational,College/Institute/Academy,PB_01_05,DM_GIS_BDDS_v5.3
+Public Building,Educational,Training Centers,PB_01_06,DM_GIS_BDDS_v5.3
+Public Building,Educational,Kinder Garten,PB_01_07,DM_GIS_BDDS_v5.3
+Public Building,Security ,Police Station ,PB_02_01,DM_GIS_BDDS_v5.3
+Public Building,Security ,Police Check Point,PB_02_02,DM_GIS_BDDS_v5.3
+Public Building,Security ,Civil Defence Station ,PB_02_03,DM_GIS_BDDS_v5.3
+Public Building,Security ,Control Tower ,PB_02_04,DM_GIS_BDDS_v5.3
+Public Building,Security ,Control Point ,PB_02_05,DM_GIS_BDDS_v5.3
+Public Building,Religious,Awqat Mosque,PB_03_01,DM_GIS_BDDS_v5.3
+Public Building,Religious,Jumaa Mosque,PB_03_02,DM_GIS_BDDS_v5.3
+Public Building,Religious,Eid Musala,PB_03_03,DM_GIS_BDDS_v5.3
+Public Building,Religious,Houses Of Worship,PB_03_04,DM_GIS_BDDS_v5.3
+Public Building,Religious,Quraan Center,PB_03_05,DM_GIS_BDDS_v5.3
+Public Building,Religious,Graveyard,PB_03_06,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Cultural / Social  Center,PB_04_01,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Theatre,PB_04_02,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Cinema,PB_04_03,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Charity Institution ,PB_04_04,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Library ,PB_04_05,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Wedding Hall,PB_04_06,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Pwd Care Center/ Senior Home/Orphanege Home,PB_04_07,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Art Center,PB_04_08,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Museum,PB_04_09,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Majles,PB_04_10,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Sport Center,PB_04_11,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Clubs (Golf/Yacht/Equestrian…),PB_04_12,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,Health Club / Gym ,PB_04_13,DM_GIS_BDDS_v5.3
+Public Building,Culture And Social Recreation Services ,STAD (Stadium),PB_04_14,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Public Park,PB_05_01,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Community Park,PB_05_02,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Plaza,PB_05_03,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Zoo,PB_05_04,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Sports Activities ,PB_05_05,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Parking (Open Parking),PB_05_06,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Others (Coasts/ Landscape….),PB_05_07,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Lakes,PB_05_08,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Scout Camp,PB_05_09,DM_GIS_BDDS_v5.3
+Public Building,Open Areas,Walk Way,PB_05_10,DM_GIS_BDDS_v5.3
+Public Building,Government/Administrative Service,Institutional / Governmental Buildings,PB_06_01,DM_GIS_BDDS_v5.3
+Public Building,Government/Administrative Service,Post Office ,PB_06_02,DM_GIS_BDDS_v5.3
+Public Building,Government/Administrative Service,Courts,PB_06_03,DM_GIS_BDDS_v5.3
+Public Building,Government/Administrative Service,Consulate,PB_06_04,DM_GIS_BDDS_v5.3
+Public Building,Government/Administrative Service,Laboratory,PB_06_05,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Substation ,PB_07_01,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Central Cooling ,PB_07_02,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Gsm/Meet Me Room ,PB_07_03,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Pumping & Sewage Treatment Station,PB_07_04,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Petrol Station ,PB_07_05,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Communication Hub(Maqsam),PB_07_06,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Ambulance Services,PB_07_07,DM_GIS_BDDS_v5.3
+Public Building,Services/Utilities,Car Services,PB_07_08,DM_GIS_BDDS_v5.3
+Public Building,Others,Temporary Structures,PB_07_09,DM_GIS_BDDS_v5.3
+Public Building,Others,Metro Station,PB_08_01,DM_GIS_BDDS_v5.3
+Public Building,Others,Port,PB_08_02,DM_GIS_BDDS_v5.3
+Public Building,Others,Airport,PB_08_03,DM_GIS_BDDS_v5.3
+Public Building,Others,Data Center ,PB_08_04,BIM_Standards
+Public Building,Agricultural,NURSERY,PB_09_01,DM_GIS_BDDS_v5.3
+Public Building,Agricultural,PRIVATE FARMS,PB_09_02,DM_GIS_BDDS_v5.3
+Public Building,Agricultural,PRODUTION FARMS,PB_09_03,DM_GIS_BDDS_v5.3
+Public Building,Agricultural,HORSES STABLES,PB_09_04,DM_GIS_BDDS_v5.3
+Public Building,Agricultural,BARN,PB_09_05,DM_GIS_BDDS_v5.3

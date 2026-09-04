@@ -1,0 +1,57 @@
+Dubai Building Permit - Model Element/Level of Information Need Matrix,,,,,,,,
+,,ARC - Architectural,,G-LOD = Geometrical Information,,,,
+,,STR - Structural,,AN-LOD = Alphanumerical Information,,,,
+,,"MEP - Mechanical, Electrical, Plumbing",,Discipline = indicates relevant model file discipline for object/element,,,,
+,,,,Permit Phases - Level of Information Need,,,,
+,,,,Preliminary Permit,,Final Permit,,
+Model Element/Category,IFC Class,Discipline,BIM to GIS,G-LOD,AN-LOD,G-LOD2,AN-LOD2,Comments
+Air Terminals,IfcAirTerminal,MEP,NO,-,-,-,-,not required  as per DM MEP req.
+Boilers,IfcBoiler,MEP,,-,-,-,-,not required  as per DM MEP req.
+"Ceilings (false, suspended)",IfcCovering,ARC,,-,-,300,300,
+Curtain Walls/Façade,IfcCurtainWall,ARC,,200,200,300,300,
+Doors,IfcDoor,ARC,,200,200,300,300,
+Duct Fittings,IfcDuctFitting,MEP,,-,-,300,300,
+Ducting,IfcDuctSegment,MEP,,-,-,300,300,
+Electrical Boards,IfcElectricalDistributionBoard,MEP,,-,-,300,300,
+Elevator,IfcTransportElement,"ARC, MEP",,200,200,300,300,
+Escalator,IfcTransportElement,"ARC, MEP",,200,200,300,300,
+"Fans (exhaust, discharge grills)",IfcFan,MEP,,-,-,300,300,
+Floors (Finishes),IfcCovering,ARC,,-,-,300,300,
+Floors (Structural),IfcSlab,STR,,200,200,300,300,
+Furniture,IfcFurniture,ARC,,200*,200,300*,300,"*inclusion of furniture depends on builing usage eg. for hospital/health care centers, beds are required."
+Garbage Bins,IfcWasteTerminal,"ARC, MEP",,200,200,300,300,
+Grids,IfcGrid,"ARC, STR, MEP",,100,100,100,100,Grids/gridlines do not require further development than LOD 100.
+Levels,IfcBuildingStorey,"ARC, STR, MEP",,100,100,100,100,Levels/building storeys do not require further development than LOD 100.
+Lighting Fixture,IfcLightFixture,"ARC, MEP",,-,-,300,300,
+Lights (Lamp/Bulb),IfcLamp,"ARC, MEP",,-,-,300,300,
+Parking Spaces,IfcSpace,ARC,,-,-,300,300,
+Pergola,IfcFurniture,ARC,,-,-,300,300,
+Pipe Fittings,IfcPipeFitting,MEP,,-,-,300,300,Chilled water system only.
+Pipe Valves,IfcValve,MEP,,-,-,300,300,Chilled water system only.
+Pipes,IfcPipeSegment,MEP,,-,-,300,300,Chilled water system only.
+Piping Valves,IfcValve,MEP,,-,-,300,300,Chilled water system only.
+Pumps,IfcPump,MEP,,200,200,300,300,
+Railings,IfcRailings,ARC,,200,200,300,300,
+Ramps,"IfcRamp, IfcRampFlight",ARC,,200,200,300,300,Instances where IfcRamp and IfcRampFlight should be used are described in the BIM E-Submission modeling guidelines
+Roads,"IfcCivilElement, IfcSlab (IFC2x3)",ARC,,200,200,300,300,
+Roofs,IfcRoof,ARC,,200,200,300,300,
+Rooms,IfcSpace,ARC,,200*,200,300,300,*in mosques (ablution) and labor accomation only
+Sidewalks/Footpaths,"IfcCivilElement, IfcSlab (IFC2x3)",ARC,,-,-,-,-,
+Sinks,IfcSanitaryTerminal,MEP,,-,-,-,-,
+Smoke Detectors,IfcSensor,MEP,,200,200,300,300,not required  as per DM MEP req.
+Space Heaters,IfcSpaceHeater,MEP,,-,-,-,-,not required  as per DM MEP req.
+Spaces ,IfcSpace,MEP,,200,200,300,300,
+Sprinklers,IfcFireSuppressionTerminal,MEP,,-,-,300,300,
+Shading Device,IfcShadingDevice,ARC,,-,-,300,300,
+Stairs,"IfcStair, IfcStairFlight",ARC,,-,-,300,300,Instances where IfcStair and IfcStairFlight should be used are described in the BIM E-Submission modeling guidelines
+Structural Beams,IfcBeam,STR,,-,-,300,300,
+Structural Columns,IfcColumn,STR,,-,-,300,300,
+Structural Foundations,IfcFooting,STR,,-,-,300,300,
+Structural Framing,IfcBeam,STR,,-,-,300,300,
+Structural Piles,IfcPile,STR,,-,-,300,300,
+Toilet,IfcSanitaryTerminal,MEP,,-,-,300,300,
+Topography,IfcSite,ARC,,200,200,300,300,
+Transformers,IfcTranformer,MEP,,200,200,300,300,
+Walls,IfcWall,ARC,,-,-,300,300,
+Water Tanks,IfcTank,MEP,,200,200,300,300,
+Windows,IfcWindow,ARC,,-,-,300,300,

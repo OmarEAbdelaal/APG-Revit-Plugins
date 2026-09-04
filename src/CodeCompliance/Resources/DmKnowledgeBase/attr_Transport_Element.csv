@@ -1,0 +1,10 @@
+Transport Element (IfcTransportElement),,,,,,,,"Predefined Type, IFC 4",object type override data samples,
+"An IfcTransportElement is a generalization of all transport related objects that move people, animals or goods within a building or building complex. ",,,,,,,,"ELEVATOR, ESCALATOR, MOVINGWALKWAY, CRANEWAY, LIFTINGGEAR
+","PASSENGER, SERVICE, FIRE",
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,-,"Holds the entity specific enumerations from the IFC standard that classifies the entity. If a custom value is needed, the attribute ObjectTypeOverride has to be used to define such custom type, whereas the PredefinedType is set to USERDEFINED.",YES,Text,ESCALATORS,-,Required,-,
+Status,Status,Pset_TransportElementCommon,IFC Standard Property.,YES,Text,"New, Existing",-,Required,-,
+CapacityPeople,CapacityPeople,Pset_TransportElementCommon,IFC Standard Property.,YES,Number,200,-,Required,-,
+CapacityWeight,CapacityWeight,Pset_TransportElementCommon,IFC Standard Property.,YES,Number( unit in KG),20000,-,Required,-,
+FireExit,FireExit,Pset_TransportElementCommon/Building Permit,IFC Standard Property.,YES,Boolean,YES/NO,-,Required,-,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,"Allows for a custom value to be added, if no applicable PredefinedType enumerator can be found.",YES,Text,,-,Required,-,

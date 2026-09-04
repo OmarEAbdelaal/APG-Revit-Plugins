@@ -1,0 +1,13 @@
+Unit Extra Info,,
+Name,Desc.,Data Type
+IsAreaLessThan150,Area less than 150 ,Boolean (Y/N)
+Persons,no. of Persons,int
+WCs,No. of WC,int
+Showers,No. of Showers,int
+Sinks,No. of Sinks,int
+Cars,No. of Cars,int
+Buses,No. of Buses,int
+Bicycles,No. of Bicycles,int
+Seats,no. of Seats,int
+Ablutions,no. of Ablutions,int
+Bedrooms,no. of Bedrooms,int
