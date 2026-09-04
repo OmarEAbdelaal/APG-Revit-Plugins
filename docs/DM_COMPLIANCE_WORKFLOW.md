@@ -85,37 +85,74 @@ Click **DM Compliance**. The audit runs immediately and the dashboard shows:
 |---|---|
 | **Select in model** | Selects the affected elements in Revit, so Revit's own properties palette and filters work on them. |
 | **Highlight in 3D section box** | Creates (or reuses) the 3D view **CC - DM Compliance 3D**, fits its section box around the affected elements with a 1.5 m margin, colours them red and selects them. The view opens when you close the dashboard. |
-| **Copy prompt** | Copies the fix prompt for the selected finding. |
+| **Copy prompt** | Copies the fix prompt for the selected finding — DM data and the runnable script included. |
+| **Copy script only** | Copies just the C# that the prompt asks Claude to send with `send_code_to_revit`. |
 | **Copy fix-all prompt** | Copies one prompt that walks Claude through every finding, worst first. |
-| **Export report** | Writes the HTML dashboard, the CSV and the prompt file (see §4) and opens the HTML. |
-| **DM rule data** | Writes the DM data files to `Documents\CodeCompliance\DMKnowledgeBase` so they can be updated (see §5). |
+| **Bind DM parameters** | Creates the DM shared parameters from the plugin's own data and binds them to the categories that need them — no DM file required (see §3). |
+| **Export report** | Writes the HTML dashboard, the CSV and the prompt file (see §5) and opens the HTML. |
+| **DM rule data** | Writes the DM data files to `Documents\CodeCompliance\DMKnowledgeBase` so they can be updated (see §6). |
 | **Clear highlight** | Removes the red overrides from the compliance view. |
 
 ---
 
-## 3. Fixing findings with Claude (Revit MCP)
+## 3. The DM parameters — nothing to download or upload
 
-Every finding carries a prompt that names the model, the finding, the DM rule, the exact
-change, the affected element ids, and how the value should be derived (for example: read
-`IsExternal` from the wall function, take `FireRating` from the type, map room names to
-Appendix C space usage codes). The prompt also tells Claude what it must **not** do: no
-geometry changes, one transaction per finding, ask instead of guessing.
+The tool carries Dubai Municipality's data itself. It knows all 250 DM shared parameters
+with their data types, so it **writes the Revit shared parameter file** rather than asking
+for DM's file:
+
+`Documents\CodeCompliance\DMKnowledgeBase\DM_SharedParameters.txt`
+
+It is (re)written every time the audit runs. GUIDs are derived from the parameter name, so
+the same parameter always gets the same GUID on every machine and every run. If your office
+already works with DM's official shared parameter file, load that one first — existing
+definitions with the same name are reused and only the missing ones are created from here.
+
+**Bind DM parameters** in the dashboard creates every attribute the audit needs and binds
+it, as an instance parameter, to exactly the categories that need it (walls, doors, rooms,
+levels, project information …) in a single transaction. That clears the "attribute not
+bound" findings without leaving Revit. The same operation is available as a script inside
+the prompts, so Claude can do it over the MCP link instead.
+
+---
+
+## 4. Fixing findings with Claude (Revit MCP)
+
+Each finding's prompt is self-contained. It carries:
+
+- the finding, the DM clause behind it and the affected element ids;
+- **the DM data the fix needs** — the attribute's data type, property set and sample value,
+  the IFC4 `PredefinedType` and `ObjectTypeOverride` enumerations for that element class,
+  the Appendix C vocabularies (zones, unit usages, building occupancies), and the level,
+  object and file naming tables. For space usage codes it carries a **proposed mapping for
+  the room names actually found in this model**;
+- **a ready-to-run C# script** for the revit-mcp tool `send_code_to_revit`, written for that
+  host: C# 5, no transaction of its own (the host opens one), `document` in scope, and it
+  returns a summary of what it changed.
+
+Where the value can be read from the model, the script derives it instead of asking:
+`IsExternal` from the wall function (or the host wall for doors and windows), `FireRating`
+from the element type, `LoadBearing` from the structural flag and category, `IfcMaterial`
+from the material, `Status` from the phase, `SpaceUsageDescription` from the code on the
+same room. Anything that cannot be derived is reported back as skipped, with the elements
+listed, instead of being guessed.
 
 Workflow:
 
 1. **APG Revit Plugins ▸ Revit MCP ▸ MCP Server** — start the server (see
    [docs/REVIT_MCP.md](REVIT_MCP.md) for the one-time setup).
 2. In the dashboard, select a finding and click **Copy prompt**.
-3. Paste it into Claude Desktop (or Claude Code) and let it read the elements first.
-4. Confirm the table Claude proposes, let it write the values, then click **Run audit**
-   again in the dashboard to see the finding disappear.
+3. Paste it into Claude Desktop (or Claude Code). Claude sends the script to Revit and
+   reports what it changed.
+4. Click **Run audit** again to see the finding disappear.
 
-Start with the critical findings: binding the DM shared parameters, the gate level, the
-geo-referencing and the usage codes unblock most of the other checks.
+Start with the binding findings (or press **Bind DM parameters**): once the attributes exist
+on the categories, every value fix can run. Then the gate level, the geo-referencing and the
+usage codes unblock most of what is left.
 
 ---
 
-## 4. Report files
+## 5. Report files
 
 Written to `Documents\CodeCompliance`:
 
@@ -127,7 +164,7 @@ Written to `Documents\CodeCompliance`:
 
 ---
 
-## 5. Keeping the rules current
+## 6. Keeping the rules current
 
 Dubai Municipality revises the standard every one to three months (the shipped data is
 version **1.4**, last DM change 2026-06-08). Click **DM rule data** in the dashboard: the
@@ -137,7 +174,7 @@ files — no new plugin build.
 
 ---
 
-## 6. What the audit cannot see
+## 7. What the audit cannot see
 
 - Compliance is finally assessed on the **exported IFC**, not on the Revit file. The audit
   anticipates the exporter, it does not replace a check of the exported file in a viewer.
@@ -147,3 +184,5 @@ files — no new plugin build.
   single Revit session.
 - MEP element attributes are not checked: DM currently mandates only the architectural and
   structural models for submission.
+- Project settings (units, coordinates, the IFC export setup) are changed in the Revit user
+  interface, not by a script — those findings say so instead of shipping one.
