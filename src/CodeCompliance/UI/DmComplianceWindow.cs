@@ -13,6 +13,7 @@ using System.Windows.Media;
 using Autodesk.Revit.UI;
 using CodeCompliance.Core.Dm;
 using CodeCompliance.Reporting;
+using ComboBox = System.Windows.Controls.ComboBox;
 using TextBox = System.Windows.Controls.TextBox;
 
 namespace CodeCompliance.UI

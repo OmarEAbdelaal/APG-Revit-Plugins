@@ -351,15 +351,15 @@ namespace CodeCompliance.Core.Dm
             if (string.IsNullOrWhiteSpace(json))
                 return;
             var obj = JObject.Parse(json);
-            foreach (KeyValuePair<string, JToken?> pair in obj)
+            foreach (JProperty property in obj.Properties())
             {
                 var classes = new List<string>();
-                if (pair.Value is JArray array)
+                if (property.Value is JArray array)
                 {
                     foreach (JToken value in array)
                         classes.Add(((string?)value ?? "").Trim());
                 }
-                _categoryToIfc[pair.Key] = classes;
+                _categoryToIfc[property.Name] = classes;
             }
         }
 
