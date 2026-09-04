@@ -380,6 +380,12 @@ namespace CodeCompliance.UI
             copy.Click += (_, _) => CopyPrompt();
             buttons.Children.Add(copy);
 
+            Button copyScript = ApgTheme.SecondaryButton("Copy script only");
+            copyScript.Margin = new Thickness(0, 0, 8, 0);
+            copyScript.ToolTip = "The C# the prompt asks Claude to send with send_code_to_revit.";
+            copyScript.Click += (_, _) => CopyScript();
+            buttons.Children.Add(copyScript);
+
             Button copyAll = ApgTheme.SecondaryButton("Copy fix-all prompt");
             copyAll.Margin = new Thickness(0, 0, 8, 0);
             copyAll.Click += (_, _) => CopyAllPrompts();
@@ -403,6 +409,13 @@ namespace CodeCompliance.UI
             panel.Children.Add(close);
 
             var left = new WrapPanel();
+
+            Button bind = ApgTheme.SecondaryButton("Bind DM parameters");
+            bind.Margin = new Thickness(0, 0, 8, 0);
+            bind.ToolTip = "Create the Dubai Municipality shared parameters from the data shipped with the " +
+                           "plugin and bind them to the categories that need them. No DM file needed.";
+            bind.Click += (_, _) => BindParameters();
+            left.Children.Add(bind);
 
             Button report = ApgTheme.SecondaryButton("Export report");
             report.Margin = new Thickness(0, 0, 8, 0);
@@ -618,6 +631,61 @@ namespace CodeCompliance.UI
             if (finding == null)
                 return;
             Copy(finding.McpPrompt, "Prompt copied. Paste it into Claude with the Revit MCP server running.");
+        }
+
+        private void CopyScript()
+        {
+            DmFinding? finding = Selected;
+            if (finding == null)
+                return;
+            if (finding.FixScript.Length == 0)
+            {
+                Say("This finding is not fixed by a script — the prompt explains what to do instead.");
+                return;
+            }
+            Copy(finding.FixScript,
+                 "Script copied. Send it to Revit with the revit-mcp tool send_code_to_revit.");
+        }
+
+        /// <summary>
+        /// Creates the DM shared parameters from the plugin's own data and binds them to the
+        /// categories the audit needs them on, then re-runs the audit.
+        /// </summary>
+        private void BindParameters()
+        {
+            UIDocument? uiDoc = _uiApp.ActiveUIDocument;
+            if (uiDoc?.Document == null)
+            {
+                Say("Open a Revit model first.");
+                return;
+            }
+
+            Cursor = Cursors.Wait;
+            try
+            {
+                var stage = _stage.SelectedIndex == 1 ? DmPermitStage.Preliminary : DmPermitStage.Final;
+                var bindings = DmSharedParameters.RequiredBindings(stage, _conditional.IsChecked == true);
+
+                DmBindResult bind;
+                using (var transaction = new Autodesk.Revit.DB.Transaction(
+                           uiDoc.Document, "DM compliance – bind DM shared parameters"))
+                {
+                    transaction.Start();
+                    bind = DmSharedParameters.Bind(uiDoc.Document, bindings);
+                    transaction.Commit();
+                }
+
+                Say(bind.Summary + " Parameter file: " + bind.FilePath);
+                RunAudit();
+            }
+            catch (Exception ex)
+            {
+                Say("Could not bind the DM parameters: " + ex.Message);
+            }
+            finally
+            {
+                Cursor = Cursors.Arrow;
+            }
         }
 
         private void CopyAllPrompts()

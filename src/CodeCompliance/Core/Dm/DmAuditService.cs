@@ -58,6 +58,17 @@ namespace CodeCompliance.Core.Dm
                 KnowledgeBaseSource = DmKnowledgeBase.Source
             };
 
+            // Write the DM shared parameter file up front: the fix scripts in the prompts point
+            // at it, so the definitions are on disk before anyone runs one.
+            try
+            {
+                DmSharedParameters.WriteFile();
+            }
+            catch
+            {
+                // a read-only Documents folder must not stop the audit
+            }
+
             var parameters = new DmParameters(doc);
 
             CheckProjectInformation(doc, result, parameters, options);
@@ -166,7 +177,7 @@ namespace CodeCompliance.Core.Dm
 
             if (notBound.Count > 0)
             {
-                Add(result, new DmFinding
+                var binding = new DmFinding
                 {
                     Group = DmCheckGroup.ProjectInformation,
                     Severity = DmSeverity.Critical,
@@ -178,12 +189,16 @@ namespace CodeCompliance.Core.Dm
                              (notBound.Count > 30 ? " …" : "") + ".",
                     Reference = "Dubai BIM e-Submission shared parameter file, Appendix B",
                     FixKind = DmFixKind.BindParameter,
-                    FixAction = "Manage ▸ Shared Parameters: load \"DUBAI BIM e-Submission_Shared " +
-                                "Parameters.txt\", then Manage ▸ Project Parameters and bind the listed " +
-                                "attributes to the Project Information category as instance parameters.",
+                    FixAction = "Bind the listed DM attributes to the Project Information category. " +
+                                "The plugin ships the definitions: click \"Bind DM parameters\" in the " +
+                                "dashboard, or run the script in the prompt.",
                     CheckedCount = attributes.Count,
-                    AffectedCount = notBound.Count
-                }, result.ModelTitle);
+                    AffectedCount = notBound.Count,
+                    Table = "Project"
+                };
+                binding.ParametersToBind.AddRange(notBound);
+                binding.Categories.Add(BuiltInCategory.OST_ProjectInformation.ToString());
+                Add(result, binding, result.ModelTitle);
             }
 
             foreach (DmAttribute attribute in empty)
@@ -207,8 +222,9 @@ namespace CodeCompliance.Core.Dm
                     FixAction = "Enter a value for \"" + attribute.Name + "\" in Manage ▸ Project Information" +
                                 (attribute.Sample.Length > 0 ? " (DM sample: " + attribute.Sample + ")" : "") + ".",
                     CheckedCount = 1,
-                    AffectedCount = 1
-                }, result.ModelTitle);
+                    AffectedCount = 1,
+                    Table = "Project"
+                }, result.ModelTitle, new List<Element> { info }, options);
             }
 
             // BIMStandardVersion must name the standard the model was prepared against.
@@ -327,7 +343,8 @@ namespace CodeCompliance.Core.Dm
                     FixAction = "Rename the levels to ABBREVIATION_IDENTIFICATION in uppercase and keep the " +
                                 "same names in the structural model.",
                     CheckedCount = buildingStoreys.Count,
-                    AffectedCount = badNames.Count
+                    AffectedCount = badNames.Count,
+                    ReferenceData = DmReferenceData.LevelNaming()
                 }, result.ModelTitle, badNames, options);
             }
 
@@ -437,7 +454,7 @@ namespace CodeCompliance.Core.Dm
                 if (missing.Count == 0)
                     continue;
 
-                Add(result, new DmFinding
+                var storeyFinding = new DmFinding
                 {
                     Group = DmCheckGroup.Levels,
                     Severity = anyBound ? DmSeverity.Error : DmSeverity.Critical,
@@ -455,10 +472,16 @@ namespace CodeCompliance.Core.Dm
                         ? "Fill \"" + attribute.Name + "\" on each building storey with the area from the " +
                           "submitted area statement (m²)."
                         : "Bind the DM shared parameter \"" + attribute.Name + "\" to the Levels category, " +
-                          "then fill it per storey.",
+                          "then fill it per storey. The plugin ships the definition — use \"Bind DM " +
+                          "parameters\" in the dashboard or the script in the prompt.",
                     CheckedCount = buildingStoreys.Count,
-                    AffectedCount = missing.Count
-                }, result.ModelTitle, missing, options);
+                    AffectedCount = missing.Count,
+                    Table = "Storey"
+                };
+                storeyFinding.Categories.Add(BuiltInCategory.OST_Levels.ToString());
+                if (!anyBound)
+                    storeyFinding.ParametersToBind.Add(attribute.Name);
+                Add(result, storeyFinding, result.ModelTitle, missing, options);
             }
 
             Summarize(result, DmCheckGroup.Levels, "Level naming, gate level and storey attributes",
@@ -657,7 +680,8 @@ namespace CodeCompliance.Core.Dm
                         FixAction = "Name the exported IFC (and ideally the Revit file) per the convention and " +
                                     "keep the PA field identical to the ParcelId attribute.",
                         CheckedCount = 1,
-                        AffectedCount = 1
+                        AffectedCount = 1,
+                        ReferenceData = DmReferenceData.FileNaming()
                     }, result.ModelTitle);
                 }
                 else
@@ -864,6 +888,14 @@ namespace CodeCompliance.Core.Dm
                 if (finding.AffectedCount == 0)
                     finding.AffectedCount = elements.Count;
             }
+
+            if (finding.ReferenceData.Length == 0)
+                finding.ReferenceData = DmReferenceData.ForAttribute(finding.ParameterName, finding.Table);
+            if (result.SpaceUsageSuggestions.Length > 0 &&
+                (finding.ParameterName == "SpaceUsageCode" || finding.ParameterName == "SpaceUsageDescription"))
+                finding.ReferenceData = result.SpaceUsageSuggestions + "\n" + finding.ReferenceData;
+            if (finding.FixScript.Length == 0)
+                finding.FixScript = DmScriptBuilder.ForFinding(finding);
 
             finding.McpPrompt = DmPromptBuilder.ForFinding(finding, modelTitle);
             result.Findings.Add(finding);

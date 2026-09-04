@@ -48,7 +48,7 @@ namespace CodeCompliance.Core.Dm
             { "BIMStandardVersion", "The Dubai BIM Standard version the model is prepared against — currently " + DmKnowledgeBase.StandardVersion + "." }
         };
 
-        /// <summary>Prompt that fixes one finding.</summary>
+        /// <summary>Prompt that fixes one finding, data and script included.</summary>
         public static string ForFinding(DmFinding finding, string modelTitle)
         {
             var sb = new StringBuilder();
@@ -67,15 +67,21 @@ namespace CodeCompliance.Core.Dm
             sb.AppendLine(finding.FixAction);
             if (finding.ParameterName.Length > 0)
             {
-                sb.AppendLine("Parameter: " + finding.ParameterName +
+                sb.AppendLine("Attribute: " + finding.ParameterName +
                               (finding.SampleValue.Length > 0 ? "   ·   DM data sample: " + finding.SampleValue : ""));
                 string hint = Hint(finding.ParameterName);
                 if (hint.Length > 0)
-                {
                     sb.AppendLine("How to derive the value: " + hint);
-                }
             }
             sb.AppendLine();
+
+            if (finding.ReferenceData.Length > 0)
+            {
+                sb.AppendLine("Dubai Municipality data for this fix — it is all here, nothing to download, " +
+                              "look up or upload");
+                sb.AppendLine(finding.ReferenceData.TrimEnd());
+                sb.AppendLine();
+            }
 
             if (finding.HasElements)
             {
@@ -85,17 +91,36 @@ namespace CodeCompliance.Core.Dm
                 sb.AppendLine();
             }
 
-            sb.AppendLine("How to work");
-            sb.AppendLine("1. Use the revit-mcp connection to the model that is already open in Revit " +
-                          "(APG Revit Plugins ▸ Revit MCP ▸ MCP Server must be running).");
-            sb.AppendLine("2. Read the current state of the listed elements before changing anything and " +
-                          "show me a table of what you intend to write.");
-            sb.AppendLine("3. Apply the change in a single transaction named \"DM compliance – " +
-                          Compact(finding.Title) + "\" so I can undo it in one step.");
-            sb.AppendLine("4. Do not move, delete or re-host geometry, and do not touch elements outside the list.");
-            sb.AppendLine("5. When a value cannot be derived from the model, list those elements and ask me " +
-                          "instead of writing a guess.");
-            sb.AppendLine("6. Finish with a short report: how many elements were changed, which were skipped and why.");
+            if (finding.FixScript.Length > 0)
+            {
+                sb.AppendLine("Do this now");
+                sb.AppendLine("1. Send the script below to Revit with the revit-mcp tool " +
+                              "send_code_to_revit (parameter \"code\"). It is written for that host: C# 5, " +
+                              "no transaction of its own, Document available as \"document\", returns a summary.");
+                sb.AppendLine("2. Report the summary it returns.");
+                sb.AppendLine("3. If it reports skipped elements because a value could not be derived, list " +
+                              "those elements and ask me for the value — only for those, do not guess.");
+                sb.AppendLine("4. Change nothing beyond this finding: no geometry, no deletions, no elements " +
+                              "outside the id list.");
+                sb.AppendLine();
+                sb.AppendLine("----- script for send_code_to_revit -----");
+                sb.AppendLine(finding.FixScript.TrimEnd());
+                sb.AppendLine("----- end of script -----");
+                sb.AppendLine();
+                sb.AppendLine("For a handful of elements the modify_element tool does the same job: pass the " +
+                              "element ids with the parameter name \"" + finding.ParameterName + "\" and its value.");
+            }
+            else
+            {
+                sb.AppendLine("Do this now");
+                sb.AppendLine("1. Read the current state through revit-mcp before changing anything.");
+                sb.AppendLine("2. This fix is not a parameter write: apply it in Revit as described above " +
+                              (finding.FixKind == DmFixKind.ProjectSetup
+                                  ? "(a project setting — it has to be done in the Revit user interface)."
+                                  : "(a model change — confirm the approach with me before touching geometry)."));
+                sb.AppendLine("3. Tell me exactly what you changed, or what you need from me to proceed.");
+            }
+
             return sb.ToString();
         }
 
@@ -115,8 +140,10 @@ namespace CodeCompliance.Core.Dm
                           result.Count(DmSeverity.Warning) + " warnings, over " +
                           result.AffectedElements + " elements.");
             sb.AppendLine();
-            sb.AppendLine("Work through them in this order, one finding at a time, and stop after each one " +
-                          "for my confirmation before writing to the model:");
+            sb.AppendLine("Every finding below has its own prompt in the dashboard (and in the exported " +
+                          "prompt file) carrying the DM data and a ready send_code_to_revit script, so no " +
+                          "DM file has to be downloaded or uploaded. Work through them in this order, " +
+                          "worst first, applying each fix and reporting the result before moving on:");
             sb.AppendLine();
 
             int index = 1;
@@ -136,7 +163,8 @@ namespace CodeCompliance.Core.Dm
             sb.AppendLine();
             sb.AppendLine("Rules: never change geometry, never delete elements without asking, one Revit " +
                           "transaction per finding, and report what you changed after each step. Values you " +
-                          "cannot derive from the model must be asked, not guessed.");
+                          "cannot derive from the model must be asked, not guessed. Start with the binding " +
+                          "findings: once the DM attributes exist on the categories, the value fixes can run.");
             return sb.ToString();
         }
 

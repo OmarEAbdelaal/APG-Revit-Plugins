@@ -106,6 +106,8 @@ namespace CodeCompliance.Core.Dm
         private static Dictionary<string, DmUsageCode> _buildingUsage = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
         private static Dictionary<string, DmUsageCode> _zoneObjectTypes = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
         private static List<string> _unitExtraInfoKeys = new List<string>();
+        private static Dictionary<string, string> _predefinedTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, string> _objectTypeOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static string _source = "embedded";
 
         /// <summary>Folder the user can drop updated DM data files into (they override the embedded ones).</summary>
@@ -238,6 +240,8 @@ namespace CodeCompliance.Core.Dm
             _buildingUsage = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
             _zoneObjectTypes = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
             _unitExtraInfoKeys = new List<string>();
+            _predefinedTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _objectTypeOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _source = Directory.Exists(OverrideFolder) ? OverrideFolder : "embedded";
 
             LoadIdsRules(ReadFile("ids_rules.json"));
@@ -255,9 +259,11 @@ namespace CodeCompliance.Core.Dm
                     !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                     continue;
                 string table = file.Substring("attr_".Length, file.Length - "attr_".Length - ".csv".Length);
-                List<DmAttribute> attributes = ParseAttributeTable(ReadFile(file));
+                string csv = ReadFile(file);
+                List<DmAttribute> attributes = ParseAttributeTable(csv);
                 if (attributes.Count > 0)
                     _attributes[table] = attributes;
+                ParseEnumerations(table, csv);
             }
         }
 
@@ -437,6 +443,36 @@ namespace CodeCompliance.Core.Dm
                 case "Fire Compartment": return "Compartmentation";
                 case "GlazedAreaFraction": return "GlazingAreaFraction";
                 default: return attribute;
+            }
+        }
+
+        /// <summary>
+        /// The title rows of an Appendix B table carry the IFC4 PredefinedType list and DM's
+        /// ObjectTypeOverride samples in the two right-hand columns.
+        /// </summary>
+        private static void ParseEnumerations(string table, string csv)
+        {
+            List<List<string>> rows = DmCsv.Parse(csv);
+            int header = rows.FindIndex(r => r.Count > 0 &&
+                                             string.Equals(r[0].Trim(), "Attribute", StringComparison.OrdinalIgnoreCase));
+            if (header <= 0)
+                return;
+
+            for (int i = 0; i < header; i++)
+            {
+                List<string> row = rows[i];
+                int column = row.FindIndex(c => c.IndexOf("Predefined Type", StringComparison.OrdinalIgnoreCase) >= 0);
+                if (column < 0 || i + 1 >= header)
+                    continue;
+
+                List<string> values = rows[i + 1];
+                string predefined = DmCsv.Cell(values, column);
+                if (predefined.Length > 0)
+                    _predefinedTypes[table] = predefined;
+                string overrides = DmCsv.Cell(values, column + 1);
+                if (overrides.Length > 0)
+                    _objectTypeOverrides[table] = overrides;
+                return;
             }
         }
 

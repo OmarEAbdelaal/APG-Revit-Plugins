@@ -81,6 +81,10 @@ namespace CodeCompliance.Core.Dm
         /// <summary>Example value from the DM standard (Appendix B "Data Sample").</summary>
         public string SampleValue { get; set; } = "";
 
+        /// <summary>Appendix B table the finding comes from, e.g. "Wall" — used to look up
+        /// the allowed values and the data type of the attribute.</summary>
+        public string Table { get; set; } = "";
+
         /// <summary>Revit element ids the finding applies to (may be empty for project-level findings).</summary>
         public List<long> ElementIds { get; } = new List<long>();
 
@@ -92,6 +96,30 @@ namespace CodeCompliance.Core.Dm
 
         /// <summary>How many elements of the scope were examined.</summary>
         public int CheckedCount { get; set; }
+
+        /// <summary>
+        /// DM attributes this finding asks to be created and bound (fix kind
+        /// <see cref="DmFixKind.BindParameter"/>).
+        /// </summary>
+        public List<string> ParametersToBind { get; } = new List<string>();
+
+        /// <summary>
+        /// Revit categories the finding applies to, as BuiltInCategory names — used to bind
+        /// parameters and to write the fix script.
+        /// </summary>
+        public List<string> Categories { get; } = new List<string>();
+
+        /// <summary>
+        /// DM data the fix needs and the tool already carries: allowed values, code lists,
+        /// naming tables. Shown in the prompt so nothing has to be looked up or uploaded.
+        /// </summary>
+        public string ReferenceData { get; set; } = "";
+
+        /// <summary>
+        /// C# that fixes the finding through the revit-mcp tool send_code_to_revit, or "" when
+        /// the fix is not scriptable (a project setting, a decision to make).
+        /// </summary>
+        public string FixScript { get; set; } = "";
 
         /// <summary>Prompt to paste into Claude with the Revit MCP connector running.</summary>
         public string McpPrompt { get; set; } = "";
@@ -168,6 +196,12 @@ namespace CodeCompliance.Core.Dm
         public DateTime RunAt { get; set; } = DateTime.Now;
         public string RevitVersion { get; set; } = "";
         public string KnowledgeBaseSource { get; set; } = "";
+
+        /// <summary>
+        /// Room name to Appendix C space usage code proposals for the rooms of this model,
+        /// carried into the prompts so the mapping never has to be looked up by hand.
+        /// </summary>
+        public string SpaceUsageSuggestions { get; set; } = "";
 
         public List<DmFinding> Findings { get; } = new List<DmFinding>();
         public List<DmCheckSummary> Checks { get; } = new List<DmCheckSummary>();

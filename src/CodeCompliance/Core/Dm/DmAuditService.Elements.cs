@@ -157,6 +157,7 @@ namespace CodeCompliance.Core.Dm
                     Reference = "Dubai BIM Standard — space numbering per storey",
                     FixKind = DmFixKind.Rename,
                     FixAction = "Renumber the listed rooms to <LEVEL>-<3 digits> matching their storey.",
+                    ReferenceData = DmReferenceData.LevelNaming(),
                     CheckedCount = placed.Count,
                     AffectedCount = badNumbers.Count
                 }, result.ModelTitle, badNumbers, options);
@@ -179,6 +180,11 @@ namespace CodeCompliance.Core.Dm
                     AffectedCount = missingNames.Count
                 }, result.ModelTitle, missingNames, options);
             }
+
+            // The room names of this model, mapped to Appendix C codes, so the fix prompts can
+            // carry a ready proposal instead of the whole vocabulary.
+            result.SpaceUsageSuggestions = DmUsageMatcher.SuggestionTable(
+                placed.Select(r => r is Autodesk.Revit.DB.Architecture.Room room ? RoomName(room) : ""));
 
             // Appendix B and IDS attributes for IfcSpace.
             var attributes = new List<DmAttribute>();
@@ -203,7 +209,8 @@ namespace CodeCompliance.Core.Dm
             }
 
             CheckAttributeSet(result, parameters, options, DmCheckGroup.SpacesAndUnits, "Rooms",
-                              "Room (IfcSpace)", placed, attributes);
+                              "Room (IfcSpace)", placed, attributes, "Room_Spaces",
+                              new[] { BuiltInCategory.OST_Rooms });
 
             // Parking spaces carry three extra attributes.
             var parkingRooms = placed.Where(r => IsParkingRoom(r, parameters)).ToList();
@@ -219,7 +226,8 @@ namespace CodeCompliance.Core.Dm
                         Description = "Whether the parking space has a wheel stop.", Sample = "YES" }
                 };
                 CheckAttributeSet(result, parameters, options, DmCheckGroup.SpacesAndUnits, "Parking spaces",
-                                  "Parking (IfcSpace)", parkingRooms, parkingAttributes);
+                                  "Parking (IfcSpace)", parkingRooms, parkingAttributes, "Parking_Spaces",
+                                  new[] { BuiltInCategory.OST_Rooms, BuiltInCategory.OST_Parking });
             }
 
             List<Element> parkingElements = new FilteredElementCollector(doc)
@@ -482,7 +490,7 @@ namespace CodeCompliance.Core.Dm
 
                 CheckAttributeSet(result, parameters, options, DmCheckGroup.ElementAttributes, rule.Display,
                                   rule.Display + " (" + rule.IfcEntity + ", " + rule.Discipline + " model)",
-                                  elements, attributes);
+                                  elements, attributes, rule.Table, rule.Categories);
                 CheckIfcMapping(result, doc, options, rule, elements);
             }
 
@@ -497,7 +505,8 @@ namespace CodeCompliance.Core.Dm
         /// </summary>
         private static void CheckAttributeSet(DmAuditResult result, DmParameters parameters, DmAuditOptions options,
                                               DmCheckGroup group, string scope, string reference,
-                                              List<Element> elements, List<DmAttribute> attributes)
+                                              List<Element> elements, List<DmAttribute> attributes,
+                                              string table, BuiltInCategory[] categories)
         {
             if (elements.Count == 0 || attributes.Count == 0)
                 return;
@@ -539,7 +548,7 @@ namespace CodeCompliance.Core.Dm
 
                 if (missing.Count > 0)
                 {
-                    Add(result, new DmFinding
+                    var finding = new DmFinding
                     {
                         Group = group,
                         Severity = notBound > 0 ? DmSeverity.Critical : DmSeverity.Error,
@@ -565,8 +574,13 @@ namespace CodeCompliance.Core.Dm
                             : "Fill \"" + attribute.Name + "\" on the listed elements" +
                               (attribute.Sample.Length > 0 ? " (DM sample: " + attribute.Sample + ")" : "") + ".",
                         CheckedCount = elements.Count,
-                        AffectedCount = missing.Count
-                    }, result.ModelTitle, missing, options);
+                        AffectedCount = missing.Count,
+                        Table = table
+                    };
+                    finding.Categories.AddRange(categories.Select(c => c.ToString()));
+                    if (notBound > 0)
+                        finding.ParametersToBind.Add(attribute.Name);
+                    Add(result, finding, result.ModelTitle, missing, options);
                 }
                 else if (yesNoCount == elements.Count && yesCount == 0 && elements.Count > 3)
                 {
@@ -585,14 +599,15 @@ namespace CodeCompliance.Core.Dm
                         SampleValue = attribute.Sample,
                         FixAction = "Confirm the value of \"" + attribute.Name + "\" and set Yes where it applies.",
                         CheckedCount = elements.Count,
-                        AffectedCount = elements.Count
+                        AffectedCount = elements.Count,
+                        Table = table
                     }, result.ModelTitle, elements, options);
                 }
             }
 
             if (unbound.Count > 0)
             {
-                Add(result, new DmFinding
+                var binding = new DmFinding
                 {
                     Group = group,
                     Severity = DmSeverity.Critical,
@@ -604,12 +619,16 @@ namespace CodeCompliance.Core.Dm
                              ". Without the parameter the attribute cannot be exported at all.",
                     Reference = reference,
                     FixKind = DmFixKind.BindParameter,
-                    FixAction = "Manage ▸ Shared Parameters: load \"DUBAI BIM e-Submission_Shared Parameters.txt\", " +
-                                "then Manage ▸ Project Parameters and bind the listed attributes to this category " +
-                                "(instance or type as the DM template does), and fill the values afterwards.",
+                    FixAction = "Create and bind these DM attributes to this category, then fill the values. " +
+                                "The plugin ships the definitions and writes the shared parameter file itself: " +
+                                "click \"Bind DM parameters\" in the dashboard, or run the script in the prompt.",
                     CheckedCount = elements.Count,
-                    AffectedCount = elements.Count
-                }, result.ModelTitle, elements, options);
+                    AffectedCount = elements.Count,
+                    Table = table
+                };
+                binding.ParametersToBind.AddRange(unbound.Select(a => a.Name));
+                binding.Categories.AddRange(categories.Select(c => c.ToString()));
+                Add(result, binding, result.ModelTitle, elements, options);
             }
         }
 
@@ -765,6 +784,7 @@ namespace CodeCompliance.Core.Dm
                     Reference = reference,
                     FixKind = DmFixKind.Rename,
                     FixAction = "Rename the types to Category_FunctionalType_Discipline_Description.",
+                    ReferenceData = DmReferenceData.ObjectNaming(),
                     CheckedCount = checkedTypes,
                     AffectedCount = withoutSeparator.Count
                 }, result.ModelTitle, withoutSeparator, options);
@@ -783,6 +803,7 @@ namespace CodeCompliance.Core.Dm
                     Reference = reference,
                     FixKind = DmFixKind.Rename,
                     FixAction = "Replace spaces with underscores in the type names.",
+                    ReferenceData = DmReferenceData.ObjectNaming(),
                     CheckedCount = checkedTypes,
                     AffectedCount = withSpaces.Count
                 }, result.ModelTitle, withSpaces, options);
@@ -800,6 +821,7 @@ namespace CodeCompliance.Core.Dm
                     Reference = reference,
                     FixKind = DmFixKind.Rename,
                     FixAction = "Remove special characters from the type names.",
+                    ReferenceData = DmReferenceData.ObjectNaming(),
                     CheckedCount = checkedTypes,
                     AffectedCount = withSymbols.Count
                 }, result.ModelTitle, withSymbols, options);
@@ -818,6 +840,7 @@ namespace CodeCompliance.Core.Dm
                     Reference = reference,
                     FixKind = DmFixKind.Rename,
                     FixAction = "Shorten the type names to 30 characters using the standard abbreviations.",
+                    ReferenceData = DmReferenceData.ObjectNaming(),
                     CheckedCount = checkedTypes,
                     AffectedCount = tooLong.Count
                 }, result.ModelTitle, tooLong, options);
