@@ -16,10 +16,12 @@ namespace CodeCompliance.Commands
     /// Creates a code-compliant parking ramp (Dubai Building Code Annex B,
     /// Section B.7.2.2, Tables B.9 / B.10) as native Floor elements shaped with
     /// slab-shape ("Modify Sub Elements") points:
-    /// 1. The user either selects model lines/arcs already drawn along the ramp
-    ///    path (in the direction of travel going up), or draws the path directly
-    ///    in the command by clicking points. The path can be the left edge,
-    ///    right edge or centerline of the ramp — chosen in the input dialog.
+    /// 1. The user picks how to define the ramp path: select an already-drawn chain of
+    ///    model lines/arcs (as the left edge, right edge or centerline), draw new
+    ///    lines/arcs now with Revit's own Line tool (then re-run to select them), or
+    ///    select the ramp's full drawn outline (left edge, right edge, start, end) for a
+    ///    ramp whose width varies along its run. The ramp always starts at the start
+    ///    point of the first line/curve drawn or picked, in the direction of travel.
     /// 2. The dialog asks for two of the three key parameters (floor height h,
     ///    slope S, total run R) and solves for the third, exactly like the
     ///    standalone Parking Ramp Calculator app, with code compliance checked
@@ -208,9 +210,10 @@ namespace CodeCompliance.Commands
         }
 
         /// <summary>
-        /// Lets the user choose how to define the path: select existing model
-        /// lines/arcs (multiple, in any order — they are chained automatically),
-        /// or draw the path now by clicking points. Returns null on cancel.
+        /// Lets the user choose how to define the path: select existing model lines/arcs
+        /// (a single path, or the ramp's full left/right/start/end outline for a ramp whose
+        /// width varies along its run), or draw new geometry now with Revit's own Line tool.
+        /// Returns null on cancel.
         /// </summary>
         private static RampPath? AcquirePath(UIDocument uiDoc, Document doc)
         {
@@ -218,83 +221,132 @@ namespace CodeCompliance.Commands
             {
                 MainInstruction = "How do you want to define the ramp path?",
                 MainContent =
-                    "The path is the ramp's left edge, right edge or centerline in plan, " +
-                    "in the direction of travel going up the ramp.",
+                    "Whichever way you provide it, the ramp starts at the START POINT of the " +
+                    "first line/curve you draw or pick — draw or pick it in the direction of " +
+                    "travel, going up the ramp.",
                 CommonButtons = TaskDialogCommonButtons.Cancel,
                 AllowCancellation = true
             };
             choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink1,
                 "Select drawn model lines",
-                "Pick one or more model lines/arcs that form the path. " +
-                "Pick the line at the ramp start first — its drawn direction sets the direction of travel.");
+                "Pick one or more connected model lines/arcs forming a single path (left edge, " +
+                "right edge or centerline — chosen next). Pick, or start the chain at, the line " +
+                "at the ramp's bottom first: the point where it begins is the ramp's starting " +
+                "point, and its drawn direction sets the direction of travel going up.");
             choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink2,
-                "Draw the path now",
-                "Click points in the view to define a straight-segment path. Press Esc to finish.");
+                "Draw new lines/arcs now",
+                "Opens Revit's own Line tool (Line and Arc, with Chain) so you can sketch the " +
+                "path with full snapping and dimension input. Once you're done, run Parking Ramp " +
+                "again and choose \"Select drawn model lines\" to continue with what you drew.");
+            choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink3,
+                "Select ramp outline (varying width)",
+                "Pick the ramp's left edge, right edge, start edge and end edge separately — " +
+                "each one or more connected lines/arcs. Use this when the ramp is not a constant " +
+                "width along its length.");
             TaskDialogResult result = choice.Show();
 
             if (result == TaskDialogResult.CommandLink1)
             {
-                IList<Reference> refs;
-                try
-                {
-                    refs = uiDoc.Selection.PickObjects(
-                        ObjectType.Element,
-                        new RampLineSelectionFilter(),
-                        "Select the model lines/arcs forming the ramp path (first pick = ramp start), " +
-                        "then press Finish.");
-                }
-                catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-                {
-                    return null;
-                }
-
-                var curves = new List<Curve>();
-                foreach (Reference r in refs)
-                    if (doc.GetElement(r) is CurveElement ce && ce.GeometryCurve != null)
-                        curves.Add(ce.GeometryCurve);
-                if (curves.Count == 0)
-                    return null;
-                return RampPath.FromCurves(curves);
+                IList<Curve>? curves = PickCurveChain(uiDoc, doc,
+                    "Select the model lines/arcs forming the ramp path (first pick = ramp start), " +
+                    "then press Finish.");
+                return curves == null ? null : RampPath.FromCurves(curves);
             }
 
             if (result == TaskDialogResult.CommandLink2)
             {
-                EnsureWorkPlane(uiDoc, doc);
-                var points = new List<XYZ>();
-                while (true)
+                var instructions = new TaskDialog("Parking Ramp - Draw Path")
                 {
-                    try
-                    {
-                        string prompt = points.Count == 0
-                            ? "Click the ramp start point (direction of travel goes up the ramp). Esc to finish."
-                            : $"Click the next path point ({points.Count} so far). Esc to finish.";
-                        points.Add(uiDoc.Selection.PickPoint(prompt));
-                    }
-                    catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-                    {
-                        break;
-                    }
-                }
-                if (points.Count < 2)
+                    MainInstruction = "Revit's Line tool will open next.",
+                    MainContent =
+                        "Use Line and Arc (start-end-radius, center-ends, tangent or fillet), with " +
+                        "\"Chain\" turned on, to sketch the ramp path as one continuous run of lines " +
+                        "and curves, in the direction of travel going up the ramp — the point where " +
+                        "you start sketching becomes the ramp's starting point.\n\n" +
+                        "When you're done, click Modify (or press Esc), then run Parking Ramp again " +
+                        "and choose \"Select drawn model lines\" (or \"Select ramp outline\" for a " +
+                        "varying-width ramp) to continue with what you just drew.",
+                    CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel,
+                    DefaultButton = TaskDialogResult.Ok
+                };
+                if (instructions.Show() != TaskDialogResult.Ok)
                     return null;
-                return RampPath.FromPoints(points);
+
+                RevitCommandId lineCmd = RevitCommandId.LookupPostableCommandId(PostableCommand.ModelLine);
+                if (lineCmd != null && uiDoc.Application.CanPostCommand(lineCmd))
+                    uiDoc.Application.PostCommand(lineCmd);
+                else
+                    TaskDialog.Show("Parking Ramp",
+                        "Could not open the Line tool automatically. Click Model Line on the " +
+                        "ribbon, draw the path, then run Parking Ramp again.");
+                return null;
             }
+
+            if (result == TaskDialogResult.CommandLink3)
+                return AcquireOutlinePath(uiDoc, doc);
 
             return null;
         }
 
-        /// <summary>PickPoint needs an active work plane; set a horizontal one at the view's level.</summary>
-        private static void EnsureWorkPlane(UIDocument uiDoc, Document doc)
+        /// <summary>
+        /// Prompts for the ramp's full drawn outline — left edge, right edge, start edge and
+        /// end edge, each its own chain of one or more connected lines/arcs — and builds a
+        /// path whose width can vary along the run (see <see cref="RampPath.FromOutline"/>).
+        /// </summary>
+        private static RampPath? AcquireOutlinePath(UIDocument uiDoc, Document doc)
         {
-            View view = uiDoc.ActiveView;
-            if (view.SketchPlane != null)
-                return;
-            double z = (view as ViewPlan)?.GenLevel?.Elevation ?? 0;
-            using var t = new Transaction(doc, "Set work plane");
-            t.Start();
-            var plane = Plane.CreateByNormalAndOrigin(XYZ.BasisZ, new XYZ(0, 0, z));
-            view.SketchPlane = SketchPlane.Create(doc, plane);
-            t.Commit();
+            TaskDialog.Show("Parking Ramp - Ramp Outline",
+                "Select the ramp's drawn outline in four picks — left edge, right edge, start " +
+                "edge and end edge — each made of one or more connected model lines/arcs. The " +
+                "left/right edges may differ in length or shape, so the ramp width can vary " +
+                "along the run; the start/end lines just confirm the two ends connect up. Pick " +
+                "the edges in the direction of travel, going up the ramp — the left edge's " +
+                "starting point sets the ramp's starting point.");
+
+            IList<Curve>? leftCurves = PickCurveChain(uiDoc, doc,
+                "Select the LEFT edge of the ramp (one or more connected lines/arcs), then press Finish.");
+            if (leftCurves == null)
+                return null;
+
+            IList<Curve>? rightCurves = PickCurveChain(uiDoc, doc,
+                "Select the RIGHT edge of the ramp (one or more connected lines/arcs), then press Finish.");
+            if (rightCurves == null)
+                return null;
+
+            IList<Curve>? startCurves = PickCurveChain(uiDoc, doc,
+                "Select the line at the START of the ramp, connecting the left and right edges, " +
+                "then press Finish.");
+            if (startCurves == null)
+                return null;
+
+            IList<Curve>? endCurves = PickCurveChain(uiDoc, doc,
+                "Select the line at the END of the ramp, connecting the left and right edges, " +
+                "then press Finish.");
+            if (endCurves == null)
+                return null;
+
+            return RampPath.FromOutline(leftCurves, rightCurves, startCurves, endCurves);
+        }
+
+        /// <summary>Picks one or more model lines/arcs and returns their geometry curves, or
+        /// null when the user cancels or picks nothing.</summary>
+        private static IList<Curve>? PickCurveChain(UIDocument uiDoc, Document doc, string prompt)
+        {
+            IList<Reference> refs;
+            try
+            {
+                refs = uiDoc.Selection.PickObjects(ObjectType.Element, new RampLineSelectionFilter(), prompt);
+            }
+            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+            {
+                return null;
+            }
+
+            var curves = new List<Curve>();
+            foreach (Reference r in refs)
+                if (doc.GetElement(r) is CurveElement ce && ce.GeometryCurve != null)
+                    curves.Add(ce.GeometryCurve);
+            return curves.Count > 0 ? curves : null;
         }
 
         private static List<FloorTypeItem> CollectFloorTypes(Document doc)

@@ -9,7 +9,7 @@
 ;   - includes a normal Windows uninstaller (Settings > Apps)
 
 #define MyAppName "APG Revit Plugins"
-#define MyAppVersion "1.8.0"
+#define MyAppVersion "1.8.1"
 #define MyAppPublisher "APG - Omar Elsayed"
 #define MyAppURL "https://github.com/OmarEAbdelaal/APG-Revit-Plugins"
 #define BinRoot "..\src\CodeCompliance\bin"
