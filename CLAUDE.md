@@ -50,7 +50,15 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
   the Appendix B attribute matrices and the Appendix C usage codes, embedded in the DLL and
   overridable from `Documents\CodeCompliance\DMKnowledgeBase`. DM revises the standard every
   1-3 months — update the data files, do not hardcode rules in C#.
-- `DmAuditService` (+ `.Elements.cs`) produces `DmFinding`s that carry element ids, the type
-  of modification and a ready-made Revit MCP prompt built by `DmPromptBuilder`.
+- `DmAuditService` (+ `.Elements.cs`, `.Modelling.cs`) produces `DmFinding`s that carry element
+  ids, the type of modification and a ready-made Revit MCP prompt built by `DmPromptBuilder`,
+  plus a runnable fix script from `DmScriptBuilder` (+ `.Modelling.cs`).
 - Category ↔ IFC entity ↔ Appendix B table mapping lives in `DmRuleCatalog`; add a category
   there rather than in the audit code.
+- Phase 7 is DM's *Recommended Modelling Practices*: `modelling_practices.json` carries the 15
+  practices (wording, severity, fix kind, thresholds); `DmAuditService.Modelling.cs` only
+  implements the detection, keyed on the practice id (`RMP-01` … `RMP-15`), and
+  `DmScriptBuilder.Modelling.cs` the fix script keyed on `DmFinding.FixData["target"]`.
+- The dashboard is **modeless**: every Revit call goes through `DmRevitTask` (an
+  `ExternalEvent`), never straight from the WPF thread. `DmUiSettings` persists the options,
+  the filters and the window geometry.

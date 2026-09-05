@@ -19,13 +19,25 @@ namespace CodeCompliance.Core.Dm
     /// pattern matching, tuples and local functions, never opens a transaction of its own,
     /// and returns a string summary.
     /// </summary>
-    public static class DmScriptBuilder
+    public static partial class DmScriptBuilder
     {
         private const int MaxIdsInScript = 3000;
 
         /// <summary>The script that fixes a finding, or "" when a script cannot fix it.</summary>
         public static string ForFinding(DmFinding finding)
         {
+            // A modelling-practice finding is not a parameter value: it has its own script
+            // (re-constrain, re-host, place rooms, map to IfcCovering …). When the practice
+            // needs a person the script is empty and the generic fixes below take over.
+            if (finding.PracticeId.Length > 0)
+            {
+                string practiceScript = ForPractice(finding);
+                if (practiceScript.Length > 0)
+                    return practiceScript;
+                if (finding.FixKind == DmFixKind.ModelChange || finding.FixKind == DmFixKind.Review)
+                    return "";
+            }
+
             switch (finding.FixKind)
             {
                 case DmFixKind.BindParameter:

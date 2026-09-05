@@ -28,8 +28,9 @@ shipped with the plugin and reloadable when DM revises the standard (see §5):
 | `usage_*.csv` — Appendix C controlled vocabularies | Valid space, unit, zone and building occupancy codes |
 | `category_to_ifc.json` | Which IFC class a Revit category exports as |
 | `shared_parameters.json`, `property_sets.json` | The DM shared parameters and the "Building Permit" property set |
+| `modelling_practices.json` — DM's 15 recommended modelling practices | How the model itself has to be built (see phase 7) |
 
-The audit runs in seven phases, mirroring DM's own offline self-assessment:
+The audit runs in eight phases, mirroring DM's own offline self-assessment:
 
 1. **Project / site / building** — Revit project information, the DM attributes on
    IfcProject, IfcSite and IfcBuilding (ParcelId, BIMStandardVersion, GateLevel, BuildingNum,
@@ -52,7 +53,10 @@ The audit runs in seven phases, mirroring DM's own offline self-assessment:
    characters, 30-character limit.
 6. **Geo-referencing and units** — survey point still at the origin, site location outside
    Dubai, `GateLevel` against the elevation of the gate level, non-metric project units.
-7. **Export readiness** — file naming convention and the ParcelId cross-check, imported CAD,
+7. **Recommended modelling practices** — DM's *Recommended Modelling Practices*, checked
+   against the geometry of the model itself (see §1a). Switch the phase off with
+   *Check modelling practices* when you only want the data checks: it is the slowest phase.
+8. **Export readiness** — file naming convention and the ParcelId cross-check, imported CAD,
    CAD and Revit links, in-place families, the model warning count, and the IFC export setup
    checklist.
 
@@ -61,11 +65,47 @@ submission), **Error** (fix before submitting) and **Warning** (fix where feasib
 
 The audit is **read-only**. Nothing in the model changes until you decide to fix something.
 
+### 1a. The recommended modelling practices (phase 7)
+
+Phase 7 checks DM's *Recommended Modelling Practices* — the way the model has to be built so
+the exported IFC survives DM's platform. Each practice carries its own id, so a finding can be
+traced back to the practice (and searched for by typing e.g. `RMP-09` in the search box):
+
+| Id | Practice | What is reported |
+|---|---|---|
+| RMP-01 | Walls run from FFL down to SSL and up to the underside of the slab | Walls starting above their level, walls whose top reaches into the slab above, walls with an unconnected height |
+| RMP-02 | One column per storey | Columns constrained across more than one storey (foundation to roof) |
+| RMP-03 | Spaces properly enclosed | Walls and columns that are not room bounding, so the boundary runs through them |
+| RMP-04 | No empty area is left | Storeys whose placed rooms cover less than 90 % of the built floor area |
+| RMP-05 | Gate level and road level elements | Hardscape, landscape and boundary walls not on the gate level; roads not on the road level |
+| RMP-06 | Elements on the level they sit on | Elements whose geometry is entirely outside the storey of their level parameter (ramps and railings left on the gate level, elements floating above the building) |
+| RMP-07 | FFL / SSL level pairs | Finished floor levels with no matching SSL reference level |
+| RMP-08 | Modelled with the correct tool | A pergola, canopy or louvre screen assembled from slabs and columns instead of one generic model |
+| RMP-09 | Finishes export as IfcCovering | Floor finishes that would export as IfcSlab and cladding that would export as IfcWall |
+| RMP-10 | Space height adjusted to the ceiling | Rooms whose height stops below or runs past the ceiling of that room |
+| RMP-11 | No clash with the linked model | Elements overlapping the volume of an element in a linked model |
+| RMP-12 | One room per enclosed region | Rooms Revit reports in the same enclosed region, or not enclosed at all |
+| RMP-13 | Clear unwanted elements | Furniture, casework, fittings and structural content still exported from the architectural model |
+| RMP-14 | Dummy level for split levels | Groups of walls and rooms sitting at another elevation on a storey level |
+| RMP-15 | Purge before the export | Unused loadable family types the export would carry |
+
+The wording, the severity, the type of modification and **every tolerance** of these practices
+live in `modelling_practices.json`. Set `"enabled": false` on a practice to switch it off,
+change `"severity"`, or retune a threshold — no new plugin build (see §6). Each practice also
+carries its Revit steps and an MCP hint, both of which travel into the fix prompt.
+
 ---
 
 ## 2. The dashboard
 
-Click **DM Compliance**. The audit runs immediately and the dashboard shows:
+Click **DM Compliance**. The dashboard opens **modeless**: Revit stays fully usable next to
+it — pan, zoom, edit, open another view — and the dashboard never has to be closed to work on
+a finding. Clicking the ribbon button again brings the open dashboard forward instead of
+opening a second one. Everything the dashboard asks Revit to do (the audit, the selection,
+the 3D highlight, the parameter binding) is executed by Revit itself through an external
+event, so it always runs in a valid API context.
+
+The audit runs immediately and the dashboard shows:
 
 - **Five tiles** — critical, errors, warnings, how many elements need modification, and a
   submission-readiness percentage.
@@ -75,16 +115,32 @@ Click **DM Compliance**. The audit runs immediately and the dashboard shows:
 - **A findings table** — severity, phase, scope, the issue, the **type of modification**
   (set parameter, load/bind parameter, rename, model change, project setup, review), the DM
   attribute involved and how many of the checked elements are affected. Filter by severity,
-  by phase or by free text.
+  by phase, by type of modification or by free text (the practice ids are searchable too).
+- **An element list** for the selected finding — element id, category, name and level, one
+  row per element. Pick a row (or several) to work on those elements alone: **Select in
+  Revit** selects them, **Highlight selected element** frames exactly them in the 3D
+  compliance view, and a double-click does the same. With *Highlight in 3D on select* ticked
+  the highlight follows every pick, so you can walk down the list and watch each element in
+  the model. Revit stays open and usable the whole time.
 - **A detail panel** for the selected finding — what is wrong, the DM reference, what to
-  change, example elements, and the ready-made **prompt for Claude**.
+  change, and the ready-made **prompt for Claude**.
+
+### Everything is remembered
+
+Permit stage, the three audit switches, all four filters, the two working preferences and the
+window size and position are written to
+`%LOCALAPPDATA%\APGRevitPlugins\DmCompliance\dm-ui-settings.json` when the dashboard closes
+(and before every audit run) and restored the next time it opens — so re-opening the dashboard
+picks the work up exactly where you left it. **DM Report** uses the same saved options, so the
+silent report matches what the dashboard last showed.
 
 ### Buttons
 
 | Button | What it does |
 |---|---|
-| **Select in model** | Selects the affected elements in Revit, so Revit's own properties palette and filters work on them. |
-| **Highlight in 3D section box** | Creates (or reuses) the 3D view **CC - DM Compliance 3D**, fits its section box around the affected elements with a 1.5 m margin, colours them red and selects them. The view opens when you close the dashboard. |
+| **Select all in model** | Selects every affected element of the finding in Revit, so Revit's own properties palette and filters work on them. |
+| **Highlight in 3D section box** | Creates (or reuses) the 3D view **CC - DM Compliance 3D**, fits its section box around the affected elements with a 1.5 m margin, colours them red, selects them **and opens the view straight away** — the dashboard stays where it is. |
+| **Highlight selected element** | The same, for just the elements picked in the element list. |
 | **Copy prompt** | Copies the fix prompt for the selected finding — DM data and the runnable script included. |
 | **Copy script only** | Copies just the C# that the prompt asks Claude to send with `send_code_to_revit`. |
 | **Copy fix-all prompt** | Copies one prompt that walks Claude through every finding, worst first. |
@@ -130,6 +186,16 @@ Each finding's prompt is self-contained. It carries:
   host: C# 5, no transaction of its own (the host opens one), `document` in scope, and it
   returns a summary of what it changed.
 
+For the **recommended modelling practices** the script is the model change itself, written
+against the same host: re-constrain the walls to the slab above (the slab thickness is read
+from the floors of that level), place the missing rooms with *Place Rooms Automatically*,
+switch Room Bounding on, re-host elements onto the level their geometry sits on while
+compensating the offset so nothing moves, raise the rooms to their ceiling, write
+`IfcExportAs = IfcCovering` / `DontExport` on the element types, create the dummy level for a
+split storey. Where the change needs a decision — splitting a column, remodelling a pergola,
+moving geometry that clashes with a link, deleting a redundant room, purging — the prompt
+carries DM's own Revit steps instead of a script and asks before anything is touched.
+
 Where the value can be read from the model, the script derives it instead of asking:
 `IsExternal` from the wall function (or the host wall for doors and windows), `FireRating`
 from the element type, `LoadBearing` from the structural flag and category, `IfcMaterial`
@@ -159,7 +225,7 @@ Written to `Documents\CodeCompliance`:
 | File | Content |
 |---|---|
 | `<model>_DM_Compliance_<stamp>.html` | Dashboard for reading and sharing: tiles, the checks that ran, every finding with its element ids and its prompt |
-| `<model>_DM_Compliance_<stamp>.csv` | One row per finding with the full element id list — use it to track the fixes |
+| `<model>_DM_Compliance_<stamp>.csv` | One row per finding with the practice id and the full element id list — use it to track the fixes |
 | `<model>_DM_Compliance_Prompts_<stamp>.txt` | The fix-all prompt plus one prompt per finding |
 
 ---
@@ -179,7 +245,11 @@ files — no new plugin build.
 - Compliance is finally assessed on the **exported IFC**, not on the Revit file. The audit
   anticipates the exporter, it does not replace a check of the exported file in a viewer.
 - The IFC export setup itself is not readable through the Revit API, so the DM export
-  settings stay a checklist item in phase 7.
+  settings stay a checklist item in phase 8.
+- The modelling practices are checked on geometry the Revit API exposes cheaply: bounding
+  boxes, constraints and parameters. The link clash check (RMP-11) therefore compares
+  bounding-box volumes inside a time budget rather than running a full solid clash — it points
+  at what to look at, it does not replace Navisworks.
 - Duplicated elements **across** IFC files (the single-source rule) cannot be seen from a
   single Revit session.
 - MEP element attributes are not checked: DM currently mandates only the architectural and

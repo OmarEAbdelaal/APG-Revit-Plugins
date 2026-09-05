@@ -20,6 +20,13 @@ namespace CodeCompliance.Core.Dm
         /// <summary>Check family and type names against the DM object naming convention.</summary>
         public bool CheckObjectNaming { get; set; } = true;
 
+        /// <summary>
+        /// Check DM's recommended modelling practices (wall and column constraints, level
+        /// association, space coverage and height, finishes, link clashes …). They read the
+        /// model geometry, so they are the slowest phase of the audit.
+        /// </summary>
+        public bool CheckModellingPractices { get; set; } = true;
+
         /// <summary>Maximum element ids kept per finding (protects the dashboard on huge models).</summary>
         public int MaxElementsPerFinding { get; set; } = 20000;
     }
@@ -78,6 +85,8 @@ namespace CodeCompliance.Core.Dm
             if (options.CheckObjectNaming)
                 CheckObjectNaming(doc, result);
             CheckGeoReferencing(doc, result, parameters);
+            if (options.CheckModellingPractices)
+                CheckModellingPractices(doc, result, parameters, options);
             CheckExportReadiness(doc, result);
 
             return result;

@@ -12,7 +12,8 @@ namespace CodeCompliance.Commands
     /// <summary>
     /// Runs the DM BIM compliance audit without opening the dashboard and writes the report
     /// files (HTML dashboard, CSV of all findings with element ids, and the Revit MCP prompts)
-    /// to Documents\CodeCompliance.
+    /// to Documents\CodeCompliance. It uses the same audit options the dashboard was last run
+    /// with, so a silent report matches what the dashboard shows.
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -27,11 +28,20 @@ namespace CodeCompliance.Commands
                 return Result.Cancelled;
             }
 
+            DmUiSettings settings = DmUiSettings.Load();
+            var options = new DmAuditOptions
+            {
+                Stage = settings.StageIndex == 1 ? DmPermitStage.Preliminary : DmPermitStage.Final,
+                IncludeConditional = settings.IncludeConditional,
+                CheckObjectNaming = settings.CheckObjectNaming,
+                CheckModellingPractices = settings.CheckModellingPractices
+            };
+
             DmAuditResult result;
             try
             {
                 result = DmAuditService.Run(uiDoc.Document, commandData.Application.Application.VersionNumber,
-                                            new DmAuditOptions());
+                                            options);
             }
             catch (Exception ex)
             {

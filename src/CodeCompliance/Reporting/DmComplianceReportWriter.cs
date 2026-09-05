@@ -36,12 +36,13 @@ namespace CodeCompliance.Reporting
         private static string BuildCsv(DmAuditResult result)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Severity,Check group,Scope,Issue,Fix type,Parameter,Fix action,Affected,Checked,DM reference,Element ids");
+            sb.AppendLine("Severity,Check group,Practice,Scope,Issue,Fix type,Parameter,Fix action,Affected,Checked,DM reference,Element ids");
             foreach (DmFinding finding in Ordered(result))
             {
                 sb.AppendLine(string.Join(",",
                     Csv(finding.SeverityText),
                     Csv(finding.GroupText),
+                    Csv(finding.PracticeId),
                     Csv(finding.Scope),
                     Csv(finding.Title),
                     Csv(finding.FixKindText),

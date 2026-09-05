@@ -27,7 +27,8 @@ namespace CodeCompliance.Core.Dm
         ElementAttributes = 3,
         ObjectNaming = 4,
         GeoReferencing = 5,
-        ExportReadiness = 6
+        ModellingPractices = 6,
+        ExportReadiness = 7
     }
 
     /// <summary>What kind of change fixes a finding — the "type of modification".</summary>
@@ -124,6 +125,28 @@ namespace CodeCompliance.Core.Dm
         /// <summary>Prompt to paste into Claude with the Revit MCP connector running.</summary>
         public string McpPrompt { get; set; } = "";
 
+        /// <summary>
+        /// Id of the DM recommended modelling practice this finding comes from ("RMP-01"), or
+        /// "" for the attribute, naming and export checks. It selects the fix script and adds
+        /// the practice's own Revit steps to the prompt.
+        /// </summary>
+        public string PracticeId { get; set; } = "";
+
+        /// <summary>
+        /// Values the fix script needs and only the audit knows — the level to re-host onto,
+        /// the offset to compensate, the IFC class to write. Keys are read by
+        /// <see cref="DmScriptBuilder"/>; values are always plain strings so they can be
+        /// written into the script verbatim.
+        /// </summary>
+        public Dictionary<string, string> FixData { get; } =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Per-element values the fix script needs, keyed by element id — e.g. the level each
+        /// element has to be re-hosted onto and by how much its offset has to change.
+        /// </summary>
+        public Dictionary<long, string> ElementFixData { get; } = new Dictionary<long, string>();
+
         public bool HasElements => ElementIds.Count > 0;
 
         public string SeverityText
@@ -168,7 +191,8 @@ namespace CodeCompliance.Core.Dm
                 case DmCheckGroup.ElementAttributes: return "4. Element attributes (Appendix B + IDS)";
                 case DmCheckGroup.ObjectNaming: return "5. Object and family naming";
                 case DmCheckGroup.GeoReferencing: return "6. Geo-referencing and units";
-                default: return "7. Export readiness";
+                case DmCheckGroup.ModellingPractices: return "7. Recommended modelling practices";
+                default: return "8. Export readiness";
             }
         }
     }
