@@ -93,14 +93,15 @@ namespace CodeCompliance
                 assemblyPath,
                 "CodeCompliance.Commands.ParkingRampCommand")
             {
-                ToolTip = "Create a code-compliant parking ramp from a drawn model line.",
+                ToolTip = "Create a code-compliant parking ramp from a drawn model line or outline.",
                 LongDescription =
-                    "Draw a model line (straight ramp) or model arc (curved/helical ramp) in a plan " +
-                    "view, in the direction of travel going up, then run this command and select it. " +
-                    "Choose whether the line is the left edge, right edge or centerline, enter two of " +
+                    "Select or draw the ramp path: one connected chain of model lines/arcs (as its " +
+                    "left edge, right edge or centerline), or the full outline (left edge, right " +
+                    "edge, start and end) for a ramp whose width varies along its run. Enter two of " +
                     "the three key parameters (floor height h, slope S, total run R) and the third is " +
                     "solved per Dubai Building Code Annex B, Tables B.9 / B.10. Compliance is checked " +
-                    "at the input step; the ramp with its transition zones is created as a DirectShape."
+                    "at the input step; the ramp with its transition zones is created as native Floor " +
+                    "elements shaped with slab-shape points."
             });
 
             panel.AddSeparator();

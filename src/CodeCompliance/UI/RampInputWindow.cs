@@ -36,6 +36,7 @@ namespace CodeCompliance.UI
 
         private readonly RampPath _path;
         private readonly bool _singleArc;
+        private readonly bool _variableWidth;
 
         private readonly ComboBox _typeBox;
         private readonly ComboBox _lanesBox;
@@ -74,6 +75,7 @@ namespace CodeCompliance.UI
         {
             _path = path;
             _singleArc = path.HasArc && path.Segments.Count == 1;
+            _variableWidth = path.IsVariableWidth;
 
             Title = "APG Plugins - Parking Ramp (Dubai BC Annex B, B.7.2.2)";
             Width = 740;
@@ -88,11 +90,15 @@ namespace CodeCompliance.UI
 
             var header = new TextBlock
             {
-                Text = $"Path: {path.Segments.Count} segment(s), drawn length {path.DrawnLength:F2} m" +
-                       (path.HasArc ? " (includes arcs). " : ". ") +
-                       "Enter two of the three key parameters (h, S, R); the third is solved per " +
-                       "Dubai Building Code Annex B Tables B.9 / B.10. The ramp is created as Floor " +
-                       "elements shaped with slab-shape (modify sub-elements) points.",
+                Text = (_variableWidth
+                            ? $"Path: drawn outline, centerline length {path.DrawnLength:F2} m, " +
+                              $"width {path.MinWidthAlongPath():F2}-{path.MaxWidthAlongPath():F2} m. "
+                            : $"Path: {path.Segments.Count} segment(s), drawn length {path.DrawnLength:F2} m" +
+                              (path.HasArc ? " (includes arcs). " : ". ")) +
+                       "The ramp starts at the start point of the first line/curve you drew or " +
+                       "picked. Enter two of the three key parameters (h, S, R); the third is " +
+                       "solved per Dubai Building Code Annex B Tables B.9 / B.10. The ramp is " +
+                       "created as Floor elements shaped with slab-shape (modify sub-elements) points.",
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 10)
             };
@@ -133,9 +139,18 @@ namespace CodeCompliance.UI
             _lanesBox.SelectedIndex = 0;
             left.Children.Add(_lanesBox);
 
-            left.Children.Add(FieldLabel("Lane width [m]  (min per Table B.9)"));
+            left.Children.Add(FieldLabel(_variableWidth
+                ? "Lane width [m]  (from the drawn outline's narrowest point)"
+                : "Lane width [m]  (min per Table B.9)"));
             _laneWidthBox = NumberBox();
             left.Children.Add(_laneWidthBox);
+            if (_variableWidth)
+            {
+                _lanesBox.IsEnabled = false;
+                _lanesBox.SelectedIndex = 0;
+                _laneWidthBox.IsEnabled = false;
+                _laneWidthBox.Text = path.MinWidthAlongPath().ToString("F2", CultureInfo.InvariantCulture);
+            }
 
             left.Children.Add(FieldLabel("Floor type (ramp is built from floors)"));
             _floorTypeBox = new ComboBox { Margin = new Thickness(0, 2, 0, 6) };
@@ -160,7 +175,8 @@ namespace CodeCompliance.UI
                             : loc == RampLineLocation.Right ? "Right edge" : "Centerline",
                     GroupName = "loc",
                     Margin = new Thickness(0, 2, 14, 6),
-                    IsChecked = loc == RampLineLocation.Center
+                    IsChecked = loc == RampLineLocation.Center,
+                    IsEnabled = !_variableWidth
                 };
                 _locationRadios[loc] = rb;
                 locPanel.Children.Add(rb);
@@ -168,7 +184,11 @@ namespace CodeCompliance.UI
             left.Children.Add(locPanel);
             left.Children.Add(new TextBlock
             {
-                Text = "Left/right are relative to the direction the path was drawn (direction of travel, going up).",
+                Text = _variableWidth
+                    ? "Not used — the left and right edges were drawn explicitly, so the ramp's " +
+                      "actual width and starting point (the left edge's start) come straight from the outline."
+                    : "Left/right are relative to the direction the path was drawn (direction of " +
+                      "travel, going up) — the ramp starts at that line's start point.",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Muted,
                 FontSize = 11,
@@ -329,8 +349,11 @@ namespace CodeCompliance.UI
 
         private void OnTypeChanged()
         {
-            RampRegulations regs = RampCalculator.GetRegulations(SelectedType);
-            _laneWidthBox.Text = regs.MinLaneWidth.ToString("F2", CultureInfo.InvariantCulture);
+            if (!_variableWidth)
+            {
+                RampRegulations regs = RampCalculator.GetRegulations(SelectedType);
+                _laneWidthBox.Text = regs.MinLaneWidth.ToString("F2", CultureInfo.InvariantCulture);
+            }
             OnSolveTargetChanged();
         }
 
@@ -430,7 +453,9 @@ namespace CodeCompliance.UI
             SetResult("Xp", $"{res.XPrime:F3} m");
             SetResult("R", $"{res.R:F3} m");
             SetResult("ratio", $"1 : {100.0 / res.S:F2}");
-            SetResult("W", $"{w:F2} m  ({Lanes} x {LaneWidth:F2} m)");
+            SetResult("W", _variableWidth
+                ? $"{_path.MinWidthAlongPath():F2}-{_path.MaxWidthAlongPath():F2} m (varies, from outline)"
+                : $"{w:F2} m  ({Lanes} x {LaneWidth:F2} m)");
 
             if (_path.HasArc)
             {
