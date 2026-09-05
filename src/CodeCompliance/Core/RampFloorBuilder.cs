@@ -67,6 +67,12 @@ namespace CodeCompliance.Core
         /// With <paramref name="exactArcEdges"/> the boundary uses true arcs on the
         /// drawn circles; otherwise arcs become fine chords (fallback for paths
         /// whose exact-arc shape edit Revit rejects).
+        ///
+        /// The ramp always covers exactly the computed run: it spans the path
+        /// stations [<paramref name="startStationM"/>, startStation + calc.R].
+        /// Stations outside the drawn path continue its geometry, so anchoring at
+        /// the drawn end (startStation = drawnLength - R) extends or trims the START
+        /// instead of the end.
         /// </summary>
         public static IList<RampFloorPiece> Build(
             Document doc,
@@ -76,7 +82,8 @@ namespace CodeCompliance.Core
             RampLineLocation location,
             ElementId floorTypeId,
             double designOffsetM = 0,
-            bool exactArcEdges = true)
+            bool exactArcEdges = true,
+            double startStationM = 0)
         {
             Level level = FindBaseLevel(doc, ToFeet(path.BaseElevation));
             double baseZFt = ToFeet(path.BaseElevation);
@@ -85,14 +92,15 @@ namespace CodeCompliance.Core
             List<(RampPathSegment Seg, double Start, double Len)> ranges =
                 SegmentRanges(path, location, widthM, designOffsetM);
             List<double> stations = BuildStations(
-                path, calc, location, widthM, designOffsetM, ranges, exactArcEdges);
+                calc, location, widthM, designOffsetM, ranges, exactArcEdges, startStationM);
 
             var created = new List<RampFloorPiece>();
             foreach (List<double> chunk in ChunkStations(ranges, stations))
             {
                 created.Add(BuildOneFloor(
                     doc, calc, widthM, location, floorTypeId,
-                    level, baseZFt, heightOffsetFt, chunk, ranges, designOffsetM, exactArcEdges));
+                    level, baseZFt, heightOffsetFt, chunk, ranges, designOffsetM, exactArcEdges,
+                    startStationM));
             }
             return created;
         }
@@ -134,51 +142,63 @@ namespace CodeCompliance.Core
         /// <summary>
         /// All design-line stations that need a boundary vertex: ramp start/end,
         /// transition-zone boundaries, segment joints, and subdivision stations
-        /// along arcs (max ~30° of sweep per boundary arc piece).
+        /// along curves (max ~30° of sweep per boundary arc piece). Stations run
+        /// from <paramref name="startStation"/> to startStation + calc.R, which may
+        /// reach outside the drawn path at either end.
         /// </summary>
         private static List<double> BuildStations(
-            RampPath path, RampCalcResult calc, RampLineLocation location, double widthM,
+            RampCalcResult calc, RampLineLocation location, double widthM,
             double designOffset, List<(RampPathSegment Seg, double Start, double Len)> ranges,
-            bool exactArcEdges)
+            bool exactArcEdges, double startStation)
         {
-            var set = new SortedSet<double> { 0.0, calc.R };
+            double rampStart = startStation, rampEnd = startStation + calc.R;
+            var set = new SortedSet<double> { rampStart, rampEnd };
             double pieceSweep = exactArcEdges ? ArcPieceSweepExact : ArcPieceSweepChord;
 
             foreach (double zone in new[] { calc.X, calc.X + calc.XPrime })
-                if (zone > StationMergeTol && zone < calc.R - StationMergeTol)
-                    set.Add(zone);
+            {
+                double station = rampStart + zone;
+                if (station > rampStart + StationMergeTol && station < rampEnd - StationMergeTol)
+                    set.Add(station);
+            }
 
             for (int i = 0; i < ranges.Count; i++)
             {
                 (RampPathSegment seg, double start, double len) = ranges[i];
-                double segEnd = Math.Min(start + len, calc.R);
-                bool last = i == ranges.Count - 1;
+                // The first and last drawn segments carry the ramp wherever it runs
+                // past the drawing, so their station range is open-ended there.
+                double from = i == 0 ? Math.Min(start, rampStart) : start;
+                double to = i == ranges.Count - 1 ? Math.Max(start + len, rampEnd) : start + len;
+                double lo = Math.Max(from, rampStart), hi = Math.Min(to, rampEnd);
+                if (hi <= lo)
+                    continue;
 
-                if (seg is RampArcSegment arc)
+                double turn = seg.PlanTurn;
+                if (turn > 1e-6 && len > 1e-9)
                 {
-                    double step = Clamp(
-                        arc.DesignRadius(location, widthM, designOffset) * pieceSweep, 0.3, 8.0);
-                    double subdivEnd = last ? calc.R : segEnd; // last arc may extend to R
-                    for (double s = start + step; s < subdivEnd - StationMergeTol; s += step)
-                        if (s > StationMergeTol)
-                            set.Add(s);
+                    // Design-line length per piece of sweep, on this segment's own radius.
+                    double step = Clamp(len / turn * pieceSweep, 0.3, 8.0);
+                    for (double s = lo + step; s < hi - StationMergeTol; s += step)
+                        set.Add(s);
                 }
 
-                if (start + len > StationMergeTol && start + len < calc.R - StationMergeTol)
-                    set.Add(start + len); // joint between segments
-                if (start >= calc.R)
-                    break;
+                foreach (double joint in new[] { start, start + len })
+                    if (joint > rampStart + StationMergeTol && joint < rampEnd - StationMergeTol)
+                        set.Add(joint);
             }
 
             var result = new List<double>();
             foreach (double s in set)
-                if (s <= calc.R + 1e-9 && (result.Count == 0 || s - result[result.Count - 1] > StationMergeTol))
+                if (s >= rampStart - 1e-9 && s <= rampEnd + 1e-9
+                    && (result.Count == 0 || s - result[result.Count - 1] > StationMergeTol))
                     result.Add(s);
-            if (result[result.Count - 1] < calc.R - StationMergeTol)
-                result.Add(calc.R);
+            if (result.Count == 0)
+                result.Add(rampStart);
+            result[0] = rampStart;
+            if (result[result.Count - 1] < rampEnd - StationMergeTol)
+                result.Add(rampEnd);
             else
-                result[result.Count - 1] = calc.R;
-            result[0] = 0.0;
+                result[result.Count - 1] = rampEnd;
             return result;
         }
 
@@ -194,14 +214,19 @@ namespace CodeCompliance.Core
             for (int i = 1; i < stations.Count; i++)
             {
                 double s0 = stations[i - 1], s1 = stations[i], sweep = 0;
-                foreach ((RampPathSegment seg, double start, double len) in ranges)
+                for (int r = 0; r < ranges.Count; r++)
                 {
-                    if (!(seg is RampArcSegment arc))
+                    (RampPathSegment seg, double start, double len) = ranges[r];
+                    // Sweep per unit length is constant along a curve, so an extension
+                    // past the drawn ends keeps turning at the same rate.
+                    double segTurn = seg.PlanTurn;
+                    if (segTurn <= 1e-6 || len <= 1e-9)
                         continue;
-                    double rd = arc.DrawnRadius; // sweep angle is radius-independent along the same arc
-                    double lo = Math.Max(s0, start), hi = Math.Min(s1, start + len);
-                    if (hi > lo && len > 1e-9)
-                        sweep += (hi - lo) / len * (arc.DrawnLength / rd);
+                    double from = r == 0 ? double.NegativeInfinity : start;
+                    double to = r == ranges.Count - 1 ? double.PositiveInfinity : start + len;
+                    double lo = Math.Max(s0, from), hi = Math.Min(s1, to);
+                    if (hi > lo)
+                        sweep += (hi - lo) / len * segTurn;
                 }
                 turn[i] = turn[i - 1] + sweep;
             }
@@ -241,7 +266,8 @@ namespace CodeCompliance.Core
             List<double> stations,
             List<(RampPathSegment Seg, double Start, double Len)> ranges,
             double designOffset,
-            bool exactArcEdges)
+            bool exactArcEdges,
+            double startStation)
         {
             int n = stations.Count;
 
@@ -300,8 +326,9 @@ namespace CodeCompliance.Core
             var targets = new List<(double X, double Y, double ZFt)>();
             for (int i = 0; i < intervals.Count; i++)
             {
-                double z0 = baseZFt + ToFeet(calc.HeightAt(stations[i]));
-                double z1 = baseZFt + ToFeet(calc.HeightAt(stations[i + 1]));
+                // Path stations -> profile stations (the profile always runs 0..R).
+                double z0 = baseZFt + ToFeet(calc.HeightAt(stations[i] - startStation));
+                double z1 = baseZFt + ToFeet(calc.HeightAt(stations[i + 1] - startStation));
                 EdgeInterval itv = intervals[i];
                 targets.Add((itv.L0.X, itv.L0.Y, z0));
                 targets.Add((itv.R0.X, itv.R0.Y, z0));

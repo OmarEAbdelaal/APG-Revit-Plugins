@@ -27,6 +27,21 @@ namespace CodeCompliance.Core
         Slope         // S
     }
 
+    /// <summary>
+    /// Which end of the drawn path is held in place when the ramp is built to the
+    /// exact computed run R. The other end moves: the ramp is extended along the
+    /// drawn geometry when R is longer than the drawing, or stopped short when it
+    /// is shorter, so the built ramp is always exactly R long.
+    /// </summary>
+    public enum RampEndAnchor
+    {
+        /// <summary>Start stays where it was drawn; the top end moves.</summary>
+        Start,
+
+        /// <summary>End stays where it was drawn; the bottom end moves.</summary>
+        End
+    }
+
     /// <summary>Limits for one ramp type from Table B.9. All lengths in meters, slope in percent.</summary>
     public class RampRegulations
     {

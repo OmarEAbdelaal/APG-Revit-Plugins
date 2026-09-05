@@ -44,6 +44,7 @@ namespace CodeCompliance.UI
         private readonly ComboBox _floorTypeBox;
         private readonly Dictionary<RampLineLocation, RadioButton> _locationRadios = new Dictionary<RampLineLocation, RadioButton>();
         private readonly Dictionary<RampSolveTarget, RadioButton> _solveRadios = new Dictionary<RampSolveTarget, RadioButton>();
+        private readonly Dictionary<RampEndAnchor, RadioButton> _anchorRadios = new Dictionary<RampEndAnchor, RadioButton>();
         private readonly TextBox _hBox;
         private readonly TextBox _sBox;
         private readonly TextBox _rBox;
@@ -67,6 +68,17 @@ namespace CodeCompliance.UI
         /// drawn outline, whose width already varies as drawn).
         /// </summary>
         public double DesignOffset { get; private set; }
+
+        /// <summary>Which end of the drawn path stays put when the ramp is built to exactly R.</summary>
+        public RampEndAnchor Anchor { get; private set; } = RampEndAnchor.Start;
+
+        /// <summary>
+        /// Path station where the ramp begins. 0 when the start is the fixed end;
+        /// negative when the end is fixed and the ramp has to start before the
+        /// drawn path to reach the required run.
+        /// </summary>
+        public double StartStation { get; private set; }
+
         public long FloorTypeId => (_floorTypeBox.SelectedItem as FloorTypeItem)?.Id ?? -1;
 
         /// <summary>Thickness of the chosen floor type (used for the loop clearance check).</summary>
@@ -223,6 +235,35 @@ namespace CodeCompliance.UI
                 Margin = new Thickness(0, 0, 0, 6)
             });
 
+            left.Children.Add(SectionHeader("Build to the exact run — fixed end"));
+            var anchorItems = new (RampEndAnchor Anchor, string Text)[]
+            {
+                (RampEndAnchor.Start, "Start of the sketch (the top end moves)"),
+                (RampEndAnchor.End, "End of the sketch (the bottom end moves)"),
+            };
+            foreach ((RampEndAnchor anchor, string text) in anchorItems)
+            {
+                var rb = new RadioButton
+                {
+                    Content = text,
+                    GroupName = "anchor",
+                    Margin = new Thickness(0, 2, 0, 2),
+                    IsChecked = anchor == RampEndAnchor.Start
+                };
+                _anchorRadios[anchor] = rb;
+                left.Children.Add(rb);
+            }
+            left.Children.Add(new TextBlock
+            {
+                Text = "The ramp is always built to exactly the computed run R. The fixed end stays " +
+                       "where you drew it; the other end is extended along the drawn geometry " +
+                       "(straight on, or around the same curve) or stopped short as needed.",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Muted,
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
+
             left.Children.Add(SectionHeader("Solve for (target parameter)"));
             var solveItems = new (RampSolveTarget target, string text)[]
             {
@@ -301,7 +342,7 @@ namespace CodeCompliance.UI
             AddComplianceRow(right, "width", "Min lane width");
             AddComplianceRow(right, "radius", "Min inner radius");
             AddComplianceRow(right, "clearance", "Min clearance 2.4 m");
-            AddComplianceRow(right, "length", "Drawn path vs computed R");
+            AddComplianceRow(right, "length", "Drawn length vs required run R");
 
             // ── Buttons ─────────────────────────────────────────────────────────
             var buttons = new StackPanel
@@ -368,6 +409,17 @@ namespace CodeCompliance.UI
             }
         }
 
+        private RampEndAnchor SelectedAnchor
+        {
+            get
+            {
+                foreach (KeyValuePair<RampEndAnchor, RadioButton> kv in _anchorRadios)
+                    if (kv.Value.IsChecked == true)
+                        return kv.Key;
+                return RampEndAnchor.Start;
+            }
+        }
+
         private void OnTypeChanged()
         {
             if (!_variableWidth)
@@ -427,6 +479,7 @@ namespace CodeCompliance.UI
                 RampRegulations regs = RampCalculator.GetRegulations(type);
                 Lanes = _lanesBox.SelectedItem is int n ? n : 1;
                 Location = SelectedLocation;
+                Anchor = SelectedAnchor;
 
                 double? laneWidth = TryParse(_laneWidthBox.Text);
                 if (!laneWidth.HasValue || laneWidth.Value <= 0)
@@ -445,6 +498,10 @@ namespace CodeCompliance.UI
 
                 RampCalcResult res = RampCalculator.Compute(h, s, r, type);
                 Result = res;
+
+                // Build to exactly R: hold the chosen end, move the other one.
+                double drawnLength = _path.CenterlineLength(Location, TotalWidth, DesignOffset);
+                StartStation = Anchor == RampEndAnchor.End ? drawnLength - res.R : 0.0;
 
                 // Show the solved value back in its input box, like the app does.
                 string solvedText = solve == RampSolveTarget.FloorHeight ? res.H.ToString("F4", CultureInfo.InvariantCulture)
@@ -561,20 +618,21 @@ namespace CodeCompliance.UI
             }
 
             double drawn = _path.CenterlineLength(Location, TotalWidth, DesignOffset);
-            double diff = Math.Abs(drawn - res.R);
-            if (diff <= 0.05)
+            double diff = res.R - drawn; // + = the ramp is longer than what was drawn
+            string movingEnd = Anchor == RampEndAnchor.Start ? "End" : "Start";
+            if (Math.Abs(diff) <= 0.005)
             {
-                SetCompliance("length", true, "OK  path matches R");
+                SetCompliance("length", true, $"OK  drawn path = R = {res.R:F2} m");
             }
-            else if (drawn > res.R)
+            else if (diff > 0)
             {
                 SetCompliance("length", null,
-                    $"Note: ramp stops at R = {res.R:F2} m (path is {drawn:F2} m)");
+                    $"{movingEnd} extended {diff:F2} m to reach R = {res.R:F2} m (drawn {drawn:F2} m)");
             }
             else
             {
                 SetCompliance("length", null,
-                    $"Note: last segment extends to R = {res.R:F2} m (path is {drawn:F2} m)");
+                    $"{movingEnd} pulled back {-diff:F2} m to R = {res.R:F2} m (drawn {drawn:F2} m)");
             }
 
             return ok;
