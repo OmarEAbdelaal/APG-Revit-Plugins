@@ -33,12 +33,14 @@ code-governing line — not the overall ramp centre.
    - **Select ramp outline (varying width)** — for a ramp that isn't a constant
      width along its run: pick the **left edge**, **right edge**, **start edge**
      and **end edge** separately, each its own chain of one or more connected
-     lines/arcs. The left/right edges may differ in length or shape (e.g. an
-     outer curve longer than the inner one); the tool resamples both at equal
-     normalized arc-length fractions to build the ramp's actual width at every
-     station, so a taper or an uneven bend is captured exactly as drawn. The
-     start/end edges aren't used for geometry — they just confirm the outline
-     closes up, and a mismatch throws a clear error before anything is built.
+     lines/arcs. The two edges are paired piece by piece, so each keeps the
+     geometry you drew: a straight run stays **one straight piece** and a drawn
+     curve stays a **true arc on both edges**, with the two radii free to differ
+     — that difference is what varies the width. Edges drawn in several
+     collinear or co-circular pieces are joined first, so the ramp is never
+     split where its shape doesn't change. The start/end edges aren't used for
+     geometry — they just confirm the outline closes up, and a mismatch throws a
+     clear error before anything is built.
 2. In the dialog:
    - Choose what the path represents: **left edge**, **centerline** or
      **right edge** of the ramp band (left/right relative to travel direction).
@@ -49,20 +51,28 @@ code-governing line — not the overall ramp centre.
      For an outline path, lanes/lane width are read-only, pre-filled with the
      narrowest width found along the drawn outline (used for the Table B.9
      width check and, unless overridden, the geometry).
+   - Choose the **fixed end** — **start** or **end** of the sketch. The ramp is
+     always built to exactly the computed run **R**: the fixed end stays where
+     you drew it and the other end moves, extending along the drawn geometry
+     (straight on, or around the same curve) when R is longer than the sketch,
+     or stopping short when it is shorter. So the sketch sets the alignment and
+     the calculation sets the length — the drawing never has to be redrawn to
+     match R.
    - Choose the **target parameter to solve for** — total run **R**, floor
      height **h** or slope **S** — and enter the other two. When R is a known
      input it is prefilled from the drawn path length (its centerline, for an
      outline path).
    - Click **Calculate + check compliance**. Results (transition zones X/T/Y,
      main run X'/Y', arc radii and sweep) and all Table B.9 checks are shown
-     live. **Create ramp floors** stays disabled until the design is compliant.
-3. The ramp — entry transition + main run + exit transition — is created as one
-   floor per path segment (arcs are split into chunks of max 170° sweep; helical
-   ramps may loop past 360° by extending the last arc; an outline path is split
-   into many short, straight-edged floors — roughly every 0.75 m of drawn length
-   — so a taper or bend is followed closely). Boundary vertices and interior
-   points are raised with the slab shape editor to match the profile, so the
-   floors can be edited afterwards with **Modify Sub Elements**.
+     live; the length row says which end moves and by how much. **Create ramp
+     floors** stays disabled until the design is compliant.
+3. The ramp — entry transition + main run + exit transition — is created as ONE
+   continuous floor slab, following the drawn geometry exactly (straight edges
+   stay straight, curved edges stay true arcs, subdivided into ~30° boundary
+   pieces on the same circle). Only a path that turns past ~170° is split into
+   several floors, since a Revit sketch cannot overlap itself. Boundary vertices
+   are raised with the slab shape editor to match the profile, so the floors can
+   be edited afterwards with **Modify Sub Elements**.
 
 ## Code checks at the input step (Table B.9)
 
@@ -73,10 +83,9 @@ code-governing line — not the overall ramp centre.
 | Min inner radius | — | 4.0 m (smallest arc in the actual drawn path + alignment) | 6.0 m |
 | Min clearance 2.4 m | advisory | advisory | checked between overlapping loops (single-arc paths) |
 
-For an outline path, the inner radius check falls back to a discrete curvature
-estimate (a circle fit through each three consecutive centerline stations, minus
-the local half-width) since the drawn edges are stored as many small straight
-chords rather than true arcs.
+For an outline path the inner radius is read straight off the drawing: it is the
+radius of the tighter of the two drawn edge arcs at each curve, so a radius drawn
+to the code minimum checks out as compliant.
 
 Transition zones follow Table B.10 (X interpolated from S; T = S/2).
 

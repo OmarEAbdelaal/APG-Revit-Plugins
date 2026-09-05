@@ -142,7 +142,8 @@ namespace CodeCompliance.Commands
             {
                 pieces = RampFloorBuilder.Build(
                     doc, path, calc, window.TotalWidth, window.Location,
-                    new ElementId(window.FloorTypeId), window.DesignOffset, exactArcEdges);
+                    new ElementId(window.FloorTypeId), window.DesignOffset, exactArcEdges,
+                    window.StartStation);
             }
             catch (Exception ex)
             {
@@ -372,10 +373,11 @@ namespace CodeCompliance.Commands
             return string.Format(ci,
                 "Dubai BC Annex B B.7.2.2 | {0} ramp, {1} lane(s) x {2:F2} m | " +
                 "h = {3:F3} m, S = {4:F2}%, T = {5:F2}%, X = {6:F2} m, X' = {7:F2} m, R = {8:F3} m | " +
-                "path = {9}{10}",
+                "path = {9} | built to exact R from the drawn {10}{11}",
                 calc.Type, window.Lanes, window.LaneWidth,
                 calc.H, calc.S, calc.T, calc.X, calc.XPrime, calc.R,
                 window.Location,
+                window.Anchor == RampEndAnchor.Start ? "start" : "end",
                 window.DesignOffset != 0 ? " | slope measured on inner-lane centreline" : "");
         }
 

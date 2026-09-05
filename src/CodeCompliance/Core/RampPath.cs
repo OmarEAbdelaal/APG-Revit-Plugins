@@ -14,6 +14,10 @@ namespace CodeCompliance.Core
     /// the LEFT of the direction of travel). For multi-lane ramps the design line
     /// is the centreline of the innermost lane, which is the code-governing line
     /// for slope on curved ramps. designOffset = 0 keeps the old behaviour.
+    ///
+    /// s is never clamped: values below 0 or beyond the segment length continue the
+    /// geometry (straight on, or around the same circle), which is how a ramp is
+    /// extended to the exact run the calculation asks for.
     /// </summary>
     public abstract class RampPathSegment
     {
@@ -23,16 +27,32 @@ namespace CodeCompliance.Core
         public abstract (double X, double Y) End { get; }
         public abstract RampPathSegment Reversed();
 
+        /// <summary>Total plan sweep angle (radians, unsigned); 0 for straight segments.</summary>
+        public virtual double PlanTurn => 0;
+
         /// <summary>Design-line length of this segment for the given drawn-line location, total width and design offset.</summary>
         public abstract double CenterlineLength(RampLineLocation location, double width, double designOffset = 0);
 
         /// <summary>
         /// Left/right ramp edge positions at design-line arc-length s from the
-        /// segment start. s may exceed the segment length (used to extend the last
-        /// segment).
+        /// segment start. s may fall outside [0, length] — the geometry continues.
         /// </summary>
         public abstract (double LX, double LY, double RX, double RY) EdgesAt(
             double s, RampLineLocation location, double width, double designOffset = 0);
+
+        /// <summary>
+        /// The piece of this segment between its own arc-lengths s0 and s1 (drawn
+        /// geometry, i.e. location = Center and width = 0). Values outside
+        /// [0, DrawnLength] extend the segment rather than clamping.
+        /// </summary>
+        public abstract RampPathSegment SubSegment(double s0, double s1);
+
+        /// <summary>
+        /// One segment covering this and <paramref name="next"/> when the two are
+        /// really the same line or the same circle drawn in two pieces; null when
+        /// they cannot be joined. Keeps a ramp from being split where it is straight.
+        /// </summary>
+        public virtual RampPathSegment? TryMergeWith(RampPathSegment next) => null;
     }
 
     public sealed class RampLineSegment : RampPathSegment
@@ -83,63 +103,24 @@ namespace CodeCompliance.Core
             double cy = _y0 + lyv * shift + _ty * s;
             return (cx + lxv * half, cy + lyv * half, cx - lxv * half, cy - lyv * half);
         }
-    }
 
-    /// <summary>
-    /// One straight chord of a ramp built from an explicitly drawn outline (left edge +
-    /// right edge, of possibly different lengths/shapes). Its left/right edge points at
-    /// both ends are already known from the drawing, so <see cref="EdgesAt"/> ignores the
-    /// <see cref="RampLineLocation"/>/width/designOffset arguments and just interpolates
-    /// between them.
-    /// </summary>
-    public sealed class RampVariableWidthSegment : RampPathSegment
-    {
-        private readonly double _lx0, _ly0, _rx0, _ry0;
-        private readonly double _lx1, _ly1, _rx1, _ry1;
-        private readonly double _len;
+        public override RampPathSegment SubSegment(double s0, double s1)
+            => new RampLineSegment(_x0 + _tx * s0, _y0 + _ty * s0, _x0 + _tx * s1, _y0 + _ty * s1);
 
-        public double Cx0 { get; }
-        public double Cy0 { get; }
-        public double Cx1 { get; }
-        public double Cy1 { get; }
-        public double WidthStart { get; }
-        public double WidthEnd { get; }
-
-        public RampVariableWidthSegment(
-            double lx0, double ly0, double rx0, double ry0,
-            double lx1, double ly1, double rx1, double ry1)
+        public override RampPathSegment? TryMergeWith(RampPathSegment next)
         {
-            _lx0 = lx0; _ly0 = ly0; _rx0 = rx0; _ry0 = ry0;
-            _lx1 = lx1; _ly1 = ly1; _rx1 = rx1; _ry1 = ry1;
-            Cx0 = (lx0 + rx0) / 2.0; Cy0 = (ly0 + ry0) / 2.0;
-            Cx1 = (lx1 + rx1) / 2.0; Cy1 = (ly1 + ry1) / 2.0;
-            WidthStart = Math.Sqrt((rx0 - lx0) * (rx0 - lx0) + (ry0 - ly0) * (ry0 - ly0));
-            WidthEnd = Math.Sqrt((rx1 - lx1) * (rx1 - lx1) + (ry1 - ly1) * (ry1 - ly1));
-            double dx = Cx1 - Cx0, dy = Cy1 - Cy0;
-            _len = Math.Sqrt(dx * dx + dy * dy);
-            if (_len < 1e-6)
-                _len = 1e-6;
-        }
-
-        public override bool IsArc => false;
-        public override double DrawnLength => _len;
-        public override (double X, double Y) Start => (Cx0, Cy0);
-        public override (double X, double Y) End => (Cx1, Cy1);
-
-        public override RampPathSegment Reversed()
-            => new RampVariableWidthSegment(_lx1, _ly1, _rx1, _ry1, _lx0, _ly0, _rx0, _ry0);
-
-        public override double CenterlineLength(RampLineLocation location, double width, double designOffset = 0) => _len;
-
-        public override (double LX, double LY, double RX, double RY) EdgesAt(
-            double s, RampLineLocation location, double width, double designOffset = 0)
-        {
-            double t = _len <= 1e-9 ? 0 : s / _len;
-            if (t < 0) t = 0;
-            if (t > 1) t = 1;
-            double lx = _lx0 + (_lx1 - _lx0) * t, ly = _ly0 + (_ly1 - _ly0) * t;
-            double rx = _rx0 + (_rx1 - _rx0) * t, ry = _ry0 + (_ry1 - _ry0) * t;
-            return (lx, ly, rx, ry);
+            if (!(next is RampLineSegment line))
+                return null;
+            (double ex, double ey) = End;
+            (double sx, double sy) = line.Start;
+            if ((ex - sx) * (ex - sx) + (ey - sy) * (ey - sy) > 1e-6)   // 1 mm
+                return null;
+            if (Math.Abs(_tx * line._ty - _ty * line._tx) > 1e-6)       // not parallel
+                return null;
+            if (_tx * line._tx + _ty * line._ty <= 0)                   // opposite direction
+                return null;
+            (double nx, double ny) = line.End;
+            return new RampLineSegment(_x0, _y0, nx, ny);
         }
     }
 
@@ -164,6 +145,7 @@ namespace CodeCompliance.Core
 
         public override bool IsArc => true;
         public override double DrawnLength => _r * _sweep;
+        public override double PlanTurn => _sweep;
         public override (double X, double Y) Start => PointAtAngle(_a0, _r);
         public override (double X, double Y) End => PointAtAngle(_a0 + _dir * _sweep, _r);
 
@@ -224,6 +206,156 @@ namespace CodeCompliance.Core
             double ca = Math.Cos(a), sa = Math.Sin(a);
             return (_cx + rLeft * ca, _cy + rLeft * sa, _cx + rRight * ca, _cy + rRight * sa);
         }
+
+        public override RampPathSegment SubSegment(double s0, double s1)
+            => new RampArcSegment(_cx, _cy, _r, _a0 + _dir * s0 / _r, Math.Abs(s1 - s0) / _r, _dir);
+
+        public override RampPathSegment? TryMergeWith(RampPathSegment next)
+        {
+            if (!(next is RampArcSegment arc) || arc._dir != _dir)
+                return null;
+            if (Math.Abs(arc._r - _r) > 1e-4)
+                return null;
+            if (Math.Abs(arc._cx - _cx) > 1e-4 || Math.Abs(arc._cy - _cy) > 1e-4)
+                return null;
+            if (Math.Abs(Wrap(arc._a0 - (_a0 + _dir * _sweep))) > 1e-4)
+                return null; // does not continue where this one ends
+            return new RampArcSegment(_cx, _cy, _r, _a0, _sweep + arc._sweep, _dir);
+        }
+
+        /// <summary>Angle folded into (-pi, pi].</summary>
+        private static double Wrap(double angle)
+        {
+            while (angle > Math.PI) angle -= 2.0 * Math.PI;
+            while (angle <= -Math.PI) angle += 2.0 * Math.PI;
+            return angle;
+        }
+    }
+
+    /// <summary>
+    /// One piece of a ramp whose outline was drawn explicitly: a left-edge curve and
+    /// a right-edge curve that may differ in length, radius and shape, so the ramp
+    /// width varies along the run. Each edge keeps its own true geometry — a drawn
+    /// arc stays an arc — and stationing runs along the curve traced by the midpoints
+    /// between the two edges, so <see cref="EdgesAt"/> ignores the location, width
+    /// and design-offset arguments: the drawing already fixes them.
+    /// </summary>
+    public sealed class RampOutlineSegment : RampPathSegment
+    {
+        private const int MidSamples = 64;
+
+        private readonly RampPathSegment _left, _right;
+        private readonly double _leftLen, _rightLen, _len;
+
+        public RampOutlineSegment(RampPathSegment left, RampPathSegment right)
+        {
+            _left = left;
+            _right = right;
+            _leftLen = left.DrawnLength;
+            _rightLen = right.DrawnLength;
+            _len = MeasureMidLength();
+            if (_len < 1e-6)
+                _len = 1e-6;
+        }
+
+        public RampPathSegment LeftEdge => _left;
+        public RampPathSegment RightEdge => _right;
+
+        public override bool IsArc => _left.IsArc || _right.IsArc;
+        public override double DrawnLength => _len;
+        public override double PlanTurn => Math.Max(_left.PlanTurn, _right.PlanTurn);
+
+        public override (double X, double Y) Start => MidAt(0);
+        public override (double X, double Y) End => MidAt(1);
+
+        // Reversing the direction of travel swaps which edge is on the left.
+        public override RampPathSegment Reversed()
+            => new RampOutlineSegment(_right.Reversed(), _left.Reversed());
+
+        public override double CenterlineLength(RampLineLocation location, double width, double designOffset = 0)
+            => _len;
+
+        public override (double LX, double LY, double RX, double RY) EdgesAt(
+            double s, RampLineLocation location, double width, double designOffset = 0)
+        {
+            double t = s / _len;
+            (double lx, double ly, _, _) = _left.EdgesAt(t * _leftLen, RampLineLocation.Center, 0);
+            (double rx, double ry, _, _) = _right.EdgesAt(t * _rightLen, RampLineLocation.Center, 0);
+            return (lx, ly, rx, ry);
+        }
+
+        public override RampPathSegment SubSegment(double s0, double s1)
+        {
+            double t0 = s0 / _len, t1 = s1 / _len;
+            return new RampOutlineSegment(
+                _left.SubSegment(t0 * _leftLen, t1 * _leftLen),
+                _right.SubSegment(t0 * _rightLen, t1 * _rightLen));
+        }
+
+        public override RampPathSegment? TryMergeWith(RampPathSegment next)
+        {
+            if (!(next is RampOutlineSegment other))
+                return null;
+            RampPathSegment? left = _left.TryMergeWith(other._left);
+            RampPathSegment? right = _right.TryMergeWith(other._right);
+            return left != null && right != null ? new RampOutlineSegment(left, right) : null;
+        }
+
+        /// <summary>Edge-to-edge width at fraction t (0 = start, 1 = end) of the piece.</summary>
+        public double WidthAtFraction(double t)
+        {
+            (double lx, double ly, double rx, double ry) = EdgesAt(t * _len, RampLineLocation.Center, 0);
+            return Math.Sqrt((rx - lx) * (rx - lx) + (ry - ly) * (ry - ly));
+        }
+
+        /// <summary>
+        /// Radius of the inner (tighter) drawn edge, or null when both edges are
+        /// straight. A straight edge counts as infinite radius, so a piece with one
+        /// straight and one curved edge reports the curved one.
+        /// </summary>
+        public double? InnerEdgeRadius()
+        {
+            double? left = (_left as RampArcSegment)?.DrawnRadius;
+            double? right = (_right as RampArcSegment)?.DrawnRadius;
+            if (!left.HasValue)
+                return right;
+            if (!right.HasValue)
+                return left;
+            return Math.Min(left.Value, right.Value);
+        }
+
+        /// <summary>Radius of the curve midway between the two edges, when both are arcs.</summary>
+        public double? CenterRadius()
+        {
+            double? left = (_left as RampArcSegment)?.DrawnRadius;
+            double? right = (_right as RampArcSegment)?.DrawnRadius;
+            return left.HasValue && right.HasValue ? (left.Value + right.Value) / 2.0 : (double?)null;
+        }
+
+        private (double X, double Y) MidAt(double t)
+        {
+            (double lx, double ly, _, _) = _left.EdgesAt(t * _leftLen, RampLineLocation.Center, 0);
+            (double rx, double ry, _, _) = _right.EdgesAt(t * _rightLen, RampLineLocation.Center, 0);
+            return ((lx + rx) / 2.0, (ly + ry) / 2.0);
+        }
+
+        /// <summary>
+        /// Length of the midpoint curve, sampled finely enough that the polyline
+        /// error stays well under a millimetre even on a quarter-circle piece.
+        /// </summary>
+        private double MeasureMidLength()
+        {
+            double total = 0;
+            (double X, double Y) previous = MidAt(0);
+            for (int i = 1; i <= MidSamples; i++)
+            {
+                (double X, double Y) current = MidAt((double)i / MidSamples);
+                double dx = current.X - previous.X, dy = current.Y - previous.Y;
+                total += Math.Sqrt(dx * dx + dy * dy);
+                previous = current;
+            }
+            return total;
+        }
     }
 
     /// <summary>
@@ -235,6 +367,7 @@ namespace CodeCompliance.Core
     public class RampPath
     {
         private const double JoinTolerance = 0.05; // 5 cm — tolerant of Revit tangent-arc snap slack
+        private const double MinPieceLength = 0.02; // 2 cm — shorter outline pieces are folded away
 
         public IReadOnlyList<RampPathSegment> Segments { get; }
         public double BaseElevation { get; }   // meters, from the path start
@@ -245,13 +378,11 @@ namespace CodeCompliance.Core
         /// drawn explicitly, so the ramp width may vary along its length.</summary>
         public bool IsVariableWidth { get; }
 
-        private RampPath(
-            List<RampPathSegment> segments, double baseElevation,
-            bool isVariableWidth = false, bool? forceHasArc = null)
+        private RampPath(List<RampPathSegment> segments, double baseElevation, bool isVariableWidth = false)
         {
             Segments = segments;
             BaseElevation = baseElevation;
-            HasArc = forceHasArc ?? segments.Any(s => s.IsArc);
+            HasArc = segments.Any(s => s.IsArc);
             DrawnLength = segments.Sum(s => s.DrawnLength);
             IsVariableWidth = isVariableWidth;
         }
@@ -284,122 +415,78 @@ namespace CodeCompliance.Core
         /// <summary>
         /// Signed design-line offset (meters, + = left of travel) putting the
         /// stationing/slope reference on the centreline of the innermost lane.
-        /// Zero for straight ramps, single-lane ramps, or a drawn outline (which
-        /// has no arc segments to key off — its width already varies as drawn).
+        /// Zero for straight ramps, single-lane ramps, and drawn outlines (whose
+        /// lanes are already implied by the edges the user drew).
         /// </summary>
         public double DesignOffsetFor(RampLineLocation location, double totalWidth, int lanes)
         {
-            if (lanes <= 1)
+            if (lanes <= 1 || IsVariableWidth)
                 return 0;
             double laneWidth = totalWidth / lanes;
             return InnerSide(location, totalWidth) * (totalWidth - laneWidth) / 2.0;
         }
 
-        /// <summary>Smallest inner radius among arc segments, or null when the path has no arcs.
-        /// For a drawn outline (<see cref="IsVariableWidth"/>) with no true arc segments, falls
-        /// back to a discrete curvature estimate from the tessellated centerline.</summary>
+        /// <summary>
+        /// Smallest inner-edge radius along the path, or null when it is all straight.
+        /// For a drawn outline this is the tighter of the two drawn edge radii — the
+        /// radius the user actually drew, not an estimate.
+        /// </summary>
         public double? MinInnerRadius(RampLineLocation location, double width)
         {
             double? min = null;
             foreach (RampPathSegment seg in Segments)
-                if (seg is RampArcSegment arc)
-                {
-                    double ri = arc.InnerRadius(location, width);
-                    if (!min.HasValue || ri < min.Value)
-                        min = ri;
-                }
-            if (!min.HasValue && IsVariableWidth)
-                min = ApproxVariableWidthInnerRadius();
-            return min;
-        }
-
-        /// <summary>
-        /// Approximates the minimum inner-edge radius of a drawn outline by fitting a local
-        /// circle through each three consecutive centerline stations (chord / 2*sin(turn/2))
-        /// and subtracting the local half-width, since the outline is stored as many small
-        /// straight chords rather than true arcs.
-        /// </summary>
-        private double? ApproxVariableWidthInnerRadius()
-        {
-            var pts = new List<(double X, double Y, double W)>();
-            foreach (RampPathSegment seg in Segments)
-                if (seg is RampVariableWidthSegment vw)
-                {
-                    if (pts.Count == 0)
-                        pts.Add((vw.Cx0, vw.Cy0, vw.WidthStart));
-                    pts.Add((vw.Cx1, vw.Cy1, vw.WidthEnd));
-                }
-            if (pts.Count < 3)
-                return null;
-
-            double? min = null;
-            for (int i = 1; i < pts.Count - 1; i++)
             {
-                double v1x = pts[i].X - pts[i - 1].X, v1y = pts[i].Y - pts[i - 1].Y;
-                double v2x = pts[i + 1].X - pts[i].X, v2y = pts[i + 1].Y - pts[i].Y;
-                double len1 = Math.Sqrt(v1x * v1x + v1y * v1y);
-                double len2 = Math.Sqrt(v2x * v2x + v2y * v2y);
-                if (len1 < 1e-6 || len2 < 1e-6)
-                    continue;
-                double turn = Math.Atan2(v1x * v2y - v1y * v2x, v1x * v2x + v1y * v2y);
-                if (Math.Abs(turn) < 1e-4)
-                    continue; // effectively straight here
-                double chord = (len1 + len2) / 2.0;
-                double rc = chord / (2.0 * Math.Sin(Math.Abs(turn) / 2.0));
-                double ri = rc - pts[i].W / 2.0;
-                if (!min.HasValue || ri < min.Value)
-                    min = ri;
+                double? radius = seg is RampArcSegment arc ? arc.InnerRadius(location, width)
+                               : (seg as RampOutlineSegment)?.InnerEdgeRadius();
+                if (radius.HasValue && (!min.HasValue || radius.Value < min.Value))
+                    min = radius;
             }
             return min;
         }
 
-        /// <summary>Smallest left/right edge separation anywhere along a drawn outline (meters).
-        /// Zero when the path is not variable-width.</summary>
-        public double MinWidthAlongPath()
-        {
-            double min = double.MaxValue;
-            foreach (RampPathSegment seg in Segments)
-                if (seg is RampVariableWidthSegment vw)
-                {
-                    if (vw.WidthStart < min) min = vw.WidthStart;
-                    if (vw.WidthEnd < min) min = vw.WidthEnd;
-                }
-            return min == double.MaxValue ? 0 : min;
-        }
+        /// <summary>Narrowest edge-to-edge width along a drawn outline (meters); 0 otherwise.</summary>
+        public double MinWidthAlongPath() => WidthRange().Min;
 
-        /// <summary>Largest left/right edge separation anywhere along a drawn outline (meters).
-        /// Zero when the path is not variable-width.</summary>
-        public double MaxWidthAlongPath()
+        /// <summary>Widest edge-to-edge width along a drawn outline (meters); 0 otherwise.</summary>
+        public double MaxWidthAlongPath() => WidthRange().Max;
+
+        private (double Min, double Max) WidthRange()
         {
-            double max = 0;
+            const int samples = 8;
+            double min = double.MaxValue, max = 0;
             foreach (RampPathSegment seg in Segments)
-                if (seg is RampVariableWidthSegment vw)
+            {
+                if (!(seg is RampOutlineSegment outline))
+                    continue;
+                for (int i = 0; i <= samples; i++)
                 {
-                    if (vw.WidthStart > max) max = vw.WidthStart;
-                    if (vw.WidthEnd > max) max = vw.WidthEnd;
+                    double w = outline.WidthAtFraction((double)i / samples);
+                    if (w < min) min = w;
+                    if (w > max) max = w;
                 }
-            return max;
+            }
+            return min == double.MaxValue ? (0, 0) : (min, max);
         }
 
         /// <summary>
-        /// Design-line radius when the whole path is one arc (the helical case where
+        /// Design-line radius when the whole path is one curve (the helical case where
         /// the ramp may loop past 360 degrees); null otherwise.
         /// </summary>
         public double? SingleArcDesignRadius(RampLineLocation location, double width, double designOffset = 0)
-            => Segments.Count == 1 && Segments[0] is RampArcSegment arc
-                ? arc.DesignRadius(location, width, designOffset)
-                : (double?)null;
+            => Segments.Count != 1 ? (double?)null
+             : (Segments[0] as RampArcSegment)?.DesignRadius(location, width, designOffset)
+               ?? (Segments[0] as RampOutlineSegment)?.CenterRadius();
 
-        /// <summary>Centreline radius when the whole path is one arc; null otherwise.</summary>
+        /// <summary>Centreline radius when the whole path is one curve; null otherwise.</summary>
         public double? SingleArcCenterlineRadius(RampLineLocation location, double width)
-            => Segments.Count == 1 && Segments[0] is RampArcSegment arc
-                ? arc.CenterlineRadius(location, width)
-                : (double?)null;
+            => Segments.Count != 1 ? (double?)null
+             : (Segments[0] as RampArcSegment)?.CenterlineRadius(location, width)
+               ?? (Segments[0] as RampOutlineSegment)?.CenterRadius();
 
         /// <summary>
-        /// Left/right edges at global design-line arc-length s. Beyond the drawn
-        /// path the last segment is extended (straight on, or continuing around its
-        /// circle).
+        /// Left/right edges at global design-line arc-length s. Outside the drawn
+        /// path the first/last segment continues (straight on, or around its circle),
+        /// which is how the ramp reaches exactly the run the calculation asks for.
         /// </summary>
         public (double LX, double LY, double RX, double RY) EdgesAt(
             double s, RampLineLocation location, double width, double designOffset = 0)
@@ -490,13 +577,15 @@ namespace CodeCompliance.Core
         }
 
         /// <summary>
-        /// Builds a variable-width ramp path from an explicitly drawn outline: independent
-        /// left-edge and right-edge curve chains (each chained the same way as
-        /// <see cref="FromCurves"/>, so either edge may itself be several lines/arcs), plus
-        /// start/end lines used only to validate the outline closes up. The two edges are
-        /// resampled at equal normalized arc-length fractions (a "loft" between rails of
-        /// possibly different lengths/shapes) into a chain of small straight chords, each
-        /// carrying its own left/right edge points — so the ramp width can vary along the run.
+        /// Builds a variable-width ramp path from an explicitly drawn outline: a left-edge
+        /// and a right-edge chain (each one or more connected lines/arcs), plus start/end
+        /// lines used only to validate that the outline closes up.
+        ///
+        /// The two edges are paired piece by piece so each piece keeps its drawn geometry:
+        /// a straight run stays ONE straight piece and a drawn curve stays a true arc on
+        /// both edges, with the two radii free to differ (that is what varies the width).
+        /// Edges drawn in several collinear/co-circular pieces are joined first, so the
+        /// ramp is never split where it does not change shape.
         /// </summary>
         public static RampPath FromOutline(
             IList<Curve> leftCurves, IList<Curve> rightCurves,
@@ -515,39 +604,121 @@ namespace CodeCompliance.Core
             if (Dist(lsx, lsy, rex, rey) < Dist(lsx, lsy, rsx, rsy))
                 right = Reverse(right);
 
-            (double X, double Y) leftStart = left.Segments[0].Start;
-            (double X, double Y) leftEnd = left.Segments[left.Segments.Count - 1].End;
-            (double X, double Y) rightStart = right.Segments[0].Start;
-            (double X, double Y) rightEnd = right.Segments[right.Segments.Count - 1].End;
+            ValidateCap(startCurves, left.Segments[0].Start, right.Segments[0].Start, "start");
+            ValidateCap(endCurves,
+                left.Segments[left.Segments.Count - 1].End,
+                right.Segments[right.Segments.Count - 1].End, "end");
 
-            ValidateCap(startCurves, leftStart, rightStart, "start");
-            ValidateCap(endCurves, leftEnd, rightEnd, "end");
-
-            double lLen = left.CenterlineLength(RampLineLocation.Center, 0);
-            double rLen = right.CenterlineLength(RampLineLocation.Center, 0);
-            if (lLen < 0.05 || rLen < 0.05)
+            List<RampPathSegment> leftPieces = Simplify(left.Segments);
+            List<RampPathSegment> rightPieces = Simplify(right.Segments);
+            if (leftPieces.Sum(s => s.DrawnLength) < 0.05 || rightPieces.Sum(s => s.DrawnLength) < 0.05)
                 throw new RampCalcException("The left or right edge is too short.");
 
-            int n = Math.Max(12, (int)Math.Ceiling(Math.Max(lLen, rLen) / 0.75));
-            var lp = new (double X, double Y)[n + 1];
-            var rp = new (double X, double Y)[n + 1];
-            for (int i = 0; i <= n; i++)
+            // Same number of pieces on both edges (the normal case for a ramp drawn
+            // straight/curve/straight): pair them up directly, so each piece keeps the
+            // exact geometry of both edges. Otherwise fall back to splitting both edges
+            // at every shape change on either side.
+            List<RampPathSegment> paired = leftPieces.Count == rightPieces.Count
+                ? PairByIndex(leftPieces, rightPieces)
+                : PairByFraction(leftPieces, rightPieces);
+
+            List<RampPathSegment> segments = Simplify(paired);
+            if (segments.Count == 0)
+                throw new RampCalcException("The drawn outline is too short to build a ramp from.");
+
+            return new RampPath(
+                segments, Math.Min(left.BaseElevation, right.BaseElevation), isVariableWidth: true);
+        }
+
+        private static List<RampPathSegment> PairByIndex(
+            List<RampPathSegment> left, List<RampPathSegment> right)
+        {
+            var paired = new List<RampPathSegment>();
+            for (int i = 0; i < left.Count; i++)
+                paired.Add(new RampOutlineSegment(left[i], right[i]));
+            return paired;
+        }
+
+        /// <summary>
+        /// Fallback pairing when the two edges have a different number of pieces: split
+        /// both at every shape change on either edge (by normalized length), so each
+        /// resulting piece still spans exactly one line/arc on each edge.
+        /// </summary>
+        private static List<RampPathSegment> PairByFraction(
+            List<RampPathSegment> left, List<RampPathSegment> right)
+        {
+            double leftLen = left.Sum(s => s.DrawnLength);
+            double rightLen = right.Sum(s => s.DrawnLength);
+
+            var fractions = new List<double>();
+            fractions.AddRange(Breakpoints(left, leftLen));
+            fractions.AddRange(Breakpoints(right, rightLen));
+            fractions.Sort();
+
+            // Keep only breakpoints far enough apart to leave a usable piece on both edges.
+            double minGap = Math.Max(MinPieceLength / leftLen, MinPieceLength / rightLen);
+            var kept = new List<double> { 0.0 };
+            foreach (double f in fractions)
+                if (f - kept[kept.Count - 1] > minGap && f < 1.0 - minGap)
+                    kept.Add(f);
+            kept.Add(1.0);
+
+            var paired = new List<RampPathSegment>();
+            for (int i = 0; i < kept.Count - 1; i++)
             {
-                (double lx, double ly, _, _) = left.EdgesAt(lLen * i / n, RampLineLocation.Center, 0);
-                (double rx, double ry, _, _) = right.EdgesAt(rLen * i / n, RampLineLocation.Center, 0);
-                lp[i] = (lx, ly);
-                rp[i] = (rx, ry);
+                RampPathSegment? l = SubAt(left, leftLen, kept[i], kept[i + 1]);
+                RampPathSegment? r = SubAt(right, rightLen, kept[i], kept[i + 1]);
+                if (l != null && r != null)
+                    paired.Add(new RampOutlineSegment(l, r));
             }
+            return paired;
+        }
 
-            var segs = new List<RampPathSegment>();
-            for (int i = 0; i < n; i++)
-                segs.Add(new RampVariableWidthSegment(
-                    lp[i].X, lp[i].Y, rp[i].X, rp[i].Y,
-                    lp[i + 1].X, lp[i + 1].Y, rp[i + 1].X, rp[i + 1].Y));
+        /// <summary>Normalized positions of the joints between an edge's pieces.</summary>
+        private static IEnumerable<double> Breakpoints(List<RampPathSegment> pieces, double total)
+        {
+            double offset = 0;
+            for (int i = 0; i < pieces.Count - 1; i++)
+            {
+                offset += pieces[i].DrawnLength;
+                yield return offset / total;
+            }
+        }
 
-            double baseZ = Math.Min(left.BaseElevation, right.BaseElevation);
-            bool hasArc = left.HasArc || right.HasArc;
-            return new RampPath(segs, baseZ, isVariableWidth: true, forceHasArc: hasArc);
+        /// <summary>The piece of one edge chain between two normalized positions.</summary>
+        private static RampPathSegment? SubAt(
+            List<RampPathSegment> pieces, double total, double t0, double t1)
+        {
+            double s0 = t0 * total, s1 = t1 * total, mid = (s0 + s1) / 2.0;
+            double offset = 0;
+            foreach (RampPathSegment piece in pieces)
+            {
+                double len = piece.DrawnLength;
+                if (mid <= offset + len || ReferenceEquals(piece, pieces[pieces.Count - 1]))
+                    return s1 - s0 < MinPieceLength ? null : piece.SubSegment(s0 - offset, s1 - offset);
+                offset += len;
+            }
+            return null;
+        }
+
+        /// <summary>Joins consecutive pieces that are really one line or one circle.</summary>
+        private static List<RampPathSegment> Simplify(IReadOnlyList<RampPathSegment> pieces)
+        {
+            var result = new List<RampPathSegment>();
+            foreach (RampPathSegment piece in pieces)
+            {
+                if (result.Count > 0)
+                {
+                    RampPathSegment? merged = result[result.Count - 1].TryMergeWith(piece);
+                    if (merged != null)
+                    {
+                        result[result.Count - 1] = merged;
+                        continue;
+                    }
+                }
+                result.Add(piece);
+            }
+            return result;
         }
 
         /// <summary>Reverses a path's segment order and each segment's own direction.</summary>
@@ -556,7 +727,7 @@ namespace CodeCompliance.Core
             var rev = new List<RampPathSegment>();
             for (int i = p.Segments.Count - 1; i >= 0; i--)
                 rev.Add(p.Segments[i].Reversed());
-            return new RampPath(rev, p.BaseElevation, p.IsVariableWidth, p.HasArc);
+            return new RampPath(rev, p.BaseElevation, p.IsVariableWidth);
         }
 
         /// <summary>Checks a selected start/end cap actually touches both edges (within tolerance),
