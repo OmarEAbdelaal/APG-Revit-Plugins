@@ -50,6 +50,7 @@ namespace CodeCompliance.Core.Dm
                         case "RMP-13": CheckUnwantedElements(doc, result, options, practice); break;
                         case "RMP-14": CheckSplitLevels(doc, result, options, practice, storeys); break;
                         case "RMP-15": CheckExportPreparation(doc, result, options, practice); break;
+                        case "RMP-16": CheckWallStoreys(doc, result, options, practice, storeys); break;
                     }
                 }
                 catch
@@ -222,6 +223,87 @@ namespace CodeCompliance.Core.Dm
             finding.CheckedCount = checkedColumns;
             finding.AffectedCount = spanning.Count;
             finding.Categories.Add(BuiltInCategory.OST_StructuralColumns.ToString());
+            Add(result, finding, result.ModelTitle, spanning, options);
+        }
+
+        // ── RMP-16 · one wall per storey ────────────────────────────────────────
+
+        /// <summary>
+        /// The column rule of RMP-02 applied to walls: a wall drawn from the ground floor
+        /// straight up to the roof exports as one IfcWall and cannot be assigned to a storey.
+        /// Walls with an unconnected height are measured from their geometry instead of a top
+        /// constraint, so a free-standing full-height wall is caught as well.
+        /// </summary>
+        private static void CheckWallStoreys(Document doc, DmAuditResult result, DmAuditOptions options,
+                                             DmModellingPractice practice, List<Level> storeys)
+        {
+            if (storeys.Count < 2)
+                return;
+
+            int maxSpan = (int)practice.Number("maximumStoreysSpanned", 1);
+            bool ignoreCurtain = practice.Flag("ignoreCurtainWalls", true);
+            bool useGeometry = practice.Flag("includeUnconnectedHeight", true);
+
+            var spanning = new List<Element>();
+            var details = new List<string>();
+            int checkedWalls = 0;
+
+            foreach (Wall wall in new FilteredElementCollector(doc)
+                         .OfCategory(BuiltInCategory.OST_Walls)
+                         .WhereElementIsNotElementType()
+                         .OfClass(typeof(Wall))
+                         .Cast<Wall>())
+            {
+                if (ignoreCurtain && IsCurtainWall(wall))
+                    continue;
+                if (!(doc.GetElement(wall.LevelId) is Level baseLevel))
+                    continue;
+                checkedWalls++;
+
+                double low;
+                double high;
+                string span;
+
+                ElementId topLevelId = ElementIdValue(wall, BuiltInParameter.WALL_HEIGHT_TYPE);
+                if (doc.GetElement(topLevelId) is Level topLevel)
+                {
+                    low = Math.Min(baseLevel.Elevation, topLevel.Elevation);
+                    high = Math.Max(baseLevel.Elevation, topLevel.Elevation);
+                    span = baseLevel.Name + " → " + topLevel.Name;
+                }
+                else
+                {
+                    // Unconnected height: the geometry is the only thing that says how far it goes.
+                    if (!useGeometry)
+                        continue;
+                    BoundingBoxXYZ? box = SafeBoundingBox(wall);
+                    if (box == null)
+                        continue;
+                    low = box.Min.Z;
+                    high = box.Max.Z;
+                    span = baseLevel.Name + " → unconnected, " +
+                           FeetToMeters(high - low).ToString("F1", CultureInfo.InvariantCulture) + " m tall";
+                }
+
+                int crossed = storeys.Count(l => l.Elevation > low + 1e-6 && l.Elevation <= high + 1e-6);
+                if (crossed <= maxSpan)
+                    continue;
+
+                spanning.Add(wall);
+                if (details.Count < 8)
+                    details.Add(Label(wall) + ": " + span + " (" + crossed + " storeys)");
+            }
+
+            if (spanning.Count == 0)
+                return;
+
+            DmFinding finding = PracticeFinding(practice,
+                spanning.Count + " of " + checkedWalls + " wall(s) span more than " + maxSpan + " storey",
+                "Walls modelled through several storeys: " + string.Join("; ", details) +
+                (spanning.Count > details.Count ? " …" : "") + ".");
+            finding.CheckedCount = checkedWalls;
+            finding.AffectedCount = spanning.Count;
+            finding.Categories.Add(BuiltInCategory.OST_Walls.ToString());
             Add(result, finding, result.ModelTitle, spanning, options);
         }
 

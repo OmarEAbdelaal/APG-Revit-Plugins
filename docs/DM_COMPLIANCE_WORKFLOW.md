@@ -28,7 +28,7 @@ shipped with the plugin and reloadable when DM revises the standard (see §5):
 | `usage_*.csv` — Appendix C controlled vocabularies | Valid space, unit, zone and building occupancy codes |
 | `category_to_ifc.json` | Which IFC class a Revit category exports as |
 | `shared_parameters.json`, `property_sets.json` | The DM shared parameters and the "Building Permit" property set |
-| `modelling_practices.json` — DM's 15 recommended modelling practices | How the model itself has to be built (see phase 7) |
+| `modelling_practices.json` — DM's 16 recommended modelling practices | How the model itself has to be built (see phase 7) |
 
 The audit runs in eight phases, mirroring DM's own offline self-assessment:
 
@@ -75,6 +75,7 @@ traced back to the practice (and searched for by typing e.g. `RMP-09` in the sea
 |---|---|---|
 | RMP-01 | Walls run from FFL down to SSL and up to the underside of the slab | Walls starting above their level, walls whose top reaches into the slab above, walls with an unconnected height |
 | RMP-02 | One column per storey | Columns constrained across more than one storey (foundation to roof) |
+| RMP-16 | One **wall** per storey | see below — the same rule for walls |
 | RMP-03 | Spaces properly enclosed | Walls and columns that are not room bounding, so the boundary runs through them |
 | RMP-04 | No empty area is left | Storeys whose placed rooms cover less than 90 % of the built floor area |
 | RMP-05 | Gate level and road level elements | Hardscape, landscape and boundary walls not on the gate level; roads not on the road level |
@@ -88,6 +89,7 @@ traced back to the practice (and searched for by typing e.g. `RMP-09` in the sea
 | RMP-13 | Clear unwanted elements | Furniture, casework, fittings and structural content still exported from the architectural model |
 | RMP-14 | Dummy level for split levels | Groups of walls and rooms sitting at another elevation on a storey level |
 | RMP-15 | Purge before the export | Unused loadable family types the export would carry |
+| RMP-16 | One wall per storey | Walls drawn through several floors instead of one segment per storey (the column rule of RMP-02, applied to walls) |
 
 The wording, the severity, the type of modification and **every tolerance** of these practices
 live in `modelling_practices.json`. Set `"enabled": false` on a practice to switch it off,

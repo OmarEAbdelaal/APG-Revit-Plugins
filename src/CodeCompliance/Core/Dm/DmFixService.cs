@@ -107,9 +107,10 @@ namespace CodeCompliance.Core.Dm
         /// <summary>Why a finding cannot be applied automatically, in the modeller's words.</summary>
         public static string WhyNot(DmFinding finding)
         {
-            string target = Target(finding);
-            if (target.Length > 0)
-                return WhyNotPractice(target);
+            // A modelling practice answers for itself, including the ones that carry no fix
+            // target at all (splitting a column or a wall, remodelling, a clash with a link).
+            if (finding.PracticeId.Length > 0)
+                return WhyNotPractice(Target(finding));
 
             switch (finding.FixKind)
             {

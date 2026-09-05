@@ -300,6 +300,26 @@
       "settings": {
         "maximumUnusedTypes": 50
       }
+    },
+    {
+      "id": "RMP-16",
+      "enabled": true,
+      "order": 16,
+      "scope": "Walls",
+      "title": "Every wall is modelled on its own storey, not through several floors",
+      "requirement": "A wall belongs to one storey, exactly as a column does: its base is the level of that storey and its top the level above. A wall drawn once from the ground floor to the roof exports as a single IfcWall spanning the whole building, so DM's platform cannot assign it to an IfcBuildingStorey and its area is counted against one floor instead of each floor it passes.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §2 — one element per storey, applied to walls",
+      "fixAction": "Split the walls at every storey and constrain each segment between its own level and the level above, adjusting the base and top offsets to the slabs (practice RMP-01).",
+      "revitSteps": "Open a section, select the wall ▸ Modify ▸ Split Element at each storey, then set Base Constraint / Top Constraint per segment. Doors and windows stay hosted in the segment they sit in — check them after the split.",
+      "mcpHint": "Splitting a wall is never done automatically: the wall hosts doors, windows and openings, and re-creating it would lose them. Propose the split table (wall id, base and top level, the storeys it crosses) and let the modeller do it.",
+      "settingsNote": "A wall with an unconnected height is measured from its geometry instead of its top constraint, so a 12 m free-standing wall is caught too. Curtain walls are skipped by default — a full-height facade is usually modelled deliberately; set ignoreCurtainWalls to false to include them.",
+      "settings": {
+        "maximumStoreysSpanned": 1,
+        "ignoreCurtainWalls": true,
+        "includeUnconnectedHeight": true
+      }
     }
   ]
 }

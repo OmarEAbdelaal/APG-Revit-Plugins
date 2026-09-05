@@ -55,9 +55,9 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
   plus a runnable fix script from `DmScriptBuilder` (+ `.Modelling.cs`).
 - Category ↔ IFC entity ↔ Appendix B table mapping lives in `DmRuleCatalog`; add a category
   there rather than in the audit code.
-- Phase 7 is DM's *Recommended Modelling Practices*: `modelling_practices.json` carries the 15
+- Phase 7 is DM's *Recommended Modelling Practices*: `modelling_practices.json` carries the 16
   practices (wording, severity, fix kind, thresholds); `DmAuditService.Modelling.cs` only
-  implements the detection, keyed on the practice id (`RMP-01` … `RMP-15`), and
+  implements the detection, keyed on the practice id (`RMP-01` … `RMP-16`), and
   `DmScriptBuilder.Modelling.cs` the fix script keyed on `DmFinding.FixData["target"]`.
 - `DmFixService` (+ `.Modelling.cs`) applies a finding **directly** in native Revit API calls
   (the "Fix this issue" button): one named transaction, nothing deleted, and no value invented
