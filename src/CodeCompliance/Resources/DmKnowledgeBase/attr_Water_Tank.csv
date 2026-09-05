@@ -1,0 +1,8 @@
+Water Tank (IfcTank),,,,,,,,"Predefined Type, IFC 4",object type override data samples,
+An IfcTank is a vessel or container in which a fluid or gas is stored for later use.,,,,,,,,"BASIN, BREAKPRESSURE, EXPANSION, FEEDANDEXPANSION, PRESSUREVESSEL, STORAGE, VESSEL","COLDWATERTANK, HOTWATERTANK",
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,-,"Holds the entity specific enumerations from the IFC standard that classifies the entity. If a custom value is needed, the attribute ObjectTypeOverride has to be used to define such custom type, whereas the PredefinedType is set to USERDEFINED.",YES,Text,BASIN,-,Required,-,
+Status,Status,Pset_TankTypeCommon,IFC Standard Property.,YES,Text,"New, Existing",-,Required,-,
+StorageType,StorageType,Pset_TankTypeCommon,IFC Standard Property.,YES,Text,underground,-,Required,-,
+HasLadder,HasLadder,Pset_TankOccurrence,IFC Standard Property.,YES,Boolean,YES/NO,-,Required,-,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,"Allows for a custom value to be added, if no applicable PredefinedType enumerator can be found.",YES,Text,HotWaterTank,-,Required,-,

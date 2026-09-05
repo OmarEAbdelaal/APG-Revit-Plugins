@@ -29,10 +29,10 @@ namespace CodeCompliance.UI
     /// </summary>
     public class RampInputWindow : Window
     {
-        private static readonly Brush Green = new SolidColorBrush(Color.FromRgb(0x1E, 0x84, 0x49));
-        private static readonly Brush Red = new SolidColorBrush(Color.FromRgb(0xC0, 0x39, 0x2B));
-        private static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0x6D, 0x7A, 0x8A));
-        private static readonly Brush Blue = new SolidColorBrush(Color.FromRgb(0x24, 0x71, 0xA3));
+        private static readonly Brush Green = ApgTheme.Green;
+        private static readonly Brush Red = ApgTheme.Red;
+        private static readonly Brush Muted = ApgTheme.Muted;
+        private static readonly Brush Blue = ApgTheme.Accent;
 
         private readonly RampPath _path;
         private readonly bool _singleArc;
@@ -59,6 +59,14 @@ namespace CodeCompliance.UI
         public double LaneWidth { get; private set; }
         public RampLineLocation Location { get; private set; } = RampLineLocation.Center;
         public double TotalWidth => LaneWidth * Lanes;
+
+        /// <summary>
+        /// Signed lateral offset (m, + = left of travel) of the slope/stationing
+        /// reference line: the centreline of the innermost lane for multi-lane
+        /// curved ramps (the code-governing line), 0 otherwise (including for a
+        /// drawn outline, whose width already varies as drawn).
+        /// </summary>
+        public double DesignOffset { get; private set; }
         public long FloorTypeId => (_floorTypeBox.SelectedItem as FloorTypeItem)?.Id ?? -1;
 
         /// <summary>Thickness of the chosen floor type (used for the loop clearance check).</summary>
@@ -77,16 +85,25 @@ namespace CodeCompliance.UI
             _singleArc = path.HasArc && path.Segments.Count == 1;
             _variableWidth = path.IsVariableWidth;
 
-            Title = "APG Plugins - Parking Ramp (Dubai BC Annex B, B.7.2.2)";
-            Width = 740;
-            Height = 660;
+            Title = "Parking Ramp – APG Revit Plugins";
+            Width = 760;
+            Height = 700;
+            MinWidth = 640;
+            MinHeight = 520;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             ResizeMode = ResizeMode.CanResize;
+            ApgTheme.Apply(this);
 
-            var root = new Grid { Margin = new Thickness(12) };
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var band = ApgTheme.CreateHeader("Parking Ramp Designer",
+                "Ramp Creator  ·  Dubai Building Code Annex B, B.7.2.2");
+            Grid.SetRow((FrameworkElement)band, 0);
+            root.Children.Add(band);
 
             var header = new TextBlock
             {
@@ -98,17 +115,19 @@ namespace CodeCompliance.UI
                        "The ramp starts at the start point of the first line/curve you drew or " +
                        "picked. Enter two of the three key parameters (h, S, R); the third is " +
                        "solved per Dubai Building Code Annex B Tables B.9 / B.10. The ramp is " +
-                       "created as Floor elements shaped with slab-shape (modify sub-elements) points.",
+                       "created as one continuous floor slab shaped with slab-shape (modify " +
+                       "sub-elements) points.",
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 10)
+                Foreground = Muted,
+                Margin = new Thickness(16, 10, 16, 8)
             };
-            Grid.SetRow(header, 0);
+            Grid.SetRow(header, 1);
             root.Children.Add(header);
 
-            var body = new Grid();
+            var body = new Grid { Margin = new Thickness(16, 0, 16, 0) };
             body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            Grid.SetRow(body, 1);
+            Grid.SetRow(body, 2);
             root.Children.Add(body);
 
             // ── Left column: inputs ─────────────────────────────────────────────
@@ -138,6 +157,15 @@ namespace CodeCompliance.UI
                 _lanesBox.Items.Add(nLanes);
             _lanesBox.SelectedIndex = 0;
             left.Children.Add(_lanesBox);
+            left.Children.Add(new TextBlock
+            {
+                Text = "For multi-lane curved ramps, slope and run are measured along the " +
+                       "centreline of the innermost lane (nearest the inner curve).",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Muted,
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
 
             left.Children.Add(FieldLabel(_variableWidth
                 ? "Lane width [m]  (from the drawn outline's narrowest point)"
@@ -227,12 +255,8 @@ namespace CodeCompliance.UI
             _rBox = NumberBox();
             left.Children.Add(_rBox);
 
-            var calc = new Button
-            {
-                Content = "Calculate + check compliance",
-                Margin = new Thickness(0, 10, 0, 4),
-                Padding = new Thickness(0, 6, 0, 6)
-            };
+            Button calc = ApgTheme.PrimaryButton("Calculate + check compliance");
+            calc.Margin = new Thickness(0, 10, 0, 4);
             calc.Click += (_, _) => Calculate();
             left.Children.Add(calc);
 
@@ -284,26 +308,23 @@ namespace CodeCompliance.UI
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 10, 0, 0)
+                Margin = new Thickness(16, 10, 16, 14)
             };
-            _okButton = new Button
-            {
-                Content = "Create ramp floors",
-                Width = 140,
-                Margin = new Thickness(0, 0, 8, 0),
-                IsEnabled = false,
-                IsDefault = true
-            };
+            _okButton = ApgTheme.PrimaryButton("Create ramp floors");
+            _okButton.Margin = new Thickness(0, 0, 8, 0);
+            _okButton.IsEnabled = false;
+            _okButton.IsDefault = true;
             _okButton.Click += (_, _) =>
             {
                 Confirmed = true;
                 Close();
             };
-            var cancel = new Button { Content = "Cancel", Width = 90, IsCancel = true };
+            Button cancel = ApgTheme.SecondaryButton("Cancel");
+            cancel.IsCancel = true;
             cancel.Click += (_, _) => Close();
             buttons.Children.Add(_okButton);
             buttons.Children.Add(cancel);
-            Grid.SetRow(buttons, 2);
+            Grid.SetRow(buttons, 3);
             root.Children.Add(buttons);
 
             Content = root;
@@ -375,9 +396,15 @@ namespace CodeCompliance.UI
             if (solve != RampSolveTarget.TotalRun && string.IsNullOrWhiteSpace(_rBox.Text))
             {
                 double w = EstimateTotalWidth();
-                _rBox.Text = _path.CenterlineLength(SelectedLocation, w)
+                _rBox.Text = _path.CenterlineLength(SelectedLocation, w, EstimateDesignOffset(w))
                     .ToString("F3", CultureInfo.InvariantCulture);
             }
+        }
+
+        private double EstimateDesignOffset(double totalWidth)
+        {
+            int lanes = _lanesBox.SelectedItem is int n ? n : 1;
+            return _path.DesignOffsetFor(SelectedLocation, totalWidth, lanes);
         }
 
         private double EstimateTotalWidth()
@@ -408,6 +435,8 @@ namespace CodeCompliance.UI
 
                 if (FloorTypeId < 0)
                     throw new RampCalcException("Select a floor type.");
+
+                DesignOffset = _path.DesignOffsetFor(Location, TotalWidth, Lanes);
 
                 RampSolveTarget solve = SelectedSolveTarget;
                 double? h = solve == RampSolveTarget.FloorHeight ? null : RequireValue(_hBox, "h");
@@ -466,9 +495,11 @@ namespace CodeCompliance.UI
             if (_singleArc)
             {
                 double rc = _path.SingleArcCenterlineRadius(Location, w) ?? 0;
-                if (rc > 0)
+                double rd = _path.SingleArcDesignRadius(Location, w, DesignOffset) ?? rc;
+                if (rc > 0 && rd > 0)
                 {
-                    double theta = res.R / rc;
+                    // Sweep follows the design line (inner-lane centreline when multi-lane).
+                    double theta = res.R / rd;
                     SetResult("rc", $"{rc:F2} m");
                     SetResult("sweep", $"{theta * 180.0 / Math.PI:F1} deg");
                     SetResult("Li", $"{(rc - w / 2.0) * theta:F3} m");
@@ -507,7 +538,7 @@ namespace CodeCompliance.UI
                 SetCompliance("radius", null, "N/A (straight path)");
             }
 
-            double? rcSingle = _path.SingleArcCenterlineRadius(Location, TotalWidth);
+            double? rcSingle = _path.SingleArcDesignRadius(Location, TotalWidth, DesignOffset);
             if (rcSingle.HasValue)
             {
                 double? gap = RampCalculator.MinLoopClearance(res, rcSingle.Value, SlabThickness);
@@ -529,7 +560,7 @@ namespace CodeCompliance.UI
                 SetCompliance("clearance", null, "Verify 2.4 m headroom above ramp");
             }
 
-            double drawn = _path.CenterlineLength(Location, TotalWidth);
+            double drawn = _path.CenterlineLength(Location, TotalWidth, DesignOffset);
             double diff = Math.Abs(drawn - res.R);
             if (diff <= 0.05)
             {
@@ -598,22 +629,9 @@ namespace CodeCompliance.UI
             return null;
         }
 
-        private static TextBlock SectionHeader(string text)
-        {
-            return new TextBlock
-            {
-                Text = text.ToUpperInvariant(),
-                FontWeight = FontWeights.Bold,
-                FontSize = 11,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x3A, 0x5C)),
-                Margin = new Thickness(0, 10, 0, 4)
-            };
-        }
+        private static TextBlock SectionHeader(string text) => ApgTheme.SectionHeader(text);
 
-        private static TextBlock FieldLabel(string text)
-        {
-            return new TextBlock { Text = text, Foreground = Muted, FontSize = 11, Margin = new Thickness(0, 2, 0, 0) };
-        }
+        private static TextBlock FieldLabel(string text) => ApgTheme.FieldLabel(text);
 
         private static TextBox NumberBox()
         {

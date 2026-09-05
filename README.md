@@ -1,35 +1,56 @@
-# Code Compliance – Fire Fighting (Revit Plugin)
+# APG Revit Plugins
 
-A Revit add-in that reviews **fire-fighting designs** against applicable codes and produces
-comprehensive review comments on plans.
+The **APG** suite of Revit add-ins, by **Omar Elsayed**. One codebase, one ribbon tab,
+one installer — currently shipping five plugins, with more to come.
 
 Supports **Revit 2024, 2025, 2026 and 2027** from a single code base.
 
-## What you get right now
+## The plugins
 
-After installing and starting Revit you will see a new ribbon tab:
+After installing and starting Revit you will see the **APG Revit Plugins** ribbon tab:
 
 ```
-Code Compliance
-└── Fire Fighting (panel)
-    ├── Escape Stairs  – detect all stairs, tick which are escape stairs
-    │                    (saved to the CC_IsEscapeStair parameter)
-    ├── Travel Paths   – create Path of Travel lines from the most remote point of
-    │                    every room to the nearest escape stair, through doors
-    ├── Egress Report  – measure paths, detect fire ratings of doors on the routes,
-    │                    create schedules and export an HTML + CSV report
-    ├── Model Check    – counts fire-protection elements (installation test)
-    └── About          – add-in version and info
+APG Revit Plugins (tab)
+├── Code Compliance – Fire Fighting (panel)
+│   ├── Escape Stairs  – detect all stairs, tick which are escape stairs
+│   │                    (saved to the CC_IsEscapeStair parameter)
+│   ├── Travel Paths   – create Path of Travel lines from the most remote point of
+│   │                    every room to the nearest escape stair, through doors
+│   ├── Egress Report  – measure paths, detect fire ratings of doors on the routes,
+│   │                    create schedules and export an HTML + CSV report
+│   └── Model Check    – counts fire-protection elements (installation test)
+├── DM BIM Compliance (panel)
+│   ├── DM Compliance  – audit the model against the Dubai Municipality BIM
+│   │                    e-submission requirements (IDS rules, Appendix B attributes,
+│   │                    Appendix C usage codes), list every element to modify and the
+│   │                    type of modification, highlight them in a 3D section box and
+│   │                    copy the Claude/Revit MCP prompt that fixes them
+│   └── DM Report      – run the same audit silently and export HTML + CSV + prompts
+├── Ramp Creator (panel)
+│   └── Parking Ramp   – draw a line/arc, enter two of {h, S, R}, get a
+│                        code-compliant ramp (Dubai Building Code Annex B,
+│                        Tables B.9 / B.10) built as Floor elements
+├── Revit MCP (panel)
+│   ├── MCP Server     – switch the in-Revit JSON-RPC service on/off so Claude
+│   │                    (Desktop / Code) can read and drive the open model
+│   └── MCP Setup      – install/update the MCP server + Revit command sets from
+│                        GitHub, configure Claude Desktop, choose the commands
+└── APG (panel)
+    └── About APG      – suite version, plugins, author and contact
 ```
 
-See [docs/EGRESS_WORKFLOW.md](docs/EGRESS_WORKFLOW.md) for the 3-step egress analysis guide.
+Guides: [docs/EGRESS_WORKFLOW.md](docs/EGRESS_WORKFLOW.md) (fire-fighting egress analysis),
+[docs/DM_COMPLIANCE_WORKFLOW.md](docs/DM_COMPLIANCE_WORKFLOW.md) (Dubai Municipality BIM compliance),
+[docs/RAMP_WORKFLOW.md](docs/RAMP_WORKFLOW.md) (parking ramp creator),
+[docs/ANNOTATION_WORKFLOW.md](docs/ANNOTATION_WORKFLOW.md) (magic annotation),
+[docs/REVIT_MCP.md](docs/REVIT_MCP.md) (connect Claude to Revit).
 
-## For end users: one-click installer
+## For end users: one installer for the whole suite
 
-Download `CodeComplianceSetup-<version>.exe` (from the GitHub **Releases** page, or from the
-**Actions → Build installer** workflow artifacts) and double-click it. No admin rights
-needed — the installer detects which Revit versions (2024–2027) are on the machine and
-deploys to those automatically. Uninstall from Windows **Settings → Apps** as usual.
+Download `APG-Revit-Plugins-Setup-<version>.exe` (from the GitHub **Releases** page, or
+from the **Actions → Build installer** workflow artifacts) and double-click it. No admin
+rights needed — the installer detects which Revit versions (2024–2027) are on the machine
+and deploys to those automatically. Uninstall from Windows **Settings → Apps** as usual.
 
 To build the installer yourself (needs [Inno Setup 6](https://jrsoftware.org/isdl.php)):
 
@@ -45,7 +66,7 @@ powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1
 3. Build (`Ctrl+Shift+B`). The post-build step automatically copies the add-in into
    `%APPDATA%\Autodesk\Revit\Addins\<version>\`.
 4. Start Revit. When asked about loading the new add-in, choose **Always Load**.
-5. Open any model and click **Code Compliance → Run FF Check**.
+5. Open any model and use the **APG Revit Plugins** tab.
 
 Alternatively, install from the command line without opening Visual Studio:
 
@@ -61,34 +82,67 @@ See [docs/INSTALLATION.md](docs/INSTALLATION.md) for details and troubleshooting
 CodeCompliance.sln                  Visual Studio solution (8 configurations: Debug/Release × R24–R27)
 src/CodeCompliance/
     CodeCompliance.csproj           Multi-version project (one codebase, 4 Revit targets)
-    App.cs                          IExternalApplication – builds the ribbon UI
-    Commands/
-        EscapeStairsCommand.cs      Step 1: detect stairs + mark escape stairs
-        TravelPathsCommand.cs       Step 2: create travel distance paths
-        EgressReportCommand.cs      Step 3: schedules + HTML/CSV report
-        FireFightingCheckCommand.cs Element count summary (installation test)
-        AboutCommand.cs             About dialog
-    Core/
+    App.cs                          IExternalApplication – builds the APG Revit Plugins ribbon tab
+    RibbonIcons.cs                  Loads the embedded APG brand icons
+    Resources/                      APG icons + wordmarks (regenerated by tools/gen-icons.ps1)
+    Resources/DmKnowledgeBase/      Dubai Municipality rule data (IDS rules, Appendix B
+                                    attribute matrices, Appendix C usage codes) — embedded
+                                    as data so a DM revision needs no code change
+    Commands/                       One IExternalCommand per ribbon button
+        EscapeStairsCommand.cs      CC-FF step 1: detect stairs + mark escape stairs
+        TravelPathsCommand.cs       CC-FF step 2: create travel distance paths
+        EgressReportCommand.cs      CC-FF step 3: schedules + HTML/CSV report
+        FireFightingCheckCommand.cs CC-FF: element count summary (installation test)
+        ParkingRampCommand.cs       Ramp Creator: code-compliant parking ramps
+        McpServerCommand.cs         Revit MCP: switch the socket service on/off
+        McpSetupCommand.cs          Revit MCP: install/update from GitHub, Claude config
+        AboutCommand.cs             About the suite
+    Core/                           Model logic (no UI)
         EscapeStairService.cs       Stair detection + CC_IsEscapeStair parameter
         EgressAnalysisService.cs    Path of Travel creation, lengths, doors on path
+        RampCalculator.cs           Dubai BC Annex B ramp math (Tables B.9/B.10)
+        RampPath.cs / RampFloorBuilder.cs  Ramp geometry + floor creation
+        UpdateChecker.cs            Suite update notifications (GitHub releases)
+        Mcp/                        Revit MCP module (no Revit SDK dependency)
+            McpSocketService.cs     TCP JSON-RPC 2.0 endpoint for the MCP server
+            McpCommandHost.cs       Loads command-set DLLs by reflection, built-in commands
+            McpInstaller.cs         Downloads server + command sets from GitHub releases,
+                                    auto-update, Claude Desktop configuration
+            McpSettings.cs / McpPaths.cs / McpLog.cs
     Reporting/
         EgressReportWriter.cs       HTML + CSV export
         ScheduleBuilder.cs          Revit schedules
-    UI/
-        EscapeStairsWindow.cs       Stair selection dialog (WPF)
+    UI/                             Code-only WPF dialogs, shared APG theme
+        ApgTheme.cs                 Brand colors, header band, buttons, cards
+        AboutWindow.cs              Suite about dialog
+        EscapeStairsWindow.cs       Stair selection dialog
+        RampInputWindow.cs          Ramp design + live compliance dialog
+        McpSetupWindow.cs           Revit MCP setup / status dialog
 install/
     CodeCompliance.addin            Revit add-in manifest
-    install.ps1                     Build + install for any/all Revit versions
-    uninstall.ps1                   Remove the add-in
+    install.ps1 / uninstall.ps1     Build + (un)install for any/all Revit versions
 installer/
-    CodeCompliance.iss              Inno Setup script for the end-user setup.exe
+    CodeCompliance.iss              Inno Setup script for the single suite setup.exe
+    apg.ico                         Installer icon (generated)
     build-installer.ps1             Builds all targets + compiles the installer
+tools/
+    gen-icons.ps1                   Regenerates all APG brand assets from code
 .github/workflows/
     build-installer.yml             CI: builds the setup.exe on every push / release tag
 docs/
     INSTALLATION.md                 Install, test and troubleshooting guide
     ARCHITECTURE.md                 How multi-version targeting works + roadmap
+    EGRESS_WORKFLOW.md              Fire-fighting egress analysis user guide
+    RAMP_WORKFLOW.md                Parking ramp creator user guide
 ```
+
+## Adding a future APG plugin
+
+1. Add its commands under `src/CodeCompliance/Commands/` and logic under `Core/`.
+2. Create a new ribbon panel for it in `App.cs` (`CreateRibbon`) on the existing
+   **APG Revit Plugins** tab, with icons from `tools/gen-icons.ps1`.
+3. Style its dialogs with `UI/ApgTheme.cs` so the whole suite looks the same.
+4. It ships automatically in the same installer — nothing else to change.
 
 ## How multi-version support works
 
@@ -106,16 +160,17 @@ versions. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## Roadmap
 
 - [x] Multi-version project skeleton (2024–2027)
-- [x] Ribbon UI + installable test command
-- [x] End-user installer (.exe) + CI build
-- [x] Escape stair detection & tagging (CC_IsEscapeStair parameter)
-- [x] Travel distance paths (room → escape stair, through doors)
-- [x] Door fire-rating detection on escape routes
-- [x] Egress schedules + HTML/CSV report
-- [ ] Pass/fail rules (max travel distance, required door ratings — values to be specified)
-- [ ] Two-exit / alternative route checks
+- [x] APG Revit Plugins ribbon tab + branding + single installer (.exe) + CI build
+- [x] Code Compliance – Fire Fighting: escape stairs, travel paths, fire ratings, reports
+- [x] Ramp Creator: Dubai BC Annex B parking ramps as floors
+- [x] Magic Annotation: one-step view annotation
+- [x] Revit MCP: Claude ↔ Revit connector with auto-updating server and command sets
+      (server + commands live in [OmarEAbdelaal/revit-mcp](https://github.com/OmarEAbdelaal/revit-mcp))
+- [ ] Fire Fighting: pass/fail rules (max travel distance, required door ratings)
+- [ ] Fire Fighting: two-exit / alternative route checks
 - [ ] Review-comment annotations on plans
+- [ ] More APG plugins
 
-## Author
+## Company & author
 
-Omar E. Abdelaal
+**APG** — author **Omar Elsayed** (omar.e.abdelaal@gmail.com)

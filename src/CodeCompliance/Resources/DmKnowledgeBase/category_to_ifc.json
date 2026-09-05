@@ -1,0 +1,171 @@
+{
+  "Ceilings": [
+    "IfcCovering"
+  ],
+  "Columns": [
+    "IfcColumn"
+  ],
+  "Conduits": [
+    "IFCCableCarrierSegment"
+  ],
+  "Curtain Panels": [
+    "IfcCurtainWall"
+  ],
+  "Curtain Systems": [
+    "IfcCurtainWall"
+  ],
+  "Curtain Wall Mullions": [
+    "IfcCurtainWall"
+  ],
+  "Detail Items": [
+    "IfcAnnotation"
+  ],
+  "Doors": [
+    "IfcDoor"
+  ],
+  "Duct Fittings": [
+    "IfcDuctFitting"
+  ],
+  "Filled region": [
+    "IfcAnnotation"
+  ],
+  "Fire Alarm Devices": [
+    "IfcSensor"
+  ],
+  "Floors": [
+    "IfcSlab"
+  ],
+  "Generic Models": [
+    "IfcBuildingElementProxy",
+    "IfcOpeningElement"
+  ],
+  "Grids": [
+    "IfcGrid"
+  ],
+  "Imports in Families": [
+    "IfcBuildingElementProxy"
+  ],
+  "Levels": [
+    "IfcBuildingStorey"
+  ],
+  "Lines": [
+    "IfcAnnotation"
+  ],
+  "Mass": [
+    "IfcBuildingElementProxy",
+    "IfcOpening",
+    "IfcRoof",
+    "IfcSlab",
+    "IfcWall"
+  ],
+  "Massing": [
+    "IfcBuildingElementProxy"
+  ],
+  "Parking": [
+    "IfcBuildingElementProxy",
+    "IfcSpaceType"
+  ],
+  "Parts": [
+    "IfcBuildingElementPart"
+  ],
+  "Pipe Fittings": [
+    "IfcPipeFitting"
+  ],
+  "Railings": [
+    "IfcRailing"
+  ],
+  "Ramps": [
+    "IfcRamp"
+  ],
+  "Roads": [
+    "IfcCivilElement"
+  ],
+  "Roofs": [
+    "IfcRoof"
+  ],
+  "Rooms": [
+    "IfcSpace"
+  ],
+  "Ruled Curtain System": [
+    "IfcCurtainWall"
+  ],
+  "Shaft Openings": [
+    "IfcOpeningElement"
+  ],
+  "Site": [
+    "IfcBuildingElementProxy",
+    "IfcSite",
+    "IfcSlab"
+  ],
+  "Spaces": [
+    "IfcSpace"
+  ],
+  "Specialty Equipment": [
+    "IfcBuildingElementProxy",
+    "IfcDoor",
+    "IfcTransportElement"
+  ],
+  "Stairs": [
+    "IfcStair"
+  ],
+  "Structural Area Reinforcement": [
+    "IfcReinforcingBar"
+  ],
+  "Structural Beam Systems": [
+    "IfcAssembly"
+  ],
+  "Structural Columns": [
+    "IfcColumn"
+  ],
+  "Structural Fabric Areas": [
+    "IfcGroup"
+  ],
+  "Structural Fabric Reinforcement": [
+    "IfcReinforcementMesh"
+  ],
+  "Structural Foundations": [
+    "IfcSlab"
+  ],
+  "Structural Framing": [
+    "IfcBuildingElementProxy"
+  ],
+  "Structural Path Reinforcement": [
+    "IfcReinforcingBar"
+  ],
+  "Structural Stiffeners": [
+    "IfcPlate"
+  ],
+  "Structural Trusses": [
+    "IfcAssembly"
+  ],
+  "Text Notes": [
+    "IfcAnnotation"
+  ],
+  "Topography": [
+    "IfcBuildingElementProxy",
+    "IfcSite"
+  ],
+  "Toposolid": [
+    "IfcSite"
+  ],
+  "Walls": [
+    "IfcBuildingElementProxy",
+    "IfcOpeningElement",
+    "IfcWall"
+  ],
+  "Walls/Interior:1": [
+    "IfcWall"
+  ],
+  "Walls/Exterior:2": [
+    "IfcWall"
+  ],
+  "Walls/Foundation:3": [
+    "IfcWall"
+  ],
+  "Walls/Retaining:4": [
+    "IfcWall"
+  ],
+  "Windows": [
+    "IfcWindow"
+  ]
+}

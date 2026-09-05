@@ -1,0 +1,8 @@
+Valve (IfcValve) ,,,,,,"Predefined Type , IFC 2x3","Predefined Type, IFC 4", object type override data samples,
+Description: An IfcValve is used in a building services piping distribution system to control or modulate the flow of the fluid.,,,,,,"AIRRELEASE, ANTIVACUUM, CHANGEOVER, CHECK, COMMISSIONING, DIVERTING, DRAWOFFCOCK, DOUBLECHECK, DOUBLEREGULATING, FAUCET, FLUSHING, GASCOCK, GASTAP, ISOLATING, MIXING, PRESSUREREDUCING, PRESSURERELIEF, REGULATING, SAFETYCUTOFF, STEAMTRAP, STOPCOCK","AIRRELEASE, ANTIVACUUM, CHANGEOVER, CHECK, COMMISSIONING, DIVERTING, DRAWOFFCOCK, DOUBLECHECK, DOUBLEREGULATING, FAUCET, FLUSHING, GASCOCK, GASTAP, ISOLATING, MIXING, PRESSUREREDUCING, PRESSURERELIEF, REGULATING, SAFETYCUTOFF, STEAMTRAP, STOPCOCK",/,
+Attribute,IFC Reference,Property Set,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,_,YES,Text,DOUBLECHECK,Y,Y,Y,
+Status,Status,Pset_ValveTypeCommon,YES,Text,"New, Existing",N,N,N,
+Size,Size,Pset_ValveTypeCommon,YES,Number  (Unit in m),0.01,Y,Y,Y,
+WorkingPressure,WorkingPressure,Pset_ValveTypeCommon,YES,Number (Unit in Pa),60,N,Y,Y,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,YES,Text,,Y,Y,Y,

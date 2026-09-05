@@ -1,20 +1,23 @@
 ---
 name: revit-plugin-dev
 description: >
-  Develop the Code Compliance Revit plugin in this repo: project structure, adding
+  Develop the APG Revit Plugins suite in this repo: project structure, adding
   commands and ribbon buttons, multi-version Revit API rules (2024-2027), and how to
   compile/verify changes. Use whenever writing or modifying C# code under
   src/CodeCompliance, adding features, or fixing build errors.
 ---
 
-# Revit Plugin Development (Code Compliance)
+# Revit Plugin Development (APG Revit Plugins)
 
 ## What this project is
 
-A Revit add-in ("Code Compliance - Fire Fighting") that reviews fire-fighting designs.
-One C# codebase targets **Revit 2024, 2025, 2026 and 2027** via build configurations.
-Current feature set: egress analysis (escape stairs → travel paths → fire-rating report).
-See `docs/EGRESS_WORKFLOW.md` for the user workflow and `docs/ARCHITECTURE.md` for design.
+The APG Revit Plugins suite (author: Omar Elsayed): one ribbon tab "APG Revit Plugins"
+with one panel per plugin. Current plugins: "Code Compliance – Fire Fighting" (egress
+analysis: escape stairs → travel paths → fire-rating report) and "Ramp Creator"
+(Dubai BC Annex B parking ramps). One C# codebase targets **Revit 2024, 2025, 2026
+and 2027** via build configurations.
+See `docs/EGRESS_WORKFLOW.md` / `docs/RAMP_WORKFLOW.md` for user workflows and
+`docs/ARCHITECTURE.md` for design.
 
 ## Critical environment fact: compile via CI, not locally
 
@@ -28,7 +31,7 @@ Windows-only. The compile loop is:
 4. Check the run via the GitHub MCP tools (`actions_list` / `actions_get` /
    `get_job_logs`). Grep the saved log for `error |Build failed for|Included Revit targets`.
 5. A successful run means the code compiles against all four real Revit APIs and
-   uploads a `CodeComplianceSetup` installer artifact.
+   uploads an `APG-Revit-Plugins-Setup` installer artifact.
 
 Never claim code compiles until CI is green. If one target fails, `build-installer.ps1`
 excludes it from the installer with a warning — always verify the log line
@@ -38,14 +41,20 @@ excludes it from the installer with a warning — always verify the log line
 
 ```
 src/CodeCompliance/
-  App.cs                      IExternalApplication - ribbon UI ONLY, no model logic
+  App.cs                      IExternalApplication - ribbon UI ONLY, no model logic.
+                              Tab "APG Revit Plugins", one panel per plugin; a new
+                              plugin = a new panel here
+  RibbonIcons.cs              Loads embedded APG icons (Resources/*.png)
+  Resources/*.png             Brand assets - regenerate via tools/gen-icons.ps1
   Commands/*.cs               One IExternalCommand per ribbon button (thin entry points)
-  Core/*.cs                   Model logic (stairs, egress analysis) - no UI
+  Core/*.cs                   Model logic (stairs, egress, ramps) - no UI
   Reporting/*.cs              Schedules + HTML/CSV export
-  UI/*.cs                     WPF windows - CODE-ONLY WPF, no XAML (see rules below)
+  UI/*.cs                     WPF windows - CODE-ONLY WPF, no XAML (see rules below);
+                              style with UI/ApgTheme.cs (header band, buttons, palette)
 install/CodeCompliance.addin  Manifest (do not change the AddInId GUID - it keeps
                               "Always Load" trust and installer identity)
-installer/                    Inno Setup script + build script
+installer/                    Inno Setup script + build script + apg.ico
+tools/gen-icons.ps1           Regenerates all APG brand assets
 ```
 
 ## Multi-version rules (the part that breaks builds)

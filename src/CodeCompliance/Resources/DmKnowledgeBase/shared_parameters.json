@@ -1,0 +1,1002 @@
+[
+  {
+    "name": "MechanicalVentilationRate",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "GateLevel",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SecondMullionOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "OccupancyNumber",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Building1Type",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "StructuralClass",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "AirConditioning",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "OccupancyUsageCode",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ParkingUse",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "PredefinedType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FrameThickness1",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "IsExternal",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "WaistThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "TotalArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "TotalNetArea",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "AssessmentCondition",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "MaterialPassportCodes",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "UnitUsageDescription",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "Slope",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "BuildingHeightLimit",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "SecondTransomOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "InternalShadingCoefficient",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Fragility",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SprinklerProtectionAutomatic",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "NominalHeight",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "TemperatureRange",
+    "dataType": "MULTILINETEXT"
+  },
+  {
+    "name": "IsOccupied",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "RequiredHeadroom",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "PressureRange",
+    "dataType": "MULTILINETEXT"
+  },
+  {
+    "name": "OuterDiameter",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "IsAdaptable",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Headroom",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "DoorClearWidth",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "Construction",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ZoneName",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "BuildingOccupancyUsageCode",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsCoated",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Status",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "NaturalVentilation",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "FootPrintArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "MainFireUse",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FlammabilityRating",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "CasingThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "NosingLength",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "IsFamily",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "CapacityPeople",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "BuildingOccupancyUsageDescription",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FireProtectionClass",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "TotalBuildupArea",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "LandID",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsCommonFacility",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Translucency",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "UnitNo",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "BuildingID",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ThermalTransmittance",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SpaceHumidityWinter",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "AirConditioningCentral",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "AssessmentDate",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "Span",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "RatedVoltage",
+    "dataType": "MULTILINETEXT"
+  },
+  {
+    "name": "SkirtingBoard",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "HasVisionPanel",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "FloorAreaRatio",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "FragilityRating",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "Finish",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SelfLatching",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Concealed",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "IsOccupiedSpace",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SpaceTemperatureWinterMin",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "PanelOperation2",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ThresholdDepth",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "HasNonSkidSurface",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SiteCoverageRatio",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "BoreSize",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "FrameDepth1",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "Operation",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsWired",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Shape",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsCirculationSpace",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "MullionThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "SpaceTemperatureMin",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Building3Type",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ConstructionMethod",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsAccessible",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "TypeDesignator",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "NameOverride",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "RecycledSteelWeight",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "BuildableArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "PowerFactor",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "NetPlannedArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "IsSkilledOperator",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "ExtendToStructure",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "UnitUsageCode",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "MarketCategory",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FireRiskFactor",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ThresholdThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "RecycledConcreteRatio",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "IsPermanentID",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SpaceHumiditySummer",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "IsLightWeightCovering",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "OccupancyExtraInfo",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IfcDescription",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "TotalWattage",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "ConcealedFlooring",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "FlammableStorage",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "GrossFloorArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "HasLiner",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "FrameThickness3",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "ArtificialLighting",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "TransomThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "IfcObjectType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsHabitableSpace",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "CasingDepth",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "HasWheelStop",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "PanelOperation1",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "BIMStandardVersion",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "YearOfConstruction",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ConcealedCeiling",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "InsulationStandardClass",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "LiningOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "ThresholdOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "CompressiveStrength",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SpaceTemperatureSummerMin",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "FirstTransomOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "NumberOfPoles",
+    "dataType": "INTEGER"
+  },
+  {
+    "name": "HasDrive",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "IsAisle",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Reference",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "Combustible",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Occupancy",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FireExit",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SpaceTemperatureWinter",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "NumberOfStoreys",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Building4Type",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "RecycledAluminiumRatio",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "NumberOfSources",
+    "dataType": "INTEGER"
+  },
+  {
+    "name": "HandicapAccessible",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "StrengthClass",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "PanelDepth1",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "Recyclable",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "PanelDepth2",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "ParkingUnits",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ExternalShadingCoefficient",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "ReinforcementAreaRatio",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SelfLocking",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "NetAreaPlanned",
+    "dataType": "AREA"
+  },
+  {
+    "name": "ClearWidth",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "RecycledGypsumWeight",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "BuildingNum",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Capacity",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "NominalDiameterOrWidth",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "LightReflectanceValue",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "TotalFloorGrossArea",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SolarHeatGainTransmittance",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "FrameThickness2",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "FillGas",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsMain",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Zone NetAreaPlanned",
+    "dataType": "AREA"
+  },
+  {
+    "name": "TransomOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "PredefinedTypeOverride",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FirstMullionOffset",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "InsetShadingCoefficient",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "AssessmentDescription",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "Zone GrossAreaPlanned",
+    "dataType": "AREA"
+  },
+  {
+    "name": "MarketSubCategory",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "TotalGrossArea",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "AncillaryFireUse",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "GrossPlannedArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "PanelWidth2",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "CapacityWeight",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Building2Type",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SpaceUsageDescription",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FireRating",
+    "dataType": "INTEGER"
+  },
+  {
+    "name": "PressureClass",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "LiningThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "PanelWidth1",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SpaceTemperatureMax",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "InvertElevation",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "CompositionType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ReinforcementVolumeRatio",
+    "dataType": "MASS_DENSITY"
+  },
+  {
+    "name": "SecurityRating",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "UnitExtraInfo",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "PanelPosition2",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "PitchAngle",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Height",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "Illuminance",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "DiscontinuedHeating",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "NaturalVentilationRate",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "IsCovered",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SpaceUsageCode",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SprinklerProtection",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SpaceTemperatureSummerMax",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "ObjectTypeOverride",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SolarReflectanceIndex",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "IsTempered",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "HasProtectiveEarth",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "ThermalTransmittanceSummer",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Reflectivity",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "WorkingPressure",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "SpaceHumidity",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "AirPressurization",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "ConstructionMode",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FlangeThickness",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "SpaceTemperatureSummer",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "OccupancyUse",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "RecycledSteelRatio",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "NetFloorArea",
+    "dataType": "AREA"
+  },
+  {
+    "name": "Gradient",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "FrameDepth2",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "IsLandmarked",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "LiningDepth",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "FlangeDiameter",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "GrossAreaPlanned",
+    "dataType": "AREA"
+  },
+  {
+    "name": "SurfaceSpreadOfFlame",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "BeamRadiationTransmittance",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "ZoneObjectType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "Color",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SpaceTemperatureWinterMax",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "AcousticRating",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "RecycledConcreteVolume",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "BuildingNo",
+    "dataType": "INTEGER"
+  },
+  {
+    "name": "LightFixtureMountingType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ConcreteCover",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "InnerDiameter",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "LightFixturePlacingType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "FireHazardFactor",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "ThermalTransmittanceWinter",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Reinforcement",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "IsEntrance",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "RequiredSlope",
+    "dataType": "ANGLE"
+  },
+  {
+    "name": "RecycledAluminiumWeight",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "ParcelId",
+    "dataType": "INTEGER"
+  },
+  {
+    "name": "IsLaminated",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "HardwareHeight",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "GlazingAreaFraction",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "Infiltration",
+    "dataType": "NUMBER"
+  },
+  {
+    "name": "OccupancyType",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "SelfClosing",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "SmokeStop",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "Compartmentation",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "IfcMaterial",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "LoadBearing",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "IsSlipResistant",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "E-Charging",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "FrameDepth3",
+    "dataType": "LENGTH"
+  },
+  {
+    "name": "ZoneDescription",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "PanelPosition1",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "PubliclyAccessible",
+    "dataType": "YESNO"
+  },
+  {
+    "name": "IfcSpatialContainer",
+    "dataType": "TEXT"
+  },
+  {
+    "name": "BuildingPartNum",
+    "dataType": "NUMBER"
+  }
+]

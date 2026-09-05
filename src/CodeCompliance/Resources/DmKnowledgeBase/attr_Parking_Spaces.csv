@@ -1,0 +1,12 @@
+Spaces (IfcSpaceType.Parking),,,,,,,,"Predefined Type, IFC 4",Object type override data sample,Parking Use data samples
+"An IfcSpaceType.Parking is a dedicated space to use as a parking space for vehicles, including access, as a parking aisle",,,,,,,,PARKING,"PARALLEL, 90DEGREE, 45DEGREE, 60DEGREE, 75DEGREE, LOADINGTRUCK12M, LOADINGTRUCK15M, LOADINGTRUCK9M","REGULAR, BUS, TRUCK, VAN, FAMILY"
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,-,"Holds the entity specific enumerations from the IFC standard that classifies the entity. If a custom value is needed, the attribute ObjectTypeOverride has to be used to define such custom type, whereas the PredefinedType is set to USERDEFINED.",YES,Text,PARKING,-,Required,-,
+HandicapAccessible,HandicapAccessible,Pset_SpaceCommon/Building Permit,IFC Standard Property. The value should be the same under Pset_SpaceCommon and Building Permit property set.,YES,Boolean,YES/NO,-,Required,-,
+IsExternal,IsExternal,Pset_SpaceCommon/Building Permit,IFC Standard Property. The value should be the same under Pset_SpaceCommon and Building Permit property set.,YES,Boolean,YES/NO,-,Required,-,
+ParkingUse,ParkingUse,Building Permit,NA,YES,Text,BUS,-,Required,-,
+E-Charging,E-Charging,Building Permit,NA,YES,Boolean,YES/NO,-,Required,-,
+ParkingUnits,ParkingUnits,Building Permit,NA,YES,Text,10 Units,-,Required,-,
+IsAisle,IsAisle,Building Permit,NA,YES,Boolean,YES/NO,-,Required,-,
+HasWheelStop,HasWheelStop,Building Permit,NA,YES,Boolean,YES/NO,-,Required,-,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,"Allows for a custom value to be added, if no applicable PredefinedType enumerator can be found.",YES,Text,PARKING,-,Required,-,

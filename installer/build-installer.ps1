@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-    Builds the add-in for all Revit versions and compiles the user installer (.exe).
+    Builds the APG Revit Plugins suite for all Revit versions and compiles the
+    single user installer (.exe).
 
 .DESCRIPTION
     1. Builds src/CodeCompliance in Release for every Revit version (2024-2027).
        If a single version fails to build (e.g. its API package is not on NuGet yet),
        it is skipped with a warning and the installer is produced without it.
     2. Compiles installer/CodeCompliance.iss with Inno Setup 6.
-       Output: installer/output/CodeComplianceSetup-<version>.exe
+       Output: installer/output/APG-Revit-Plugins-Setup-<version>.exe
 
     Requirements: .NET SDK 8+ and Inno Setup 6 (https://jrsoftware.org/isdl.php,
     or: winget install JRSoftware.InnoSetup)

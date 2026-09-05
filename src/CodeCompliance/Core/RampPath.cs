@@ -8,6 +8,12 @@ namespace CodeCompliance.Core
     /// <summary>
     /// One plan segment of the ramp path. All values in meters; the path lives in
     /// plan (XY) — elevations come from the ramp calculation, not from the drawing.
+    ///
+    /// Stationing (arc-length s) is measured along the DESIGN LINE: the ramp
+    /// centreline shifted sideways by <c>designOffset</c> (meters, positive toward
+    /// the LEFT of the direction of travel). For multi-lane ramps the design line
+    /// is the centreline of the innermost lane, which is the code-governing line
+    /// for slope on curved ramps. designOffset = 0 keeps the old behaviour.
     /// </summary>
     public abstract class RampPathSegment
     {
@@ -17,15 +23,16 @@ namespace CodeCompliance.Core
         public abstract (double X, double Y) End { get; }
         public abstract RampPathSegment Reversed();
 
-        /// <summary>Centreline length of this segment for the given drawn-line location and total width.</summary>
-        public abstract double CenterlineLength(RampLineLocation location, double width);
+        /// <summary>Design-line length of this segment for the given drawn-line location, total width and design offset.</summary>
+        public abstract double CenterlineLength(RampLineLocation location, double width, double designOffset = 0);
 
         /// <summary>
-        /// Left/right ramp edge positions at centreline arc-length s from the segment
-        /// start. s may exceed the segment length (used to extend the last segment).
+        /// Left/right ramp edge positions at design-line arc-length s from the
+        /// segment start. s may exceed the segment length (used to extend the last
+        /// segment).
         /// </summary>
         public abstract (double LX, double LY, double RX, double RY) EdgesAt(
-            double s, RampLineLocation location, double width);
+            double s, RampLineLocation location, double width, double designOffset = 0);
     }
 
     public sealed class RampLineSegment : RampPathSegment
@@ -55,10 +62,13 @@ namespace CodeCompliance.Core
             return new RampLineSegment(ex, ey, _x0, _y0);
         }
 
-        public override double CenterlineLength(RampLineLocation location, double width) => _len;
+        // On a straight run every longitudinal line has the same length,
+        // so the design offset changes nothing here.
+        public override double CenterlineLength(RampLineLocation location, double width, double designOffset = 0)
+            => _len;
 
         public override (double LX, double LY, double RX, double RY) EdgesAt(
-            double s, RampLineLocation location, double width)
+            double s, RampLineLocation location, double width, double designOffset = 0)
         {
             double half = width / 2.0;
             double lxv = -_ty, lyv = _tx; // unit left vector
@@ -79,7 +89,8 @@ namespace CodeCompliance.Core
     /// One straight chord of a ramp built from an explicitly drawn outline (left edge +
     /// right edge, of possibly different lengths/shapes). Its left/right edge points at
     /// both ends are already known from the drawing, so <see cref="EdgesAt"/> ignores the
-    /// <see cref="RampLineLocation"/>/width arguments and just interpolates between them.
+    /// <see cref="RampLineLocation"/>/width/designOffset arguments and just interpolates
+    /// between them.
     /// </summary>
     public sealed class RampVariableWidthSegment : RampPathSegment
     {
@@ -118,10 +129,10 @@ namespace CodeCompliance.Core
         public override RampPathSegment Reversed()
             => new RampVariableWidthSegment(_lx1, _ly1, _rx1, _ry1, _lx0, _ly0, _rx0, _ry0);
 
-        public override double CenterlineLength(RampLineLocation location, double width) => _len;
+        public override double CenterlineLength(RampLineLocation location, double width, double designOffset = 0) => _len;
 
         public override (double LX, double LY, double RX, double RY) EdgesAt(
-            double s, RampLineLocation location, double width)
+            double s, RampLineLocation location, double width, double designOffset = 0)
         {
             double t = _len <= 1e-9 ? 0 : s / _len;
             if (t < 0) t = 0;
@@ -149,6 +160,7 @@ namespace CodeCompliance.Core
 
         public bool CenterIsLeftOfTravel => _dir > 0;
         public double DrawnRadius => _r;
+        public (double X, double Y) Center => (_cx, _cy);
 
         public override bool IsArc => true;
         public override double DrawnLength => _r * _sweep;
@@ -171,27 +183,44 @@ namespace CodeCompliance.Core
             return _r - shiftTowardCenter;
         }
 
+        /// <summary>
+        /// Radius of the design line (centreline shifted designOffset toward the
+        /// left of travel). Toward the arc centre = smaller radius.
+        /// </summary>
+        public double DesignRadius(RampLineLocation location, double width, double designOffset)
+        {
+            double rc = CenterlineRadius(location, width);
+            return rc + (CenterIsLeftOfTravel ? -designOffset : designOffset);
+        }
+
         public double InnerRadius(RampLineLocation location, double width)
             => CenterlineRadius(location, width) - width / 2.0;
 
-        public override double CenterlineLength(RampLineLocation location, double width)
-            => _sweep * CenterlineRadius(location, width);
+        public override double CenterlineLength(RampLineLocation location, double width, double designOffset = 0)
+            => _sweep * DesignRadius(location, width, designOffset);
 
-        /// <summary>Angle (radians) at centreline arc-length s from the segment start.</summary>
-        public double AngleAt(double s, RampLineLocation location, double width)
-            => _a0 + _dir * s / CenterlineRadius(location, width);
+        /// <summary>Angle (radians) at design-line arc-length s from the segment start.</summary>
+        public double AngleAt(double s, RampLineLocation location, double width, double designOffset = 0)
+            => _a0 + _dir * s / DesignRadius(location, width, designOffset);
 
         public (double X, double Y) PointAtAngle(double angle, double radius)
             => (_cx + radius * Math.Cos(angle), _cy + radius * Math.Sin(angle));
 
-        public override (double LX, double LY, double RX, double RY) EdgesAt(
-            double s, RampLineLocation location, double width)
+        /// <summary>Plan radii of the left and right ramp edges.</summary>
+        public (double Left, double Right) EdgeRadii(RampLineLocation location, double width)
         {
             double half = width / 2.0;
             double rc = CenterlineRadius(location, width);
             double rLeft = CenterIsLeftOfTravel ? rc - half : rc + half;
             double rRight = CenterIsLeftOfTravel ? rc + half : rc - half;
-            double a = _a0 + _dir * s / rc;
+            return (rLeft, rRight);
+        }
+
+        public override (double LX, double LY, double RX, double RY) EdgesAt(
+            double s, RampLineLocation location, double width, double designOffset = 0)
+        {
+            (double rLeft, double rRight) = EdgeRadii(location, width);
+            double a = AngleAt(s, location, width, designOffset);
             double ca = Math.Cos(a), sa = Math.Sin(a);
             return (_cx + rLeft * ca, _cy + rLeft * sa, _cx + rRight * ca, _cy + rRight * sa);
         }
@@ -227,8 +256,44 @@ namespace CodeCompliance.Core
             IsVariableWidth = isVariableWidth;
         }
 
-        public double CenterlineLength(RampLineLocation location, double width)
-            => Segments.Sum(s => s.CenterlineLength(location, width));
+        public double CenterlineLength(RampLineLocation location, double width, double designOffset = 0)
+            => Segments.Sum(s => s.CenterlineLength(location, width, designOffset));
+
+        /// <summary>
+        /// Which side of travel the inner lane is on: +1 = left, -1 = right,
+        /// 0 = no arcs (straight ramp — every lane has the same length).
+        /// Decided by the tightest arc, which governs compliance.
+        /// </summary>
+        public int InnerSide(RampLineLocation location, double width)
+        {
+            RampArcSegment? tightest = null;
+            double best = double.MaxValue;
+            foreach (RampPathSegment seg in Segments)
+                if (seg is RampArcSegment arc)
+                {
+                    double r = arc.CenterlineRadius(location, width);
+                    if (r < best)
+                    {
+                        best = r;
+                        tightest = arc;
+                    }
+                }
+            return tightest == null ? 0 : (tightest.CenterIsLeftOfTravel ? 1 : -1);
+        }
+
+        /// <summary>
+        /// Signed design-line offset (meters, + = left of travel) putting the
+        /// stationing/slope reference on the centreline of the innermost lane.
+        /// Zero for straight ramps, single-lane ramps, or a drawn outline (which
+        /// has no arc segments to key off — its width already varies as drawn).
+        /// </summary>
+        public double DesignOffsetFor(RampLineLocation location, double totalWidth, int lanes)
+        {
+            if (lanes <= 1)
+                return 0;
+            double laneWidth = totalWidth / lanes;
+            return InnerSide(location, totalWidth) * (totalWidth - laneWidth) / 2.0;
+        }
 
         /// <summary>Smallest inner radius among arc segments, or null when the path has no arcs.
         /// For a drawn outline (<see cref="IsVariableWidth"/>) with no true arc segments, falls
@@ -317,28 +382,35 @@ namespace CodeCompliance.Core
         }
 
         /// <summary>
-        /// Centreline radius when the whole path is one arc (the helical case where
+        /// Design-line radius when the whole path is one arc (the helical case where
         /// the ramp may loop past 360 degrees); null otherwise.
         /// </summary>
+        public double? SingleArcDesignRadius(RampLineLocation location, double width, double designOffset = 0)
+            => Segments.Count == 1 && Segments[0] is RampArcSegment arc
+                ? arc.DesignRadius(location, width, designOffset)
+                : (double?)null;
+
+        /// <summary>Centreline radius when the whole path is one arc; null otherwise.</summary>
         public double? SingleArcCenterlineRadius(RampLineLocation location, double width)
             => Segments.Count == 1 && Segments[0] is RampArcSegment arc
                 ? arc.CenterlineRadius(location, width)
                 : (double?)null;
 
         /// <summary>
-        /// Left/right edges at global centreline arc-length s. Beyond the drawn path
-        /// the last segment is extended (straight on, or continuing around its circle).
+        /// Left/right edges at global design-line arc-length s. Beyond the drawn
+        /// path the last segment is extended (straight on, or continuing around its
+        /// circle).
         /// </summary>
         public (double LX, double LY, double RX, double RY) EdgesAt(
-            double s, RampLineLocation location, double width)
+            double s, RampLineLocation location, double width, double designOffset = 0)
         {
             double offset = 0;
             for (int i = 0; i < Segments.Count; i++)
             {
-                double len = Segments[i].CenterlineLength(location, width);
+                double len = Segments[i].CenterlineLength(location, width, designOffset);
                 bool last = i == Segments.Count - 1;
                 if (s <= offset + len + 1e-9 || last)
-                    return Segments[i].EdgesAt(s - offset, location, width);
+                    return Segments[i].EdgesAt(s - offset, location, width, designOffset);
                 offset += len;
             }
             throw new InvalidOperationException("Empty ramp path.");

@@ -1,0 +1,10 @@
+ElementAssembly (IfcElementAssembly),,,,,,,,"Predefined Type, IFC 4", object type override data samples
+"The IfcElementAssembly represents complex element assemblies aggregated from several elements, such as discrete elements, building elements, or other elements.",,,,,,,,"ACCESSORY_ASSEMBLY, ARCH, BEAM_GRID, BRACED_FRAME, GIRDER, REINFORCEMENT_UNIT, RIGID_FRAME, SLAB_FIELD, TRUSS, ABUTMENT, PIER, PYLON, CROSS_BRACING, DECK",LADDER
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits
+PredefinedType,PredefinedType,-,"Holds the entity specific enumerations from the IFC standard that classifies the entity. If a custom value is needed, the attribute ObjectTypeOverride has to be used to define such custom type, whereas the PredefinedType is set to USERDEFINED.",YES,Text,ARCH,-,Required,-
+Length,Length,Building Permit,Required when ObjectTypeOverride set as PERGOLA,YES,Number (unit in m),5,-,Conditional,-
+Height,Height,Building Permit,Required when ObjectTypeOverride set as PERGOLA,YES,Number (unit in m),6,-,Conditional,-
+Depth,Depth,Building Permit,Required when ObjectTypeOverride set as PERGOLA,YES,Number (unit in m),2,-,Conditional,-
+Description,Description,Building Permit,NA,YES,Text,,-,Required,-
+MaterialPassportCodes,MaterialPassportCode,Building Permit,This value is required if available,YES,Text,,-,Conditional,-
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,"Allows for a custom value to be added, if no applicable PredefinedType enumerator can be found.",YES,Text,,-,Required,-

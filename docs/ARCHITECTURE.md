@@ -42,9 +42,13 @@ Revit startup
   └─ reads install/CodeCompliance.addin            (manifest)
        └─ loads CodeCompliance.dll
             └─ App : IExternalApplication           (App.cs)
-                 └─ creates ribbon tab "Code Compliance"
-                      ├─ Run FF Check → Commands.FireFightingCheckCommand
-                      └─ About        → Commands.AboutCommand
+                 └─ creates ribbon tab "APG Revit Plugins"
+                      ├─ panel "Code Compliance – Fire Fighting"
+                      │    Escape Stairs / Travel Paths / Egress Report / Model Check
+                      ├─ panel "Ramp Creator"  → Parking Ramp
+                      ├─ panel "Magic Annotation" → Magic Annotation
+                      ├─ panel "Revit MCP"     → MCP Server / MCP Setup
+                      └─ panel "APG"           → About APG
 ```
 
 - `App` does **UI registration only** — no model logic lives there.
@@ -81,3 +85,22 @@ Design principles for that phase:
   against many rules cheaply, and rules can be unit-tested without Revit.
 - **Findings reference ElementIds**, so the UI can zoom to / highlight offending elements
   and reporting can annotate plans.
+
+## Revit MCP module
+
+```
+Claude Desktop ──stdio──▶ MCP server (Node.js, from OmarEAbdelaal/revit-mcp releases)
+                              │ TCP localhost:8080, JSON-RPC 2.0
+                              ▼
+                   Core/Mcp/McpSocketService   accepts requests, one thread per client
+                   Core/Mcp/McpCommandHost     finds Commands\<Set>\<year>\*.dll, creates the
+                                               command objects by reflection, executes by name
+                   Core/Mcp/McpInstaller       GitHub releases → %LOCALAPPDATA%\APGRevitPlugins\RevitMCP,
+                                               Claude Desktop config, silent startup auto-update
+```
+
+Design choices: the host has no dependency on the RevitMCPSDK package (commands are matched
+by shape), so command sets built against any SDK version load; everything downloadable lives
+outside the add-in folder so updates never touch the installer's files; loading commands
+(ExternalEvents) only happens in a Revit API context (ribbon command, modal setup window,
+`ApplicationInitialized`). See docs/REVIT_MCP.md for the user-facing guide.

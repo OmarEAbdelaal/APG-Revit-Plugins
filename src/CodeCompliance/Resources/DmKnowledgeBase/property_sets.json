@@ -1,0 +1,551 @@
+[
+  {
+    "propertySet": "Building Permit",
+    "entities": [
+      "IfcWall",
+      "IfcWallType",
+      "IfcWallStandardCase",
+      "IfcWallStandardCaseType",
+      "IfcDoor",
+      "IfcDoorType",
+      "IfcWindow",
+      "IfcWindowType",
+      "IfcRailing",
+      "IfcRailingType",
+      "IfcSlab",
+      "IfcSlabType",
+      "IfcRoof",
+      "IfcRoofType",
+      "IfcStair",
+      "IfcStairType",
+      "IfcStairFlight",
+      "IfcStairFlightType",
+      "IfcSpace",
+      "IfcSpaceType",
+      "IfcPipeSegment",
+      "IfcPipeSegmentType",
+      "IfcDuctSegment",
+      "IfcDuctSegmentType",
+      "IfcCableSegment",
+      "IfcCableSegmentType",
+      "IfcCableCarrierSegment",
+      "IfcCableCarrierSegmentType",
+      "IfcFlowTerminal",
+      "IfcFlowTerminalType",
+      "IfcWasteTerminal",
+      "IfcWasteTerminalType",
+      "IfcRampFlight",
+      "IfcRampFlightType",
+      "IfcRamp",
+      "IfcRampType",
+      "IfcSanitaryTerminal",
+      "IfcSanitaryTerminalType",
+      "IfcCurtainWall",
+      "IfcCurtainWallType",
+      "IfcPlate",
+      "IfcPlateType",
+      "IfcMember",
+      "IfcMemberType",
+      "IfcCovering",
+      "IfcCoveringType",
+      "IfcTransportElement",
+      "IfcTransportElementType",
+      "IfcColumn",
+      "IfcColumnType",
+      "IfcBeam",
+      "IfcBeamType",
+      "IfcFoundation",
+      "IfcFoundationType",
+      "IfcPlumbingFixtures",
+      "IfcPlumbingFixturesType",
+      "IfcTank",
+      "IfcTankType",
+      "IfcBuildingElementProxy",
+      "IfcBuildingElementProxyType",
+      "IfcCivilElement",
+      "IfcCivilElementType",
+      "IfcFurniture",
+      "IfcFurnitureType",
+      "IfcElementAssembly",
+      "IfcElementAssemblyType",
+      "IfcBuildingStorey",
+      "IfcBuildingStoreyType",
+      "IfcBuildingElementPart",
+      "IfcBuildingElementPartType",
+      "IfcFooting",
+      "IfcFootingType"
+    ],
+    "properties": [
+      {
+        "name": "ThermalTransmittance",
+        "dataType": "ThermalTransmittance"
+      },
+      {
+        "name": "ObjectTypeOverride",
+        "dataType": "Text"
+      },
+      {
+        "name": "PredefinedTypeOverride",
+        "dataType": "Text"
+      },
+      {
+        "name": "Elevation at Top",
+        "dataType": "Real"
+      },
+      {
+        "name": "Elevation at Bottom",
+        "dataType": "Real"
+      },
+      {
+        "name": "SlabThickness",
+        "dataType": "Real"
+      },
+      {
+        "name": "Sill Height",
+        "dataType": "Real"
+      },
+      {
+        "name": "Operation",
+        "dataType": "Text"
+      },
+      {
+        "name": "IsEntrance",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "ParkingUse",
+        "dataType": "Text"
+      },
+      {
+        "name": "HasWheelStop",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "E-Charging",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "UnitNo",
+        "dataType": "Text"
+      },
+      {
+        "name": "UnitUsageCode",
+        "dataType": "Text"
+      },
+      {
+        "name": "SpaceUsageCode",
+        "dataType": "Text"
+      },
+      {
+        "name": "SpaceUsageDescription",
+        "dataType": "Text"
+      },
+      {
+        "name": "UnitUsageDescription",
+        "dataType": "Text"
+      },
+      {
+        "name": "UnitExtraInfo",
+        "dataType": "Text"
+      },
+      {
+        "name": "IsLightWeightCovering",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "IsHabitableSpace",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "IsOccupiedSpace",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "IsCirculationSpace",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "IsCommonFacility",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "IsAccessible",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "OccupancyNumber",
+        "dataType": "Real"
+      },
+      {
+        "name": "SelfLocking",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "SelfLatching",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "SolarReflectanceIndex",
+        "dataType": "Real"
+      },
+      {
+        "name": "SprinklerProtection Boolean",
+        "dataType": "SprinklerProtection"
+      },
+      {
+        "name": "FireRating",
+        "dataType": "Integer"
+      },
+      {
+        "name": "DoorClearWidth",
+        "dataType": "Real"
+      },
+      {
+        "name": "HardwareHeight",
+        "dataType": "Real"
+      },
+      {
+        "name": "EgressType",
+        "dataType": "Text"
+      },
+      {
+        "name": "BuildingNo",
+        "dataType": "Integer"
+      },
+      {
+        "name": "Capacity",
+        "dataType": "Real"
+      },
+      {
+        "name": "HasVisionPanel",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "Classification.Space.Number",
+        "dataType": "Text"
+      },
+      {
+        "name": "Classification.Space.Description",
+        "dataType": "Text"
+      },
+      {
+        "name": "Classification.Uniclass.Ss.Number",
+        "dataType": "Text"
+      },
+      {
+        "name": "Classification.Uniclass.Ss.Description",
+        "dataType": "Text"
+      },
+      {
+        "name": "CompressiveStrength",
+        "dataType": "Real"
+      },
+      {
+        "name": "IfcMaterial",
+        "dataType": "Text"
+      },
+      {
+        "name": "Color",
+        "dataType": "Text"
+      },
+      {
+        "name": "LightReflectanceValue",
+        "dataType": "Real"
+      },
+      {
+        "name": "SolarReflectanceIndex",
+        "dataType": "Real"
+      },
+      {
+        "name": "IsSlipResistant",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "Name",
+        "dataType": "Text"
+      },
+      {
+        "name": "Long Name",
+        "dataType": "Text"
+      },
+      {
+        "name": "IsExternal",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "IsCovered",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "BIMStandardVersion",
+        "dataType": "Text"
+      },
+      {
+        "name": "ZoneName",
+        "dataType": "Text"
+      },
+      {
+        "name": "ZoneObjectType",
+        "dataType": "Text"
+      },
+      {
+        "name": "TotalBuildupArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "TotalGrossArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "TotalFloorGrossArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "TotalNetArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "IsAdaptable",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "RecycledConcreteVolume",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledAluminiumWeight",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledGypsumWeight",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledSteelWeight",
+        "dataType": "Real"
+      },
+      {
+        "name": "Recyclable",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "RecycledConcreteRatio",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledSteelRatio",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledAluminiumRatio",
+        "dataType": "Real"
+      },
+      {
+        "name": "MaterialPassportCodes",
+        "dataType": "Text"
+      },
+      {
+        "name": "Actual Run Width",
+        "dataType": "Real"
+      },
+      {
+        "name": "FireExit",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "SprinklerProtection",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "BuildingOccupancyUsageCode",
+        "dataType": "Text"
+      },
+      {
+        "name": "BuildingOccupancyUsageDescription",
+        "dataType": "Text"
+      },
+      {
+        "name": "LoadBearing",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "HandicapAccessible",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "Load Bearing",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "PubliclyAccessible",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "HasDrive",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "SelfClosing",
+        "dataType": "Boolean"
+      },
+      {
+        "name": "Length",
+        "dataType": "Real"
+      },
+      {
+        "name": "Height",
+        "dataType": "Real"
+      },
+      {
+        "name": "Depth",
+        "dataType": "Real"
+      },
+      {
+        "name": "BuildingPartNum",
+        "dataType": "Real"
+      }
+    ]
+  },
+  {
+    "propertySet": "Condition",
+    "entities": [
+      "IfcWall",
+      "IfcWallStandardCase",
+      "IfcDoor",
+      "IfcWindow",
+      "IfcRailing",
+      "IfcSlab",
+      "IfcSlabType",
+      "IfcRoof",
+      "IfcStair",
+      "IfcStairFlight",
+      "IfcSpace",
+      "IfcBuilding",
+      "IfcSite",
+      "IfcProject",
+      "IfcPipeSegment",
+      "IfcDuctSegment",
+      "IfcCableSegment",
+      "IfcCableCarrierSegment",
+      "IfcFlowTerminal",
+      "IfcWasteTerminal",
+      "IfcRamp",
+      "IfcRampFlight",
+      "IfcSanitaryTerminal",
+      "IfcCurtainWall",
+      "IfcPlate",
+      "IfcMember",
+      "IfcCovering",
+      "IfcTransportElement",
+      "IfcColumn",
+      "IfcBeam",
+      "IfcFoundation",
+      "IfcPlumbingFixtures"
+    ],
+    "properties": [
+      {
+        "name": "AssessmentDate",
+        "dataType": "Text"
+      },
+      {
+        "name": "AssessmentCondition",
+        "dataType": "Text"
+      },
+      {
+        "name": "AssessmentDescription",
+        "dataType": "Text"
+      }
+    ]
+  },
+  {
+    "propertySet": "Building Permit",
+    "entities": [
+      "IfcProject",
+      "IfcProjectType"
+    ],
+    "properties": [
+      {
+        "name": "ParcelId",
+        "dataType": "Real"
+      },
+      {
+        "name": "BIMStandardVersion",
+        "dataType": "Text"
+      }
+    ]
+  },
+  {
+    "propertySet": "Building Permit",
+    "entities": [
+      "IfcSite",
+      "IfcSiteType"
+    ],
+    "properties": [
+      {
+        "name": "GateLevel",
+        "dataType": "Real"
+      }
+    ]
+  },
+  {
+    "propertySet": "Building Permit",
+    "entities": [
+      "IfcBuilding",
+      "IfcBuildingType"
+    ],
+    "properties": [
+      {
+        "name": "BuildingNum",
+        "dataType": "Real"
+      },
+      {
+        "name": "Occupancy",
+        "dataType": "Text"
+      },
+      {
+        "name": "OccupancyUse",
+        "dataType": "Text"
+      },
+      {
+        "name": "OccupancyUsageCode",
+        "dataType": "Text"
+      },
+      {
+        "name": "OccupancyExtraInfo",
+        "dataType": "Text"
+      },
+      {
+        "name": "TotalBuildupArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "TotalGrossArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "TotalFloorGrossArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "TotalNetArea",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledConcreteVolume",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledAluminiumWeight",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledGypsumWeight",
+        "dataType": "Real"
+      },
+      {
+        "name": "RecycledSteelWeight",
+        "dataType": "Real"
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+Fire Suspension Terminal (IfcFireSuppressionTerminal) ,,,,,,"Predefined Type , IFC 2x3","Predefined Type, IFC 4", object type override data samples,
+"Description: An IfcFireSuppressionTerminal has the purpose of delivering a fluid (gas or liquid) that will suppress a fire. A fire suppression terminal provides for all forms of sprinkler, spreader and other form of terminal that is connected to a pipework system and intended to act in the role of suppressing a fire.",,,,,,"BREECHINGINLET, FIREHYDRANT, HOSEREEL, SPRINKLER, SPRINKLERDEFLECTOR ","BREECHINGINLET, FIREHYDRANT, HOSEREEL, SPRINKLER, SPRINKLERDEFLECTOR ",/,
+Attribute,IFC Reference,Property Set,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits,
+PredefinedType,PredefinedType,_,YES,Text,SPRINKLER,Y,Y,Y,
+Status,Status,Pset_FireSuppressionTerminalTypeCommon,YES,Text,"New, Existing",Y,Y,Y,
+ObjectTypeOverride,ObjectTypeOverride,Building Permit,YES,Text,,Y,Y,Y,

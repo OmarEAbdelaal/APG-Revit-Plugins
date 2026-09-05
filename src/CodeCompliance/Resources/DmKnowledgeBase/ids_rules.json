@@ -1,0 +1,2109 @@
+[
+  {
+    "name": "Attribute [ParcelId] must be defined for [IfcProject]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 111111",
+    "entities": [
+      "IFCPROJECT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "ParcelId"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [BIMStandardVersion] must be defined for [IfcProject]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. 1.3",
+    "entities": [
+      "IFCPROJECT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "BIMStandardVersion"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [GateLevel] must be defined for [IfcSite]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 50",
+    "entities": [
+      "IFCSITE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "GateLevel"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [BuildingNum] must be defined for [IfcBuilding]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "BuildingNum"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalBuildupArea] must be defined for [IfcBuilding]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalBuildupArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalGrossArea] must be defined for [IfcBuilding]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalGrossArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalFloorGrossArea] must be defined for [IfcBuilding]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalFloorGrossArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalNetArea] must be defined for [IfcBuilding]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalNetArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalBuildupArea] must be defined for [IfcBuildingStorey]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDINGSTOREY"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalBuildupArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalGrossArea] must be defined for [IfcBuildingStorey]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDINGSTOREY"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalGrossArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalFloorGrossArea] must be defined for [IfcBuildingStorey]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDINGSTOREY"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalFloorGrossArea"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [TotalNetArea] must be defined for [IfcBuildingStorey]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBUILDINGSTOREY"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "TotalNetArea"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcBeam]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCBEAM"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcBeam]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCBEAM"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_BeamCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcBeam]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCBEAM"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [Span] must be defined for [IfcBeam]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 1",
+    "entities": [
+      "IFCBEAM"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCPOSITIVELENGTHMEASURE",
+        "propertySet": "Pset_BeamCommon",
+        "baseName": "Span"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [CompressiveStrength] must be defined for [IfcBeam]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 30",
+    "entities": [
+      "IFCBEAM"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "CompressiveStrength"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcBeam]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Concrete",
+    "entities": [
+      "IFCBEAM"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcBuildingElementProxy]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCBUILDINGELEMENTPROXY"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_ColumnCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [LoadBearing] must be defined for [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_ColumnCommon",
+        "baseName": "LoadBearing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [LoadBearing] must be defined for [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "LoadBearing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [CompressiveStrength] must be defined for [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 30.25",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "CompressiveStrength"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcColumn]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Concrete",
+    "entities": [
+      "IFCCOLUMN"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_CoveringCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Gypsum",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcCurtainWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCCURTAINWALL"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_DoorCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [FireRating] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of int. E.g. 60",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCLABEL",
+        "propertySet": "Pset_DoorCommon",
+        "baseName": "FireRating"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [SelfClosing] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_DoorCommon",
+        "baseName": "SelfClosing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HandicapAccessible] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_DoorCommon",
+        "baseName": "HandicapAccessible"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HandicapAccessible] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "HandicapAccessible"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HasDrive] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_DoorCommon",
+        "baseName": "HasDrive"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HasDrive] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "HasDrive"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [SelfClosing] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_DoorCommon",
+        "baseName": "SelfClosing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [SelfClosing] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "SelfClosing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsEntrance] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsEntrance"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [SelfLocking] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "SelfLocking"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [DoorClearWidth] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 0.9",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "DoorClearWidth"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [Operation] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Outside/ Inside",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "Operation"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcDoor]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Wood",
+    "entities": [
+      "IFCDOOR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcElementAssembly]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCELEMENTASSEMBLY"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_CoveringCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcCovering]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Gypsum",
+    "entities": [
+      "IFCCOVERING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [LoadBearing] must be defined for [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SlabCommon",
+        "baseName": "LoadBearing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [LoadBearing] must be defined for [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "LoadBearing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SlabCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [CompressiveStrength] must be defined for [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. ",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "CompressiveStrength"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcSlab]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Gypsum",
+    "entities": [
+      "IFCSLAB"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcFooting]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCFOOTING"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [CompressiveStrength] must be defined for [IfcFooting]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 30",
+    "entities": [
+      "IFCFOOTING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCREAL",
+        "propertySet": "Building Permit",
+        "baseName": "CompressiveStrength"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcFooting]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Concrete",
+    "entities": [
+      "IFCFOOTING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcMember]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCMEMBER"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HandicapAccessible] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SpaceCommon",
+        "baseName": "HandicapAccessible"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HandicapAccessible] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "HandicapAccessible"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SpaceCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [ParkingUse] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. BUS",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "ParkingUse"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [E-Charging] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "E-Charging"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [HasWheelStop] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "HasWheelStop"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcPile]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCPILE"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcPlate]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCPLATE"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcRailing]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCRAILING"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcRailing]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCRAILING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_RailingCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcRailing]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCRAILING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcRailing]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Gypsum",
+    "entities": [
+      "IFCRAILING"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcRamp]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCRAMP"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcRampFlight]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCRAMPFLIGHT"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcRoof]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCROOF"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SpaceCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [PubliclyAccessible] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SpaceCommon",
+        "baseName": "PubliclyAccessible"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [PubliclyAccessible] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "PubliclyAccessible"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_SpaceCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsCovered] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsCovered"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsLightWeightCovering] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsLightWeightCovering"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsHabitableSpace] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsHabitableSpace"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsOccupiedSpace] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsOccupiedSpace"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsCirculationSpace] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsCirculationSpace"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsCommonFacility] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsCommonFacility"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [SpaceUsageCode] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. SC_25_15_10",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCTEXT",
+        "propertySet": "Building Permit",
+        "baseName": "SpaceUsageCode"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [SpaceUsageDescription] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Living Room",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "SpaceUsageDescription"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [UnitNo] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. 1",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "UnitNo"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [UnitUsageCode] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. RE_01",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCTEXT",
+        "propertySet": "Building Permit",
+        "baseName": "UnitUsageCode"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [UnitUsageDescription] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. villa",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "UnitUsageDescription"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [UnitExtraInfo] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. [Showers:5],[WCs:2]",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "UnitExtraInfo"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [BuildingOccupancyUsageCode] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. PB_04_03",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "BuildingOccupancyUsageCode"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [BuildingOccupancyUsageDescription] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Cinema",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "BuildingOccupancyUsageDescription"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [ZoneName] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. LU_F1",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "ZoneName"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [ZoneObjectType] must be defined for [IfcSpace]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. LivingUnit",
+    "entities": [
+      "IFCSPACE"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "ZoneObjectType"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcStair]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCSTAIR"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcStair]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Gypsum",
+    "entities": [
+      "IFCSTAIR"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcStairFlight]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCSTAIRFLIGHT"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcStairFlight]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Gypsum",
+    "entities": [
+      "IFCSTAIRFLIGHT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcTransportElement]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCTRANSPORTELEMENT"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [CapacityPeople] must be defined for [IfcTransportElement]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 200",
+    "entities": [
+      "IFCTRANSPORTELEMENT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCCOUNTMEASURE",
+        "propertySet": "Pset_TransportElementCommon",
+        "baseName": "CapacityPeople"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [CapacityWeight] must be defined for [IfcTransportElement]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of double. E.g. 20000",
+    "entities": [
+      "IFCTRANSPORTELEMENT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCMASSMEASURE",
+        "propertySet": "Pset_TransportElementCommon",
+        "baseName": "CapacityWeight"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [FireExit] must be defined for [IfcTransportElement]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCTRANSPORTELEMENT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_TransportElementCommon",
+        "baseName": "FireExit"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [FireExit] must be defined for [IfcTransportElement]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCTRANSPORTELEMENT"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "FireExit"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_WallCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [FireRating] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of int. E.g. 120",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCLABEL",
+        "propertySet": "Pset_WallCommon",
+        "baseName": "FireRating"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [FireRating] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of int. E.g. 120",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCLABEL",
+        "propertySet": "Building Permit",
+        "baseName": "FireRating"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [LoadBearing] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_WallCommon",
+        "baseName": "LoadBearing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [LoadBearing] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "LoadBearing"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IfcMaterial] must be defined for [IfcWall]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Concrete",
+    "entities": [
+      "IFCWALL"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "IfcMaterial"
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcWasteTerminal]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCWASTETERMINAL"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcTank]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCTANK"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "PredefinedType must be in the standard list of the [IfcWindow]",
+    "ifcVersion": "IFC4",
+    "instructions": "PredefinedType must be in the standard list.",
+    "entities": [
+      "IFCWINDOW"
+    ],
+    "requirements": [
+      {
+        "type": "entity",
+        "cardinality": null,
+        "dataType": null
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcWindow]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCWINDOW"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Pset_WindowCommon",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [IsExternal] must be defined for [IfcWindow]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of bool. E.g. YES/NO",
+    "entities": [
+      "IFCWINDOW"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCBOOLEAN",
+        "propertySet": "Building Permit",
+        "baseName": "IsExternal"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [FireRating] must be defined for [IfcWindow]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of int. E.g. 120",
+    "entities": [
+      "IFCWINDOW"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": "IFCLABEL",
+        "propertySet": "Pset_WindowCommon",
+        "baseName": "FireRating"
+      }
+    ]
+  },
+  {
+    "name": "Attribute [Operation] must be defined for [IfcWindow]",
+    "ifcVersion": "IFC4",
+    "instructions": "Value must be of string. E.g. Sliding/Openable/fixed",
+    "entities": [
+      "IFCWINDOW"
+    ],
+    "requirements": [
+      {
+        "type": "property",
+        "cardinality": "required",
+        "dataType": null,
+        "propertySet": "Building Permit",
+        "baseName": "Operation"
+      }
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+Storey (IfcBuildingStorey),,,,,,,,,
+"The building storey has an elevation and typically represents a (nearly) horizontal aggregation of spaces that are vertically bound.
+Note: Occupancy Number should describe total calculated number of occupants in the building",,,,,,,,,
+Attribute,IFC Reference,Property Set,Description,User Input (YES/NO),Data Type,Data Sample,Preliminary Permit,Final Permit,Inspection Permits
+GrossHeight,GrossHeight,Qto_BuildingStoreyBaseQuantities,IFC Standard Property.,NO,Number ,1,-,Required,-
+NetHeigtht,NetHeigtht,Qto_BuildingStoreyBaseQuantities,IFC Standard Property.,NO,Number ,1,-,Required,-
+TotalBuildupArea,TotalBuildupArea,Building Permit,Total buildup area of the building storey as defined by the building code. Only required in the AR models.,YES,Number (Units in m2 ),1,-,Required,-
+TotalGrossArea,TotalGrossArea,Building Permit,Total gross area of the building storey as defined by the building code. Only required in the AR models.,YES,Number (Units in m2 ),1,-,Required,-
+TotalFloorGrossArea,TotalFloorGrossArea,Building Permit,Total gross floor area of the building storey as defined by the building code. Only required in the AR models.,YES,Number (Units in m2 ),1,-,Required,-
+TotalNetArea,TotalNetArea,Building Permit,Total net area of the building storey as defined by the building code. Only required in the AR models.,YES,Number (Units in m2 ),1,-,Required,-
+BuildingPartNum,BuildingPartNum,Building Permit,"A number to assign a storey to a building part. Only required when the building is complex and has multiple parts. E.g. podium and two tower.
+
+When the BIM model contains building parts (e.g. two towers) that share levels, each building part should be exported in a separate IFC file so different building part numbers can be assigned to same levels.",YES,Number ,1,-,Conditional,-

@@ -1,0 +1,325 @@
+{
+  "version": "1.4",
+  "source": "Dubai Municipality — Recommended Modelling Practices (BIM e-submission)",
+  "note": "Data, not code: every practice below can be re-worded, re-graded or switched off, and its thresholds retuned, by editing this file in Documents\\CodeCompliance\\DMKnowledgeBase. The audit code only implements the detection, never the rule text or the tolerances.",
+  "practices": [
+    {
+      "id": "RMP-01",
+      "enabled": true,
+      "order": 1,
+      "scope": "Walls",
+      "title": "Walls run from the FFL level down to SSL and up to the underside of the slab",
+      "requirement": "A wall is modelled from the finished floor level of its storey with a negative base offset that takes it down to the structural slab level (SSL), and its top is constrained to the level above with a negative top offset that stops it at the underside of that slab. Walls that clash into the slab above, walls that sit on top of the floor finish, and walls with an unconnected height are all rejected: the IFC then carries walls that overlap the slabs or float over the finish.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §1 — wall base and top constraints",
+      "fixAction": "Constrain each wall base to the FFL level of its storey with a negative base offset down to SSL, and its top to the level above with a negative top offset equal to the thickness of that slab. Replace unconnected heights with a real top constraint.",
+      "revitSteps": "Select the walls ▸ Properties ▸ Base Constraint = the FFL level of the storey, Base Offset = −(floor finish thickness), Top Constraint = Up to level: the level above, Top Offset = −(slab thickness of that level).",
+      "mcpHint": "The slab thickness at the top level and the floor finish thickness at the base level can be read from the floors of those levels; where a level carries no floor, ask for the value rather than guessing it.",
+      "settingsNote": "maximumBaseOffsetMillimetres is the largest base offset that is still accepted (a wall above it is reported); set it to -1 to insist on a negative offset down to SSL on every wall. maximumTopOffsetMillimetres is the offset the wall top must stay strictly below, so the default 0 already reports walls whose top reaches the level above.",
+      "settings": {
+        "maximumBaseOffsetMillimetres": 0,
+        "maximumTopOffsetMillimetres": 0,
+        "flagUnconnectedHeight": true,
+        "ignoreCurtainWalls": true,
+        "defaultBaseOffsetMillimetres": -100
+      }
+    },
+    {
+      "id": "RMP-02",
+      "enabled": true,
+      "order": 2,
+      "scope": "Columns",
+      "title": "Every column is modelled on its own storey, not from foundation to roof",
+      "requirement": "A column belongs to one storey: its base is the level of that storey and its top the level above, with the base and top offsets adjusting it to the slabs. A single column running from the top of the foundation to the top of the roof exports as one IfcColumn spanning the whole building, so DM's building card cannot assign it to a storey.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §2 — columns per level",
+      "fixAction": "Split the columns at every storey and constrain each segment between its own level and the level above, adjusting base and top offsets to the slabs.",
+      "revitSteps": "Select the column ▸ Modify ▸ Split, or set Base Level / Top Level per storey in Properties. Structural columns can be split with the Split Column tool of the structural discipline.",
+      "mcpHint": "Splitting geometry is a model change: propose the split table (column id, current base and top level, the storeys it crosses) and only re-constrain after the split has been confirmed.",
+      "settings": {
+        "maximumStoreysSpanned": 1
+      }
+    },
+    {
+      "id": "RMP-03",
+      "enabled": true,
+      "order": 3,
+      "scope": "Room bounding",
+      "title": "Spaces are properly enclosed — room boundaries stop at the wall and column faces",
+      "requirement": "Room boundaries must not run inside the walls and must not overlap the columns. Walls and columns therefore have to be room bounding, and free edges are closed with room separation lines instead of letting the boundary drift into the construction.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §3 — spaces properly enclosed",
+      "fixAction": "Switch \"Room Bounding\" on for the listed walls and columns so the room boundary stops at their faces, and close the remaining open edges with room separation lines.",
+      "revitSteps": "Select the element ▸ Properties (or Edit Type for a column family) ▸ tick Room Bounding. For open edges: Architecture ▸ Room Separator.",
+      "mcpHint": "Room Bounding is a simple checkbox and can be set directly; re-place or re-compute the rooms afterwards so the areas update.",
+      "settings": {
+        "checkWalls": true,
+        "checkColumns": true,
+        "checkCurtainWalls": false
+      }
+    },
+    {
+      "id": "RMP-04",
+      "enabled": true,
+      "order": 4,
+      "scope": "Space coverage",
+      "title": "No empty area is left — every enclosed region carries a space",
+      "requirement": "Every enclosed region of every storey, shafts and leftover pockets included, must carry a room. DM computes the storey areas from IfcSpace, so an area with no room is simply missing from the building card.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §4 — empty area should be filled with spaces",
+      "fixAction": "Place rooms in the regions that carry none, so the placed rooms cover the built floor area of each storey.",
+      "revitSteps": "Architecture ▸ Room ▸ Place Rooms Automatically on each affected level, then name and number the new rooms.",
+      "mcpHint": "Place Rooms Automatically is scriptable (Document.Create.NewRooms2 on a level) and only adds rooms — it never touches existing geometry. The new rooms still need their name, number and usage code.",
+      "settingsNote": "Coverage is the placed room area of a storey against the area of its structural floors. Floor finishes are excluded from that area — by name (floorFinishKeywords) and by thickness (ignoreFloorsThinnerThanMillimetres) — so a level that carries both a slab and its finish is not counted twice.",
+      "settings": {
+        "minimumRoomCoveragePercent": 90,
+        "minimumStoreyFloorAreaSquareMetres": 20,
+        "ignoreFloorsThinnerThanMillimetres": 150,
+        "floorFinishKeywords": ["FINISH", "FLOORING", "SCREED", "TILE", "CARPET", "TOPPING", "MARBLE", "PARQUET", "AFL"]
+      }
+    },
+    {
+      "id": "RMP-05",
+      "enabled": true,
+      "order": 5,
+      "scope": "Site elements",
+      "title": "Gate level and road level elements",
+      "requirement": "External hardscape, landscape, boundary walls and everything else outside the building is modelled on the gate level. External roads outside the plot boundary are modelled on the road level. Site elements hosted on a storey of the building distort the storey areas and the building card.",
+      "severity": "Warning",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §5 — gate level and road level elements",
+      "fixAction": "Re-host the listed site elements on the gate level (GA_…), and the external roads on the road level (RD_…).",
+      "revitSteps": "Select the elements ▸ Properties ▸ Level / Schedule Level = GA_GATE LEVEL (or RD_ROADLEVEL), then correct the offset so the geometry stays where it is.",
+      "mcpHint": "Changing the level parameter moves the element unless the offset is corrected by the same amount — always compensate the offset and report the elements whose level parameter is read-only.",
+      "settings": {
+        "gateLevelPrefixes": ["GA"],
+        "roadLevelPrefixes": ["RD"],
+        "siteCategories": ["OST_Site", "OST_Planting", "OST_Roads", "OST_Parking", "OST_SiteProperty", "OST_Topography"],
+        "boundaryKeywords": ["BOUNDARY", "FENCE", "COMPOUND", "GATE", "HARDSCAPE", "LANDSCAPE", "KERB", "CURB", "PAVING"]
+      }
+    },
+    {
+      "id": "RMP-06",
+      "enabled": true,
+      "order": 6,
+      "scope": "Level association",
+      "title": "Every element is associated with the level it actually sits on",
+      "requirement": "The level parameter of an element must be the storey the element belongs to. Ramps, railings and slabs left on the gate level, or elements hosted on a level several storeys away from their geometry, land in the wrong IfcBuildingStorey and are reported by DM's platform as elements outside the building.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §6 — elements associate with their corresponding level",
+      "fixAction": "Re-host the listed elements on the level whose elevation matches their geometry, compensating the offset so nothing moves.",
+      "revitSteps": "Select the elements ▸ Properties ▸ Level / Schedule Level = the storey the geometry sits on, then adjust the offset by the elevation difference.",
+      "mcpHint": "The correct level is the highest building storey at or below the bottom of the element; compensate the offset by the elevation difference so the geometry does not move.",
+      "settings": {
+        "toleranceMillimetres": 500,
+        "categories": [
+          "OST_Walls", "OST_Floors", "OST_Roofs", "OST_Ceilings", "OST_Columns", "OST_StructuralColumns",
+          "OST_StructuralFraming", "OST_Stairs", "OST_Ramps", "OST_StairsRailing", "OST_Doors",
+          "OST_Windows", "OST_GenericModel", "OST_CurtaSystem"
+        ]
+      }
+    },
+    {
+      "id": "RMP-07",
+      "enabled": true,
+      "order": 7,
+      "scope": "Levels",
+      "title": "FFL and SSL levels exist as a pair and only the FFL is a building storey",
+      "requirement": "DM's level convention pairs a finished floor level (…_FFL) with a structural slab level (…_SSL) for every storey. The FFL level is the building storey that is exported; the SSL level is a reference and must have \"Building Story\" cleared, otherwise the building card shows twice as many floors as the project has.",
+      "severity": "Warning",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §7 — level naming convention (FFL / SSL pairs)",
+      "fixAction": "Add the missing SSL reference level under each FFL storey, and clear \"Building Story\" on every SSL level.",
+      "revitSteps": "Create the level in a section or elevation view ▸ rename it <ABBR>_<NAME> SSL ▸ Properties ▸ clear Building Story.",
+      "mcpHint": "The SSL elevation is the FFL elevation minus the floor finish thickness of that storey; ask for the finish thickness where the model carries no finish floor.",
+      "settings": {
+        "finishedLevelSuffixes": ["FFL"],
+        "structuralLevelSuffixes": ["SSL"]
+      }
+    },
+    {
+      "id": "RMP-08",
+      "enabled": true,
+      "order": 8,
+      "scope": "Modelling tools",
+      "title": "Elements are modelled with the correct tool, not assembled from many parts",
+      "requirement": "An element that reads as one object — a pergola, a trellis, a canopy, a louvre screen — must be one element (a generic model / family) rather than a slab with openings plus a set of columns. Assemblies of unrelated categories export as unrelated IFC objects and DM cannot classify them.",
+      "severity": "Warning",
+      "fixKind": "Review",
+      "reference": "DM Recommended Modelling Practices §8 — elements modelled using correct tools",
+      "fixAction": "Replace the listed assemblies with a single generic model family that exports as one IFC element.",
+      "revitSteps": "Model the object as a loadable Generic Model family, place one instance, and delete the slab/column parts it replaces.",
+      "mcpHint": "This is a remodelling decision: list the assemblies found, name the parts, and ask before deleting anything.",
+      "settings": {
+        "keywords": ["PERGOLA", "TRELLIS", "LOUVER", "LOUVRE", "CANOPY", "SUNSHADE", "SHADING", "SCREEN", "PARGOLA"],
+        "categories": ["OST_Floors", "OST_Columns", "OST_StructuralColumns", "OST_StructuralFraming", "OST_Walls", "OST_Roofs"],
+        "minimumParts": 3
+      }
+    },
+    {
+      "id": "RMP-09",
+      "enabled": true,
+      "order": 9,
+      "scope": "IFC class of finishes",
+      "title": "Finishes export as IfcCovering, not as IfcSlab or IfcWall",
+      "requirement": "A floor finish modelled with the floor tool exports as IfcSlab, and wall cladding modelled with the wall tool exports as IfcWall. DM expects IfcCovering with PredefinedType FLOORING for floor finishes and CLADDING for cladding — otherwise the finish is counted as a structural slab or as a wall in the checker.",
+      "severity": "Error",
+      "fixKind": "SetParameter",
+      "reference": "DM Recommended Modelling Practices §9 — elements export to IFC with correct IFC types",
+      "fixAction": "Set \"IfcExportAs\" to IfcCovering on the finish and cladding types, with \"IfcExportType\" FLOORING for floor finishes and CLADDING for wall cladding.",
+      "revitSteps": "Select a finish type ▸ Edit Type ▸ IFC Parameters ▸ Export to IFC As = IfcCovering, Type IFC Predefined Type = FLOORING / CLADDING. Or map the types in the DM category mapping file used at export.",
+      "mcpHint": "Both parameters live on the element type, not on the instance: write them on the types of the listed elements and report the types that are read-only (system families in a linked or workshared file).",
+      "settings": {
+        "floorFinishKeywords": ["FINISH", "FLOORING", "SCREED", "TILE", "CARPET", "TOPPING", "MARBLE", "PARQUET", "AFL"],
+        "floorFinishMaximumThicknessMillimetres": 150,
+        "claddingKeywords": ["CLADDING", "CLAD", "FINISH", "PLASTER", "RENDER", "SKIM", "PANELLING", "PANELING", "ACP"],
+        "claddingMaximumThicknessMillimetres": 100,
+        "useThicknessForFloorFinish": true,
+        "useThicknessForCladding": false,
+        "targetIfcClass": "IfcCovering",
+        "floorPredefinedType": "FLOORING",
+        "claddingPredefinedType": "CLADDING"
+      }
+    },
+    {
+      "id": "RMP-10",
+      "enabled": true,
+      "order": 10,
+      "scope": "Space height",
+      "title": "Space height is adjusted up to the ceiling",
+      "requirement": "The height of a room must reach the ceiling of that room, not stop at the underside of the slab and not cross the ceiling. DM reads the space volume and the clear height from IfcSpace, so a room left at Revit's default height reports the wrong volume.",
+      "severity": "Warning",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §10 — space height should be adjusted",
+      "fixAction": "Set the Upper Limit and Limit Offset of the listed rooms so the room stops at the ceiling of that room (or at the slab soffit where there is no ceiling).",
+      "revitSteps": "Select the rooms ▸ Properties ▸ Upper Limit = the level above (or the same level) and Limit Offset = the ceiling height of the room.",
+      "mcpHint": "The ceiling height can be read from the ceilings inside the room boundary; where the room has no ceiling use the soffit of the slab above, and report the rooms where neither exists.",
+      "settings": {
+        "minimumHeightRatioOfStorey": 0.8,
+        "defaultCeilingHeightMillimetres": 2700,
+        "toleranceMillimetres": 100
+      }
+    },
+    {
+      "id": "RMP-11",
+      "enabled": true,
+      "order": 11,
+      "scope": "Link coordination",
+      "title": "Elements of the linked model and of this model do not clash",
+      "requirement": "Architectural walls must be aligned with the faces of the structural walls and columns of the linked structural model, not overlapping them. Overlapping volumes in the two submitted IFC files are reported by DM as duplicated geometry and distort the area take-off.",
+      "severity": "Error",
+      "fixKind": "Review",
+      "reference": "DM Recommended Modelling Practices §11 — elements in linked model and main model should not clash",
+      "fixAction": "Align the listed elements with the faces of the linked structural elements they overlap.",
+      "revitSteps": "Open the affected plan with the structural link visible, and move or re-join the architectural element so it stops at the face of the structural one.",
+      "mcpHint": "Moving geometry is a coordination decision: report the overlapping pairs with their volumes and ask before changing anything.",
+      "settings": {
+        "maximumElementsPerSide": 3000,
+        "minimumOverlapVolumeCubicMetres": 0.01,
+        "timeBudgetSeconds": 25,
+        "categories": ["OST_Walls", "OST_Columns", "OST_StructuralColumns"]
+      }
+    },
+    {
+      "id": "RMP-12",
+      "enabled": true,
+      "order": 12,
+      "scope": "Rooms",
+      "title": "Every enclosed region carries exactly one room",
+      "requirement": "Two rooms in the same enclosed region produce two IfcSpaces with the same boundary and the same area, so the storey area is counted twice. Revit reports these as \"Multiple Rooms are in the same enclosed region\"; they have to be cleared before export.",
+      "severity": "Critical",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §12 — all rooms enclosed, one room per region",
+      "fixAction": "Delete the redundant rooms so each enclosed region carries exactly one room, or close the boundary that should have separated them.",
+      "revitSteps": "Manage ▸ Warnings ▸ filter \"same enclosed region\", then delete the duplicate room or add the missing room separation line.",
+      "mcpHint": "Never delete a room without confirmation: list the region, the rooms it holds and their numbers, and ask which one is to be kept.",
+      "settings": {
+        "warningKeywords": ["same enclosed region", "Multiple Rooms", "Room is not in a properly enclosed region", "redundant"]
+      }
+    },
+    {
+      "id": "RMP-13",
+      "enabled": true,
+      "order": 13,
+      "scope": "Unwanted elements",
+      "title": "Elements the BIM standard does not ask for are excluded from the export",
+      "requirement": "Kitchen fittings, light fittings, furniture, sanitary accessories and similar content are not required by the standard and only make the IFC bigger and slower to process. Structural elements do not belong in the architectural model either — each discipline submits its own file.",
+      "severity": "Warning",
+      "fixKind": "SetParameter",
+      "reference": "DM Recommended Modelling Practices §13 — clear unwanted elements",
+      "fixAction": "Delete the elements the submission does not need, or set \"IfcExportAs\" to DontExport on their types so they stay in the working model but never reach the IFC.",
+      "revitSteps": "Edit Type ▸ IFC Parameters ▸ Export to IFC As = DontExport, or hide the categories in the exported view.",
+      "mcpHint": "Setting IfcExportAs = DontExport on the type is the safe fix — it keeps the design content in the model. Only delete elements when explicitly asked to.",
+      "settings": {
+        "categories": [
+          "OST_Furniture", "OST_FurnitureSystems", "OST_Casework", "OST_LightingFixtures",
+          "OST_LightingDevices", "OST_PlumbingFixtures", "OST_MechanicalEquipment",
+          "OST_ElectricalFixtures", "OST_ElectricalEquipment", "OST_Entourage", "OST_Planting"
+        ],
+        "structuralCategoriesInArchitecturalModel": ["OST_StructuralFraming", "OST_StructuralFoundation"],
+        "minimumCount": 1
+      }
+    },
+    {
+      "id": "RMP-14",
+      "enabled": true,
+      "order": 14,
+      "scope": "Split levels",
+      "title": "Different levels on the same floor use a dummy level",
+      "requirement": "When part of a storey sits at a different elevation, the elevated walls and rooms are placed on a dummy level whose \"Building Story\" is cleared, not on the storey level with a large offset. After the export the elements must be checked to be hosted in the corresponding IfcBuildingStorey.",
+      "severity": "Warning",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §14 — different levels at the same floor",
+      "fixAction": "Create a dummy level at the elevated part, clear \"Building Story\" on it, and place the elevated walls and rooms on it.",
+      "revitSteps": "Create the level in a section view ▸ Properties ▸ clear Building Story ▸ select the elevated elements and set their level to it, compensating the offset.",
+      "mcpHint": "Creating the level and re-hosting the elements is scriptable; the elevation of the dummy level is the offset the elements currently carry.",
+      "settingsNote": "Only positive base offsets are considered: a negative base offset is what practice RMP-01 asks for. Raise offsetThresholdMillimetres when the project models sills and upstands with an offset.",
+      "settings": {
+        "offsetThresholdMillimetres": 600,
+        "minimumElementsPerOffsetGroup": 3
+      }
+    },
+    {
+      "id": "RMP-15",
+      "enabled": true,
+      "order": 15,
+      "scope": "IFC export preparation",
+      "title": "The model is purged and trimmed before it is exported",
+      "requirement": "DM's export checklist: give the export file the Dubai BIM standard name, browse the property set and parameter mapping files in the export setup, clear the link files, purge the model, and set the level of detail to low. Do not export finely detailed elements, elements the project does not need, or reference objects.",
+      "severity": "Warning",
+      "fixKind": "Review",
+      "reference": "DM Recommended Modelling Practices §15 — IFC export DO / DON'T",
+      "fixAction": "Purge the unused families and types, unload the links, and export with the DM setup, the DM property set file and the DM parameter mapping file at low level of detail.",
+      "revitSteps": "Manage ▸ Purge Unused ▸ run it until nothing is left, then File ▸ Export ▸ IFC ▸ Modify setup and browse the DM property set and parameter mapping files.",
+      "mcpHint": "Purging is destructive to unused content only, but list what would be purged and confirm before running it.",
+      "settings": {
+        "maximumUnusedTypes": 50
+      }
+    },
+    {
+      "id": "RMP-16",
+      "enabled": true,
+      "order": 16,
+      "scope": "Walls",
+      "title": "Every wall is modelled on its own storey, not through several floors",
+      "requirement": "A wall belongs to one storey, exactly as a column does: its base is the level of that storey and its top the level above. A wall drawn once from the ground floor to the roof exports as a single IfcWall spanning the whole building, so DM's platform cannot assign it to an IfcBuildingStorey and its area is counted against one floor instead of each floor it passes.",
+      "severity": "Error",
+      "fixKind": "ModelChange",
+      "reference": "DM Recommended Modelling Practices §2 — one element per storey, applied to walls",
+      "fixAction": "Split the walls at every storey and constrain each segment between its own level and the level above, adjusting the base and top offsets to the slabs (practice RMP-01).",
+      "revitSteps": "Open a section, select the wall ▸ Modify ▸ Split Element at each storey, then set Base Constraint / Top Constraint per segment. Doors and windows stay hosted in the segment they sit in — check them after the split.",
+      "mcpHint": "Splitting a wall is never done automatically: the wall hosts doors, windows and openings, and re-creating it would lose them. Propose the split table (wall id, base and top level, the storeys it crosses) and let the modeller do it.",
+      "settingsNote": "A wall with an unconnected height is measured from its geometry instead of its top constraint, so a 12 m free-standing wall is caught too. Curtain walls are skipped by default — a full-height facade is usually modelled deliberately; set ignoreCurtainWalls to false to include them.",
+      "settings": {
+        "maximumStoreysSpanned": 1,
+        "ignoreCurtainWalls": true,
+        "includeUnconnectedHeight": true
+      }
+    }
+  ]
+}

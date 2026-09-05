@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -74,47 +75,138 @@ namespace CodeCompliance.Commands
             RampCalcResult calc = window.Result;
 
             // ── Step 3: create the floors and shape their sub-element points ────
-            IList<ElementId> floorIds;
-            using (var t = new Transaction(doc, "Create parking ramp floors"))
+            // Build with exact arc edges first; if Revit reverts the shape edit at
+            // commit ("Slab Shape Edit failed"), rebuild with fine chord segments.
+            int runNumber = NextRampRunNumber(doc);
+
+            if (!TryBuildRamp(doc, path, calc, window, runNumber, exactArcEdges: true,
+                    out IList<RampFloorPiece> pieces, out string failReason))
             {
-                t.Start();
-                try
+                message = failReason;
+                return Result.Failed;
+            }
+
+            string fallbackNote = "";
+            if (RampFloorBuilder.PostCommitWorstError(doc, pieces) > RampFloorBuilder.ElevationTolFt)
+            {
+                DeleteFloors(doc, pieces);
+                if (!TryBuildRamp(doc, path, calc, window, runNumber, exactArcEdges: false,
+                        out pieces, out failReason))
                 {
-                    floorIds = RampFloorBuilder.Build(
-                        doc, path, calc, window.TotalWidth, window.Location,
-                        new ElementId(window.FloorTypeId));
-                }
-                catch (Exception ex)
-                {
-                    t.RollBack();
-                    message = "Failed to build the ramp floors: " + ex.Message;
+                    message = failReason;
                     return Result.Failed;
                 }
-
-                string summary = BuildSummary(calc, window);
-                int index = 1;
-                foreach (ElementId id in floorIds)
+                if (RampFloorBuilder.PostCommitWorstError(doc, pieces) > RampFloorBuilder.ElevationTolFt)
                 {
-                    Element? floor = doc.GetElement(id);
-                    if (floor == null)
-                        continue;
-                    Parameter mark = floor.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
-                    if (mark != null && !mark.IsReadOnly)
-                        mark.Set($"CC - Ramp {index}/{floorIds.Count}");
-                    Parameter comments = floor.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
-                    if (comments != null && !comments.IsReadOnly)
-                        comments.Set(summary);
-                    index++;
+                    DeleteFloors(doc, pieces);
+                    TaskDialog.Show("Parking Ramp",
+                        "Revit could not hold the slab shape for this path even with segmented " +
+                        "curves, so no ramp was created. Try a simpler path (fewer or shallower " +
+                        "curves), a larger radius, or split the path into shorter ramps.");
+                    return Result.Failed;
                 }
-                t.Commit();
+                fallbackNote =
+                    "\n\nNote: Revit rejected shape-editing the exact-arc sketch for this path, " +
+                    "so the curved edges were rebuilt as fine segments (10° pieces on the same circles).";
             }
 
             TaskDialog.Show("Parking Ramp",
-                $"Ramp created as {floorIds.Count} floor(s) with slab-shape points.\n\n" +
+                (pieces.Count == 1
+                    ? "Ramp created as one continuous floor slab.\n\n"
+                    : $"Ramp created as {pieces.Count} floor slabs (a sketch cannot sweep past ~170°).\n\n") +
                 BuildSummary(calc, window) +
+                fallbackNote +
                 "\n\nAll Table B.9 checks passed at the input step. " +
                 "The full design data is stored in each floor's Comments parameter.");
             return Result.Succeeded;
+        }
+
+        private static bool TryBuildRamp(
+            Document doc,
+            RampPath path,
+            RampCalcResult calc,
+            RampInputWindow window,
+            int runNumber,
+            bool exactArcEdges,
+            out IList<RampFloorPiece> pieces,
+            out string failReason)
+        {
+            pieces = new List<RampFloorPiece>();
+            failReason = "";
+            using var t = new Transaction(doc, "Create parking ramp");
+            FailureHandlingOptions options = t.GetFailureHandlingOptions();
+            options.SetFailuresPreprocessor(new WarningSwallower());
+            t.SetFailureHandlingOptions(options);
+            t.Start();
+            try
+            {
+                pieces = RampFloorBuilder.Build(
+                    doc, path, calc, window.TotalWidth, window.Location,
+                    new ElementId(window.FloorTypeId), window.DesignOffset, exactArcEdges);
+            }
+            catch (Exception ex)
+            {
+                t.RollBack();
+                failReason = "Failed to build the ramp floors: " + ex.Message;
+                return false;
+            }
+
+            string summary = BuildSummary(calc, window);
+            int index = 1;
+            foreach (RampFloorPiece piece in pieces)
+            {
+                Element? floor = doc.GetElement(piece.FloorId);
+                if (floor == null)
+                    continue;
+                Parameter mark = floor.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
+                if (mark != null && !mark.IsReadOnly)
+                    mark.Set(pieces.Count == 1
+                        ? $"CC - Ramp {runNumber}"
+                        : $"CC - Ramp {runNumber} ({index}/{pieces.Count})");
+                Parameter comments = floor.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+                if (comments != null && !comments.IsReadOnly)
+                    comments.Set(summary);
+                index++;
+            }
+            t.Commit();
+            return true;
+        }
+
+        private static void DeleteFloors(Document doc, IList<RampFloorPiece> pieces)
+        {
+            using var t = new Transaction(doc, "Remove rejected ramp floors");
+            t.Start();
+            foreach (RampFloorPiece piece in pieces)
+                if (doc.GetElement(piece.FloorId) != null)
+                    doc.Delete(piece.FloorId);
+            t.Commit();
+        }
+
+        /// <summary>Next unique ramp number so re-runs never duplicate "Mark" values.</summary>
+        private static int NextRampRunNumber(Document doc)
+        {
+            int max = 0;
+            foreach (Element floor in new FilteredElementCollector(doc).OfClass(typeof(Floor)))
+            {
+                string mark = floor.get_Parameter(BuiltInParameter.ALL_MODEL_MARK)?.AsString() ?? "";
+                Match m = Regex.Match(mark, @"^CC - Ramp (\d+)");
+                if (m.Success && int.TryParse(m.Groups[1].Value, out int n))
+                    max = Math.Max(max, n);
+            }
+            return max + 1;
+        }
+
+        /// <summary>
+        /// Suppresses warning dialogs during ramp transactions (shape-edit warnings
+        /// are handled by the command's own post-commit verification instead).
+        /// </summary>
+        private class WarningSwallower : IFailuresPreprocessor
+        {
+            public FailureProcessingResult PreprocessFailures(FailuresAccessor failuresAccessor)
+            {
+                failuresAccessor.DeleteAllWarnings();
+                return FailureProcessingResult.Continue;
+            }
         }
 
         /// <summary>
@@ -280,10 +372,11 @@ namespace CodeCompliance.Commands
             return string.Format(ci,
                 "Dubai BC Annex B B.7.2.2 | {0} ramp, {1} lane(s) x {2:F2} m | " +
                 "h = {3:F3} m, S = {4:F2}%, T = {5:F2}%, X = {6:F2} m, X' = {7:F2} m, R = {8:F3} m | " +
-                "path = {9}",
+                "path = {9}{10}",
                 calc.Type, window.Lanes, window.LaneWidth,
                 calc.H, calc.S, calc.T, calc.X, calc.XPrime, calc.R,
-                window.Location);
+                window.Location,
+                window.DesignOffset != 0 ? " | slope measured on inner-lane centreline" : "");
         }
 
         /// <summary>Allows picking only straight or arc model/detail lines.</summary>
