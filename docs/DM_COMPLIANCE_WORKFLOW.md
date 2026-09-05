@@ -138,6 +138,7 @@ silent report matches what the dashboard last showed.
 
 | Button | What it does |
 |---|---|
+| **Fix this issue** | Applies the finding's fix to the model **directly** — no Claude, no MCP link (see §4a). Shows what it will change, asks once, then runs it as a single transaction. |
 | **Select all in model** | Selects every affected element of the finding in Revit, so Revit's own properties palette and filters work on them. |
 | **Highlight in 3D section box** | Creates (or reuses) the 3D view **CC - DM Compliance 3D**, fits its section box around the affected elements with a 1.5 m margin, colours them red, selects them **and opens the view straight away** — the dashboard stays where it is. |
 | **Highlight selected element** | The same, for just the elements picked in the element list. |
@@ -148,6 +149,7 @@ silent report matches what the dashboard last showed.
 | **Export report** | Writes the HTML dashboard, the CSV and the prompt file (see §5) and opens the HTML. |
 | **DM rule data** | Writes the DM data files to `Documents\CodeCompliance\DMKnowledgeBase` so they can be updated (see §6). |
 | **Clear highlight** | Removes the red overrides from the compliance view. |
+| **Start MCP server** | Switches the Revit MCP server on without leaving the dashboard, so a finding the tool does not fix on its own can be handed to Claude straight away. The button shows the port once it is running. |
 
 ---
 
@@ -169,6 +171,46 @@ it, as an instance parameter, to exactly the categories that need it (walls, doo
 levels, project information …) in a single transaction. That clears the "attribute not
 bound" findings without leaving Revit. The same operation is available as a script inside
 the prompts, so Claude can do it over the MCP link instead.
+
+The findings table has an **Auto-fix** column: *Yes* means **Fix this issue** can apply it.
+
+---
+
+## 4a. Fixing a finding without leaving Revit
+
+The audit already knows which elements are wrong and what the right value is, so most findings
+do not need Claude at all. **Fix this issue** makes the change itself, in native Revit API
+calls — it works offline, needs no API key, and does not depend on the MCP command sets being
+installed.
+
+Three rules govern it:
+
+- **Nothing is invented.** A DM "data sample" is an example, not this project's value. An
+  attribute whose value cannot be read from the model is reported as skipped, never filled in.
+  Only `IsExternal`, `LoadBearing`, `FireRating`, `IfcMaterial`, `Status` and
+  `SpaceUsageDescription` are derivable, and each is derived exactly as the fix script does.
+- **Nothing is deleted**, and the change runs as **one named transaction** — Ctrl+Z puts the
+  model back.
+- **Decisions stay yours.** Renaming, splitting columns, remodelling an object, resolving a
+  clash with a link, deleting a redundant room and purging are refused with the reason; those
+  findings carry their prompt instead.
+
+What it applies:
+
+| | Fix |
+|---|---|
+| Bind parameter | Creates the DM shared parameters of that finding and binds them to its categories |
+| Set parameter | Fills the attribute on the flagged elements, deriving the value from the model |
+| RMP-01 | Wall base offset down to SSL; wall top stopped under the slab above (thickness read from the floors of that level); unconnected heights constrained to the level above |
+| RMP-03 | Room Bounding switched on (instance, or the family type where the flag lives there) |
+| RMP-04 | *Place Rooms Automatically* on the storeys that carry uncovered area — only adds rooms |
+| RMP-05 / RMP-06 | Re-hosts the elements onto the right level, compensating the offset so the geometry does not move |
+| RMP-09 / RMP-13 | Writes `IfcExportAs` (and the predefined type) on the element **types** |
+| RMP-10 | Sets Upper Limit and Limit Offset so the room reaches its ceiling |
+| RMP-14 | Creates the dummy level (Building Story cleared) and moves the elevated elements onto it |
+
+After a successful fix the audit re-runs by itself, so the finding disappears — or shows what
+is left, with the skipped elements and the reason.
 
 ---
 
@@ -205,8 +247,8 @@ listed, instead of being guessed.
 
 Workflow:
 
-1. **APG Revit Plugins ▸ Revit MCP ▸ MCP Server** — start the server (see
-   [docs/REVIT_MCP.md](REVIT_MCP.md) for the one-time setup).
+1. Click **Start MCP server** in the dashboard footer — or **APG Revit Plugins ▸ Revit MCP ▸
+   MCP Server** (see [docs/REVIT_MCP.md](REVIT_MCP.md) for the one-time setup).
 2. In the dashboard, select a finding and click **Copy prompt**.
 3. Paste it into Claude Desktop (or Claude Code). Claude sends the script to Revit and
    reports what it changed.

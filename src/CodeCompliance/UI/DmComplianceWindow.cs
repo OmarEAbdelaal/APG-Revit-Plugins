@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -13,6 +14,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using Autodesk.Revit.UI;
 using CodeCompliance.Core.Dm;
+using CodeCompliance.Core.Mcp;
 using CodeCompliance.Reporting;
 // Autodesk.Revit.DB is not imported wholesale: it carries its own Grid, Binding, Color and
 // Transform, which would collide with the WPF types this window is built from.
@@ -45,6 +47,9 @@ namespace CodeCompliance.UI
             ? Finding.AffectedCount.ToString(CultureInfo.InvariantCulture) + " / " +
               Finding.CheckedCount.ToString(CultureInfo.InvariantCulture)
             : Finding.AffectedCount.ToString(CultureInfo.InvariantCulture);
+
+        /// <summary>Whether "Fix this issue" can apply this finding without a person.</summary>
+        public string AutoFix => DmFixService.CanFix(Finding) ? "Yes" : "—";
     }
 
     /// <summary>One row of the element list of the selected finding.</summary>
@@ -124,9 +129,13 @@ namespace CodeCompliance.UI
         };
         private readonly TextBlock _status = new TextBlock { Foreground = ApgTheme.Muted, VerticalAlignment = VerticalAlignment.Center };
 
+        private readonly Button _fix = ApgTheme.PrimaryButton("Fix this issue");
+        private readonly Button _mcp = ApgTheme.SecondaryButton("MCP server");
+
         private DmAuditResult? _result;
         private bool _restoring;
         private bool _auditRunning;
+        private bool _fixRunning;
 
         public DmComplianceWindow(UIApplication uiApp, DmRevitTask task)
         {
@@ -187,6 +196,7 @@ namespace CodeCompliance.UI
             Loaded += (_, _) =>
             {
                 RestoreGeometry();
+                UpdateMcpButton();
                 if (_settings.RunOnOpen)
                     RunAudit();
                 else
@@ -383,6 +393,7 @@ namespace CodeCompliance.UI
             grid.Columns.Add(Column("Type of modification", nameof(DmFindingRow.Modification), 140));
             grid.Columns.Add(Column("Attribute", nameof(DmFindingRow.Parameter), 140));
             grid.Columns.Add(Column("Affected", nameof(DmFindingRow.Affected), 90));
+            grid.Columns.Add(Column("Auto-fix", nameof(DmFindingRow.AutoFix), 70));
 
             grid.SelectionChanged += (_, _) => ShowDetail();
             grid.LoadingRow += (_, e) =>
@@ -520,6 +531,13 @@ namespace CodeCompliance.UI
 
             var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
 
+            _fix.Margin = new Thickness(0, 0, 8, 0);
+            _fix.ToolTip = "Apply this finding's fix to the open model now — no Claude, no MCP link needed. " +
+                           "One transaction, so Ctrl+Z reverts it. Values that cannot be derived from the model " +
+                           "are left alone rather than guessed.";
+            _fix.Click += (_, _) => ApplyFix();
+            buttons.Children.Add(_fix);
+
             Button select = ApgTheme.SecondaryButton("Select all in model");
             select.Margin = new Thickness(0, 0, 8, 0);
             select.Click += (_, _) => SelectElements(Selected?.ElementIds.ToList() ?? new List<long>());
@@ -592,6 +610,12 @@ namespace CodeCompliance.UI
             clear.Margin = new Thickness(0, 0, 8, 0);
             clear.Click += (_, _) => ClearHighlight();
             left.Children.Add(clear);
+
+            _mcp.Margin = new Thickness(0, 0, 8, 0);
+            _mcp.ToolTip = "Switch the Revit MCP server on without leaving the dashboard, so Claude can pick up " +
+                           "the prompt of a finding this tool cannot fix on its own.";
+            _mcp.Click += (_, _) => StartMcpServer();
+            left.Children.Add(_mcp);
 
             panel.Children.Add(left);
             return panel;
@@ -822,6 +846,7 @@ namespace CodeCompliance.UI
                 _detailText.Text = "";
                 _detailFix.Text = "";
                 _prompt.Text = "";
+                _fix.IsEnabled = false;
                 return;
             }
 
@@ -831,6 +856,12 @@ namespace CodeCompliance.UI
             _detailFix.Text = finding.FixKindText + ": " + finding.FixAction +
                               (finding.SampleValue.Length > 0 ? "   (DM sample value: " + finding.SampleValue + ")" : "");
             _prompt.Text = finding.McpPrompt;
+
+            bool fixable = DmFixService.CanFix(finding);
+            _fix.IsEnabled = fixable && !_fixRunning;
+            _fix.ToolTip = fixable
+                ? DmFixService.Describe(finding) + "  Runs as one transaction — Ctrl+Z reverts it."
+                : DmFixService.WhyNot(finding);
 
             LoadElements(finding);
         }
@@ -1040,6 +1071,149 @@ namespace CodeCompliance.UI
                 }
                 Dispatcher.Invoke(() => Say(message));
             });
+        }
+
+        // ── applying the fix ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Applies the selected finding's fix to the model directly — no Claude, no MCP link.
+        /// The change is confirmed first, runs in a single named transaction and is followed by
+        /// a fresh audit so the finding disappears (or shows what is left).
+        /// </summary>
+        private void ApplyFix()
+        {
+            DmFinding? finding = Selected;
+            if (finding == null)
+                return;
+            if (_fixRunning)
+            {
+                Say("A fix is still running…");
+                return;
+            }
+            if (!DmFixService.CanFix(finding))
+            {
+                Say(DmFixService.WhyNot(finding));
+                MessageBox.Show(this,
+                    DmFixService.WhyNot(finding) +
+                    "\n\nUse \"Copy prompt\" and let Claude do it over the Revit MCP link instead.",
+                    "This one is not applied automatically",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            MessageBoxResult answer = MessageBox.Show(this,
+                DmFixService.Describe(finding) +
+                "\n\nThis writes to the open model. It runs as one transaction, so Ctrl+Z reverts it.\n\n" +
+                "Apply it now?",
+                "Fix: " + finding.Title,
+                MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.OK);
+            if (answer != MessageBoxResult.OK)
+                return;
+
+            var stage = _stage.SelectedIndex == 1 ? DmPermitStage.Preliminary : DmPermitStage.Final;
+            bool conditional = _conditional.IsChecked == true;
+
+            _fixRunning = true;
+            _fix.IsEnabled = false;
+            Cursor = Cursors.Wait;
+            Say("Applying the fix…");
+
+            _task.Run(app =>
+            {
+                string message;
+                bool changed = false;
+                try
+                {
+                    Document? doc = app.ActiveUIDocument?.Document;
+                    if (doc == null)
+                    {
+                        message = "Open a Revit model first.";
+                    }
+                    else
+                    {
+                        DmFixOutcome outcome = DmFixService.Apply(doc, finding, stage, conditional);
+                        message = outcome.Message;
+                        changed = outcome.ChangedAnything;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    message = "The fix failed: " + ex.Message;
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    _fixRunning = false;
+                    _fix.IsEnabled = true;
+                    Cursor = Cursors.Arrow;
+                    Say(message);
+                    if (changed)
+                        RunAudit();
+                });
+            });
+        }
+
+        // ── the Revit MCP server ────────────────────────────────────────────────
+
+        /// <summary>
+        /// Switches the Revit MCP server on from here, so a finding this tool does not fix on
+        /// its own can be handed to Claude without going back to the ribbon.
+        /// </summary>
+        private void StartMcpServer()
+        {
+            if (McpSocketService.Instance.IsRunning)
+            {
+                Say("The MCP server is already running on port " + McpSocketService.Instance.Port +
+                    " with " + McpSocketService.Instance.CommandCount + " command(s). Paste the prompt into Claude.");
+                UpdateMcpButton();
+                return;
+            }
+
+            Cursor = Cursors.Wait;
+            Say("Starting the Revit MCP server…");
+
+            _task.Run(app =>
+            {
+                string message;
+                try
+                {
+                    // Start must run in a Revit API context: the command sets create ExternalEvents.
+                    McpSettings settings = McpSettings.Load();
+                    McpSocketService.Instance.Start(app, settings);
+                    message = "MCP server ON, port " + McpSocketService.Instance.Port + ", " +
+                              McpSocketService.Instance.CommandCount + " command(s)" +
+                              (McpInstaller.IsCommandsInstalled
+                                  ? ". Paste the prompt into Claude — the Revit tools are live."
+                                  : ". The downloaded command sets are missing, so only the built-in commands are " +
+                                    "available: run MCP Setup ▸ Install / Update.");
+                }
+                catch (SocketException ex)
+                {
+                    message = "Could not open the port: " + ex.Message +
+                              " Another Revit session is probably already listening on it — switch it off there, " +
+                              "or change the port in MCP Setup.";
+                }
+                catch (Exception ex)
+                {
+                    message = "Could not start the MCP server: " + ex.Message;
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    Cursor = Cursors.Arrow;
+                    Say(message);
+                    UpdateMcpButton();
+                });
+            });
+        }
+
+        private void UpdateMcpButton()
+        {
+            bool running = McpSocketService.Instance.IsRunning;
+            _mcp.Content = running
+                ? "MCP server ON (port " + McpSocketService.Instance.Port + ")"
+                : "Start MCP server";
+            _mcp.IsEnabled = !running;
         }
 
         // ── prompts, parameters and reports ─────────────────────────────────────
