@@ -106,6 +106,7 @@ namespace CodeCompliance.Core.Dm
         private static Dictionary<string, DmUsageCode> _buildingUsage = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
         private static Dictionary<string, DmUsageCode> _zoneObjectTypes = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
         private static List<string> _unitExtraInfoKeys = new List<string>();
+        private static List<DmModellingPractice> _practices = new List<DmModellingPractice>();
         private static Dictionary<string, string> _predefinedTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static Dictionary<string, string> _objectTypeOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static string _source = "embedded";
@@ -124,6 +125,20 @@ namespace CodeCompliance.Core.Dm
         public static IReadOnlyDictionary<string, DmUsageCode> BuildingOccupancyCodes { get { EnsureLoaded(); return _buildingUsage; } }
         public static IReadOnlyDictionary<string, DmUsageCode> ZoneObjectTypes { get { EnsureLoaded(); return _zoneObjectTypes; } }
         public static IReadOnlyList<string> UnitExtraInfoKeys { get { EnsureLoaded(); return _unitExtraInfoKeys; } }
+
+        /// <summary>
+        /// Dubai Municipality's recommended modelling practices, in the order they are
+        /// published. Data like everything else here: <c>modelling_practices.json</c> carries
+        /// the wording, the severity and the tolerances of each practice.
+        /// </summary>
+        public static IReadOnlyList<DmModellingPractice> ModellingPractices { get { EnsureLoaded(); return _practices; } }
+
+        /// <summary>One practice by id ("RMP-01"), or null when it is unknown or switched off.</summary>
+        public static DmModellingPractice? Practice(string id)
+        {
+            EnsureLoaded();
+            return _practices.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+        }
 
         /// <summary>"embedded" or the override folder the data was actually read from.</summary>
         public static string Source { get { EnsureLoaded(); return _source; } }
@@ -257,6 +272,7 @@ namespace CodeCompliance.Core.Dm
             _buildingUsage = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
             _zoneObjectTypes = new Dictionary<string, DmUsageCode>(StringComparer.OrdinalIgnoreCase);
             _unitExtraInfoKeys = new List<string>();
+            _practices = new List<DmModellingPractice>();
             _predefinedTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _objectTypeOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _source = Directory.Exists(OverrideFolder) ? OverrideFolder : "embedded";
@@ -269,6 +285,7 @@ namespace CodeCompliance.Core.Dm
             LoadBuildingUsage(ReadFile("usage_Building.csv"));
             LoadZones(ReadFile("usage_Zone.csv"));
             LoadUnitExtraInfo(ReadFile("usage_Unit_Extra_Info.csv"));
+            LoadModellingPractices(ReadFile("modelling_practices.json"));
 
             foreach (string file in ListFiles())
             {
@@ -581,6 +598,89 @@ namespace CodeCompliance.Core.Dm
                 string name = DmCsv.Cell(row, 0);
                 if (name.Length > 0)
                     _unitExtraInfoKeys.Add(name);
+            }
+        }
+
+        /// <summary>
+        /// DM's recommended modelling practices. Everything about a practice — its wording,
+        /// its severity, the type of modification it needs and the tolerances the detection
+        /// uses — comes from here, so the audit code never carries a rule.
+        /// </summary>
+        private static void LoadModellingPractices(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return;
+
+            JToken root = JToken.Parse(json);
+            JToken? array = root is JArray ? root : root["practices"];
+            if (!(array is JArray practices))
+                return;
+
+            foreach (JToken token in practices)
+            {
+                var practice = new DmModellingPractice
+                {
+                    Id = (string?)token["id"] ?? "",
+                    Enabled = (bool?)token["enabled"] ?? true,
+                    Order = (int?)token["order"] ?? 0,
+                    Scope = (string?)token["scope"] ?? "",
+                    Title = (string?)token["title"] ?? "",
+                    Requirement = (string?)token["requirement"] ?? "",
+                    Reference = (string?)token["reference"] ?? "",
+                    FixAction = (string?)token["fixAction"] ?? "",
+                    RevitSteps = (string?)token["revitSteps"] ?? "",
+                    McpHint = (string?)token["mcpHint"] ?? "",
+                    Severity = ParseSeverity((string?)token["severity"]),
+                    FixKind = ParseFixKind((string?)token["fixKind"])
+                };
+                if (practice.Id.Length == 0)
+                    continue;
+
+                if (token["settings"] is JObject settings)
+                {
+                    foreach (JProperty setting in settings.Properties())
+                    {
+                        if (setting.Value is JArray values)
+                        {
+                            var list = new List<string>();
+                            foreach (JToken value in values)
+                                list.Add(((string?)value ?? "").Trim());
+                            practice.Settings[setting.Name] = list;
+                        }
+                        else if (setting.Value is JValue scalar && scalar.Value != null)
+                        {
+                            practice.Settings[setting.Name] = scalar.Value;
+                        }
+                    }
+                }
+
+                _practices.Add(practice);
+            }
+
+            _practices = _practices.OrderBy(p => p.Order).ThenBy(p => p.Id, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        private static DmSeverity ParseSeverity(string? value)
+        {
+            switch ((value ?? "").Trim().ToUpperInvariant())
+            {
+                case "CRITICAL": return DmSeverity.Critical;
+                case "ERROR": return DmSeverity.Error;
+                case "PASS": return DmSeverity.Pass;
+                default: return DmSeverity.Warning;
+            }
+        }
+
+        private static DmFixKind ParseFixKind(string? value)
+        {
+            switch ((value ?? "").Trim().ToUpperInvariant())
+            {
+                case "SETPARAMETER": return DmFixKind.SetParameter;
+                case "BINDPARAMETER": return DmFixKind.BindParameter;
+                case "RENAME": return DmFixKind.Rename;
+                case "PROJECTSETUP": return DmFixKind.ProjectSetup;
+                case "REVIEW": return DmFixKind.Review;
+                default: return DmFixKind.ModelChange;
             }
         }
 

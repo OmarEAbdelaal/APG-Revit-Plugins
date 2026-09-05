@@ -55,6 +55,8 @@ namespace CodeCompliance.Core.Dm
             sb.AppendLine("Revit MCP task — Dubai Municipality BIM compliance fix");
             sb.AppendLine("Model: " + modelTitle);
             sb.AppendLine("Finding: [" + finding.SeverityText + "] " + finding.Title);
+            if (finding.PracticeId.Length > 0)
+                sb.AppendLine("DM recommended modelling practice: " + finding.PracticeId);
             if (finding.Reference.Length > 0)
                 sb.AppendLine("DM reference: " + finding.Reference);
             sb.AppendLine();
@@ -106,9 +108,12 @@ namespace CodeCompliance.Core.Dm
                 sb.AppendLine("----- script for send_code_to_revit -----");
                 sb.AppendLine(finding.FixScript.TrimEnd());
                 sb.AppendLine("----- end of script -----");
-                sb.AppendLine();
-                sb.AppendLine("For a handful of elements the modify_element tool does the same job: pass the " +
-                              "element ids with the parameter name \"" + finding.ParameterName + "\" and its value.");
+                if (finding.ParameterName.Length > 0)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine("For a handful of elements the modify_element tool does the same job: pass the " +
+                                  "element ids with the parameter name \"" + finding.ParameterName + "\" and its value.");
+                }
             }
             else
             {
@@ -118,7 +123,13 @@ namespace CodeCompliance.Core.Dm
                               (finding.FixKind == DmFixKind.ProjectSetup
                                   ? "(a project setting — it has to be done in the Revit user interface)."
                                   : "(a model change — confirm the approach with me before touching geometry)."));
-                sb.AppendLine("3. Tell me exactly what you changed, or what you need from me to proceed.");
+                if (finding.PracticeId.Length > 0)
+                    sb.AppendLine("3. The \"In Revit\" steps above are DM's own instructions for this practice: " +
+                                  "follow them, and where the change needs a decision (splitting columns, " +
+                                  "remodelling an object, moving geometry that clashes with a link) propose it " +
+                                  "as a table and wait for my answer.");
+                sb.AppendLine((finding.PracticeId.Length > 0 ? "4" : "3") +
+                              ". Tell me exactly what you changed, or what you need from me to proceed.");
             }
 
             return sb.ToString();
@@ -153,7 +164,8 @@ namespace CodeCompliance.Core.Dm
                          .ThenBy(f => (int)f.Group))
             {
                 sb.AppendLine(index.ToString(CultureInfo.InvariantCulture) + ". [" + finding.SeverityText + "] " +
-                              finding.Scope + " — " + finding.Title);
+                              finding.Scope + " — " + finding.Title +
+                              (finding.PracticeId.Length > 0 ? "   (modelling practice " + finding.PracticeId + ")" : ""));
                 sb.AppendLine("   Fix (" + finding.FixKindText.ToLowerInvariant() + "): " + finding.FixAction);
                 if (finding.HasElements)
                     sb.AppendLine("   Elements: " + finding.AffectedCount + " affected, ids " + IdList(finding.ElementIds, 40));

@@ -19,6 +19,10 @@ namespace CodeCompliance.Core.Dm
     /// Puts the elements of a finding in front of the user: a dedicated 3D view whose section
     /// box is fitted around them, the elements coloured red in that view and selected, so the
     /// problem is visible in context instead of as a list of ids.
+    ///
+    /// It is called from the dashboard's external event, so it runs in a Revit API context and
+    /// can open the view immediately — the dashboard stays open next to it and Revit keeps
+    /// working normally.
     /// </summary>
     public static class DmHighlightService
     {
@@ -58,7 +62,15 @@ namespace CodeCompliance.Core.Dm
             if (bounds == null)
             {
                 // Levels, project information and similar have no geometry: select them only.
-                uiDoc.Selection.SetElementIds(ids);
+                try
+                {
+                    uiDoc.Selection.SetElementIds(ids);
+                    uiDoc.ShowElements(ids);
+                }
+                catch
+                {
+                    // an element that cannot be shown in the active view is still selected
+                }
                 result.Success = true;
                 result.Message = ids.Count + " element(s) selected. They have no 3D geometry, so no section " +
                                  "box was created.";
@@ -111,19 +123,31 @@ namespace CodeCompliance.Core.Dm
                 transaction.Commit();
             }
 
+            bool opened = false;
             try
             {
+                // The dashboard is modeless and this runs inside its external event, so the
+                // view can be activated straight away instead of waiting for the window to close.
+                if (doc.GetElement(result.ViewId) is View3D view3D)
+                {
+                    if (uiDoc.ActiveView == null || uiDoc.ActiveView.Id != view3D.Id)
+                        uiDoc.ActiveView = view3D;
+                    opened = true;
+                }
                 uiDoc.Selection.SetElementIds(ids);
-                uiDoc.RequestViewChange((View3D)doc.GetElement(result.ViewId));
+                uiDoc.ShowElements(ids);
             }
             catch
             {
-                // the view is switched again when the dashboard closes
+                // Revit refuses to change the active view while a sketch or another modal
+                // operation is running: the colours and the section box are set either way.
             }
 
             result.Success = true;
-            result.Message = ids.Count + " element(s) framed in \"" + ViewName +
-                             "\" and coloured red. The view opens when you close the dashboard.";
+            result.Message = ids.Count + " element(s) framed in \"" + ViewName + "\" and coloured red" +
+                             (opened
+                                 ? ". The view is open — Revit stays usable, the dashboard stays where it is."
+                                 : ". Open \"" + ViewName + "\" to see them (Revit was busy).");
             return result;
         }
 
