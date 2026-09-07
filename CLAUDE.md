@@ -37,6 +37,12 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
   `OmarEAbdelaal/revit-mcp` and are downloaded from that repo's GitHub releases by
   `McpInstaller` (MCP Setup button + silent auto-update at Revit startup). Release asset
   names are a contract: `revit-mcp-server-v*.zip` and `revit-mcp-commands-v*.zip`.
+- `McpNode` resolves the Node.js runtime (bundled in the server release > downloaded by the
+  plugin > installed on the machine) and can download the current LTS itself.
+- `McpClaudeConfig` owns everything Claude-related: it only ever touches the `revit-mcp` key
+  inside `mcpServers`, backs the file up, reads it back to verify, and covers Claude Desktop
+  (`claude_desktop_config.json`) plus Claude Code (`.claude.json`, only when it exists).
+  It is applied after every install and re-checked on Revit startup.
 - Newtonsoft.Json is compile-time only (`ExcludeAssets="runtime"`): Revit ships it.
 - Local builds work when a .NET SDK is present (`dotnet build -c "Release R24"` etc.);
   otherwise rely on CI as before.

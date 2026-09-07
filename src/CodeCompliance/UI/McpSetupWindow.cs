@@ -25,7 +25,7 @@ namespace CodeCompliance.UI
     }
 
     /// <summary>
-    /// Revit MCP setup: status of the server, installation/update from GitHub, Claude Desktop
+    /// Revit MCP setup: status of the server, installation/update from GitHub, Claude
     /// configuration and the list of commands exposed to the AI. Code-only WPF, shown modal
     /// from <see cref="Commands.McpSetupCommand"/> so Revit API calls stay valid.
     /// </summary>
@@ -45,6 +45,7 @@ namespace CodeCompliance.UI
         private readonly Button _toggleButton;
         private readonly Button _installButton;
         private readonly Button _claudeButton;
+        private readonly Button _restartClaudeButton;
         private readonly TextBox _portBox = new TextBox { Width = 60 };
         private readonly CheckBox _autoStart = new CheckBox { Content = "Start automatically when Revit starts" };
         private readonly CheckBox _autoUpdate = new CheckBox { Content = "Update server and commands automatically from GitHub" };
@@ -58,8 +59,8 @@ namespace CodeCompliance.UI
             _settings = McpSettings.Load();
 
             Title = "Revit MCP Setup – APG Revit Plugins";
-            Width = 760;
-            Height = 720;
+            Width = 780;
+            Height = 740;
             MinWidth = 640;
             MinHeight = 520;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -100,7 +101,7 @@ namespace CodeCompliance.UI
             body.Children.Add(ApgTheme.Card(serverPanel));
 
             // ── 2. Components ───────────────────────────────────────────────────
-            body.Children.Add(ApgTheme.SectionHeader("2. Server, command sets and Claude Desktop"));
+            body.Children.Add(ApgTheme.SectionHeader("2. Server, command sets and Claude"));
             var comp = new StackPanel();
             comp.Children.Add(Row("Installed", _installedStatus));
             comp.Children.Add(Row("GitHub", _latestStatus));
@@ -114,15 +115,23 @@ namespace CodeCompliance.UI
             _installButton.Margin = new Thickness(0, 0, 8, 6);
             _installButton.Click += async (_, _) => await InstallAsync();
             compButtons.Children.Add(_installButton);
-            _claudeButton = ApgTheme.SecondaryButton("Configure Claude Desktop");
+            _claudeButton = ApgTheme.SecondaryButton("Configure Claude");
             _claudeButton.Margin = new Thickness(0, 0, 8, 6);
             _claudeButton.Click += (_, _) => ConfigureClaude();
             compButtons.Children.Add(_claudeButton);
+            _restartClaudeButton = ApgTheme.SecondaryButton("Restart Claude Desktop");
+            _restartClaudeButton.Margin = new Thickness(0, 0, 8, 6);
+            _restartClaudeButton.Click += (_, _) =>
+            {
+                Say(McpClaudeConfig.RestartClaudeDesktop());
+                Refresh();
+            };
+            compButtons.Children.Add(_restartClaudeButton);
             var copy = ApgTheme.SecondaryButton("Copy config JSON");
             copy.Margin = new Thickness(0, 0, 8, 6);
             copy.Click += (_, _) =>
             {
-                Clipboard.SetText(McpInstaller.ClaudeConfigSnippet(_settings));
+                Clipboard.SetText(McpClaudeConfig.Snippet(_settings));
                 Say("MCP configuration copied to the clipboard - paste it into any MCP client configuration.");
             };
             compButtons.Children.Add(copy);
@@ -246,41 +255,52 @@ namespace CodeCompliance.UI
                 _installedStatus.Foreground = available > 0 && McpInstaller.IsServerInstalled ? ApgTheme.Green : ApgTheme.Red;
             }
 
-            string? node = McpInstaller.FindNode();
-            if (node == null)
+            NodeInfo node = McpNode.Resolve();
+            if (!node.Found)
             {
-                _nodeStatus.Text = "Node.js not found. Install the LTS version from nodejs.org, then reopen this window.";
+                _nodeStatus.Text = "not found - Install / Update from GitHub brings its own Node.js runtime.";
                 _nodeStatus.Foreground = ApgTheme.Red;
             }
             else
             {
-                string? version = McpInstaller.GetNodeVersion(node);
-                bool ok = McpInstaller.IsNodeVersionSupported(version);
-                _nodeStatus.Text = (version ?? "unknown version") + "  ·  " + node +
-                                   (ok ? "" : "  ·  version " + McpInstaller.MinimumNodeVersion + " or newer is required");
-                _nodeStatus.Foreground = ok ? ApgTheme.Green : ApgTheme.Red;
+                _nodeStatus.Text = node.Describe() + (node.IsSupported ? "" : "  ·  version " + McpNode.MinimumVersion + " or newer is required");
+                _nodeStatus.Foreground = node.IsSupported ? ApgTheme.Green : ApgTheme.Red;
             }
 
-            ClaudeConfigState state = McpInstaller.CheckClaudeConfig(out string details);
-            switch (state)
+            var claudeLines = new List<string>();
+            bool anyProblem = false;
+            foreach (ClaudeConfigTarget target in McpClaudeConfig.AllTargets())
             {
-                case ClaudeConfigState.Configured:
-                    _claudeStatus.Text = "Claude Desktop is configured to launch this MCP server.";
-                    _claudeStatus.Foreground = ApgTheme.Green;
-                    break;
-                case ClaudeConfigState.PointsElsewhere:
-                    _claudeStatus.Text = "Claude Desktop has a revit-mcp entry pointing elsewhere (" + details + "). Click Configure to update it.";
-                    _claudeStatus.Foreground = ApgTheme.Red;
-                    break;
-                case ClaudeConfigState.NotConfigured:
-                    _claudeStatus.Text = "Claude Desktop is not configured yet - click Configure Claude Desktop.";
-                    _claudeStatus.Foreground = ApgTheme.Red;
-                    break;
-                default:
-                    _claudeStatus.Text = "Claude Desktop configuration not found (" + details + "). Install Claude Desktop, or use Copy config JSON for another MCP client.";
-                    _claudeStatus.Foreground = ApgTheme.Muted;
-                    break;
+                ClaudeConfigState state = McpClaudeConfig.Inspect(target, _settings, out string details);
+                switch (state)
+                {
+                    case ClaudeConfigState.Configured:
+                        claudeLines.Add(target.Name + ": configured");
+                        break;
+                    case ClaudeConfigState.PointsElsewhere:
+                        claudeLines.Add(target.Name + ": entry points elsewhere (" + details + ") - click Configure Claude");
+                        anyProblem = true;
+                        break;
+                    case ClaudeConfigState.NotConfigured:
+                        claudeLines.Add(target.Name + ": not configured yet - click Configure Claude");
+                        anyProblem = true;
+                        break;
+                    case ClaudeConfigState.Unreadable:
+                        claudeLines.Add(target.Name + ": configuration file is not valid JSON");
+                        anyProblem = true;
+                        break;
+                    default:
+                        if (target.CreateIfMissing)
+                        {
+                            claudeLines.Add(target.Name + ": not installed (no configuration file yet)");
+                            anyProblem = true;
+                        }
+                        break;
+                }
             }
+            _claudeStatus.Text = string.Join("   ·   ", claudeLines);
+            _claudeStatus.Foreground = anyProblem ? ApgTheme.Red : ApgTheme.Green;
+            _restartClaudeButton.IsEnabled = McpClaudeConfig.IsClaudeDesktopRunning();
 
             _rows.Clear();
             foreach (McpCommandInfo info in infos.OrderBy(i => i.BuiltIn ? 0 : 1).ThenBy(i => i.SetName).ThenBy(i => i.Name))
@@ -395,7 +415,13 @@ namespace CodeCompliance.UI
                     Say("Install the MCP server first (Install / Update from GitHub), then configure Claude.");
                     return;
                 }
-                Say(McpInstaller.ConfigureClaude(_settings));
+                List<ClaudeConfigResult> results = McpClaudeConfig.Apply(_settings);
+                string message = string.Join("  ", results.Where(r => !r.Skipped).Select(r => r.Message));
+                if (results.All(r => r.Skipped))
+                    message = "No Claude configuration file was found on this computer.";
+                else if (results.Any(r => r.Changed))
+                    message += "  Restart Claude Desktop so it loads the Revit tools.";
+                Say(message);
             }
             catch (Exception ex)
             {

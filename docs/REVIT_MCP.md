@@ -26,10 +26,14 @@ new tools reach every user automatically (see [Updates](#updates)).
 ## 1. Requirements
 
 - Windows 10/11, Revit 2024, 2025, 2026 or 2027.
-- **Node.js 22.13 or newer** (LTS recommended) — <https://nodejs.org>. The MCP server is a
-  Node program that Claude launches on demand; it has no native dependencies.
 - **Claude Desktop** (<https://claude.ai/download>) or Claude Code.
 - Internet access to `github.com` for the one-time install and for updates.
+
+**Node.js is not a prerequisite.** The MCP server is a Node program, but the download from
+GitHub carries its own Node.js runtime (`server\runtime\node.exe`, the current LTS), and the
+plugin points Claude at that executable. If a machine ever ends up without it, the plugin
+downloads Node.js from nodejs.org by itself and verifies the checksum. An existing Node.js
+installation is used only as a last resort.
 
 ## 2. Install the suite
 
@@ -42,18 +46,21 @@ two buttons: **MCP Server** and **MCP Setup**.
 1. Click **MCP Setup**.
 2. Section 2 shows what is installed. Click **Install / Update from GitHub**. The plugin
    downloads the latest `revit-mcp-server-<v>.zip` and `revit-mcp-commands-<v>.zip`
-   from the releases of `OmarEAbdelaal/revit-mcp` and unpacks them under
-   `%LOCALAPPDATA%\APGRevitPlugins\RevitMCP\`.
-3. Check the **Node.js** line. If it says *not found*, install Node.js LTS and reopen the window.
-4. Click **Configure Claude Desktop**. This adds (or updates) a `revit-mcp` entry in
-   `%APPDATA%\Claude\claude_desktop_config.json`, keeping every other MCP server you have.
-   A `.bak` copy of the previous file is written next to it. The entry looks like:
+   from the releases of `OmarEAbdelaal/revit-mcp`, unpacks them under
+   `%LOCALAPPDATA%\APGRevitPlugins\RevitMCP\`, and **writes the Claude configuration for you**
+   as the last step. The **Node.js** line then shows the runtime that came with the download.
+3. If you want to write the configuration again by hand (after changing the port, for example),
+   click **Configure Claude**. It adds or updates the `revit-mcp` entry in
+   `%APPDATA%\Claude\claude_desktop_config.json` and, when Claude Code is installed, in
+   `%USERPROFILE%\.claude.json` — keeping every other MCP server and every other setting in
+   those files. A `.bak` copy is written first, and the result is read back and verified.
+   The entry looks like:
 
    ```json
    {
      "mcpServers": {
        "revit-mcp": {
-         "command": "C:\\Program Files\\nodejs\\node.exe",
+         "command": "C:\\Users\\<you>\\AppData\\Local\\APGRevitPlugins\\RevitMCP\\server\\runtime\\node.exe",
          "args": ["C:\\Users\\<you>\\AppData\\Local\\APGRevitPlugins\\RevitMCP\\server\\build\\index.js"],
          "env": { "REVIT_MCP_PORT": "8080" }
        }
@@ -63,8 +70,9 @@ two buttons: **MCP Server** and **MCP Setup**.
 
    For Claude Code or another MCP client, click **Copy config JSON** and paste it into that
    client's configuration (Claude Code: `claude mcp add-json revit-mcp '<the pasted object>'`).
-5. **Restart Claude Desktop** (quit it from the tray icon, then start it again). The Revit
-   tools appear under the tools icon of the chat box.
+4. **Restart Claude Desktop** so it reads the configuration: the **Restart Claude Desktop**
+   button in MCP Setup does it for you, or quit Claude from the tray icon and start it again.
+   The Revit tools then appear under the tools icon of the chat box.
 
 ## 4. Daily use
 
@@ -94,7 +102,8 @@ two buttons: **MCP Server** and **MCP Setup**.
 | `ai_element_filter` | ai_element_filter | Query elements by category, level, parameters, bounding box |
 | `create_point_based_element`, `create_line_based_element`, `create_surface_based_element` | same | Doors/windows/furniture, walls/beams/pipes, floors/ceilings/roofs |
 | `create_grid`, `create_level`, `create_room`, `create_structural_framing_system` | same | Grids, levels, rooms, beam systems |
-| `modify_element`, `operate_element`, `delete_element` | same | Change parameters; select/hide/isolate/color; delete |
+| `modify_element`, `operate_element` | same | Change parameters; select/hide/isolate/color |
+| `delete_element` | delete_element | Delete elements by id; reports what was deleted and what was skipped |
 | `color_elements`, `tag_all_walls`, `tag_all_rooms` | color_splash, tag_all_walls, tag_rooms | Colour by parameter value, tag walls/rooms in the view |
 | `export_room_data`, `get_material_quantities`, `analyze_model_statistics` | same | Room schedule data, material take-off, model statistics |
 | `edit_family` | edit_family | Open, inspect and edit a family, then reload it |
@@ -115,6 +124,9 @@ build exists for the running Revit version, and lets you switch individual comma
   `OmarEAbdelaal/revit-mcp`. A newer release is downloaded and installed in the background;
   a dialog tells you when that happened. Restart Claude Desktop to load the new server; the
   new Revit commands are used the next time you switch the MCP server on.
+- **Claude configuration**: it is written after every install/update and re-checked at every
+  Revit start, so a moved user profile, a new Node.js runtime or a changed port cannot leave
+  Claude pointing at nothing. Only the `revit-mcp` entry is ever touched.
 - Manual: **MCP Setup ▸ Install / Update from GitHub** (stop the MCP server first — Revit
   locks loaded DLLs).
 
@@ -126,6 +138,8 @@ README for the release workflow.
 ```
 %LOCALAPPDATA%\APGRevitPlugins\RevitMCP\
   server\                      MCP server (build\index.js, node_modules, package.json)
+  server\runtime\node.exe      Node.js shipped with the server release
+  runtime\node.exe             Node.js downloaded by the plugin (only if the release had none)
   Commands\
     RevitMCPCommandSet\        command.json + 2024\ 2025\ 2026\ 2027\ (DLLs)
     RevitMCPExtraCommands\     command.json + 2024\ 2025\ 2026\ 2027\ (DLLs)
@@ -139,9 +153,11 @@ README for the release workflow.
 ## 8. Troubleshooting
 
 **Claude says the Revit tools are unavailable / no hammer icon**
-- Claude Desktop must be fully restarted after *Configure Claude Desktop*.
-- Check **MCP Setup ▸ Node.js**: Node 22.13+ must be installed. Claude runs the `command`
-  from the config file, so the path to `node.exe` must exist.
+- Claude Desktop must be fully restarted after the configuration was written (tray icon ▸ Quit,
+  or the **Restart Claude Desktop** button).
+- Check the **Claude** line in MCP Setup: it says *configured* only when the entry in the file
+  matches this installation.
+- Check **MCP Setup ▸ Node.js**: it must show a runtime (normally *bundled with the MCP server*).
 - Claude Desktop ▸ Settings ▸ Developer shows the server log if the server fails to start.
 
 **Tools exist but every call fails with "Could not connect to Revit on localhost:8080"**

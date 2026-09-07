@@ -10,7 +10,9 @@ namespace CodeCompliance.Core.Mcp
     ///
     /// <code>
     /// RevitMCP\
-    ///   server\build\index.js        MCP server (Node.js) launched by Claude Desktop
+    ///   server\build\index.js        MCP server (Node.js) launched by Claude
+    ///   server\runtime\node.exe      Node.js bundled with the server release
+    ///   runtime\node.exe             Node.js downloaded by the plugin (survives server updates)
     ///   Commands\&lt;Set&gt;\command.json   one folder per command set
     ///   Commands\&lt;Set&gt;\&lt;year&gt;\*.dll   command DLLs per Revit version
     ///   data\                        SQLite data written by the server
@@ -28,6 +30,14 @@ namespace CodeCompliance.Core.Mcp
         public static string ServerDir => Path.Combine(Root, "server");
         public static string ServerEntry => Path.Combine(ServerDir, "build", "index.js");
         public static string ServerPackageJson => Path.Combine(ServerDir, "package.json");
+
+        /// <summary>node.exe shipped inside the server release (preferred).</summary>
+        public static string BundledNodeExe => Path.Combine(ServerDir, "runtime", "node.exe");
+
+        /// <summary>node.exe downloaded by the plugin; outside server\ so server updates keep it.</summary>
+        public static string DownloadedNodeDir => Path.Combine(Root, "runtime");
+        public static string DownloadedNodeExe => Path.Combine(DownloadedNodeDir, "node.exe");
+
         public static string CommandsDir => Path.Combine(Root, "Commands");
         public static string DataDir => Path.Combine(Root, "data");
         public static string LogsDir => Path.Combine(Root, "Logs");
@@ -39,6 +49,11 @@ namespace CodeCompliance.Core.Mcp
         public static string ClaudeConfigFile => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Claude", "claude_desktop_config.json");
+
+        /// <summary>Claude Code's user configuration (only written when it already exists).</summary>
+        public static string ClaudeCodeConfigFile => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".claude.json");
 
         public static void EnsureDirectories()
         {

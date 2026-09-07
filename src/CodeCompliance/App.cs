@@ -94,8 +94,10 @@ namespace CodeCompliance
             {
                 try
                 {
+                    // Installs a newer server/command release and keeps the Claude configuration
+                    // pointing at this installation (other connectors are never touched).
                     McpUpdateResult result = await McpInstaller.AutoUpdateAsync(McpSettings.Load()).ConfigureAwait(false);
-                    if (result.Status == McpUpdateStatus.Updated)
+                    if (result.Status == McpUpdateStatus.Updated || result.ClaudeConfigured)
                         _mcpUpdate = result;
                 }
                 catch
@@ -137,9 +139,12 @@ namespace CodeCompliance
             {
                 try
                 {
-                    TaskDialog.Show("Revit MCP updated",
-                        mcp.Message + "\n\nRestart Claude Desktop so it loads the new MCP server. " +
-                        "The new Revit commands are used the next time the MCP server is switched on.");
+                    string title = mcp.Status == McpUpdateStatus.Updated ? "Revit MCP updated" : "Revit MCP reconnected to Claude";
+                    string tail = mcp.Status == McpUpdateStatus.Updated
+                        ? "\n\nRestart Claude Desktop so it loads the new MCP server. " +
+                          "The new Revit commands are used the next time the MCP server is switched on."
+                        : "\n\nRestart Claude Desktop so it picks the configuration up.";
+                    TaskDialog.Show(title, mcp.Message + tail);
                 }
                 catch
                 {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -34,17 +33,9 @@ namespace CodeCompliance.Core.Mcp
         [JsonIgnore] public bool Any => ServerVersion != null || CommandsVersion != null;
 
         [JsonIgnore]
-        public Version? Version
-        {
-            get
-            {
-                Version? v = McpInstaller.ParseVersion(ServerVersion) ?? McpInstaller.ParseVersion(CommandsVersion);
-                return v;
-            }
-        }
+        public Version? Version =>
+            McpInstaller.ParseVersion(ServerVersion) ?? McpInstaller.ParseVersion(CommandsVersion);
     }
-
-    public enum ClaudeConfigState { FileMissing, NotConfigured, Configured, PointsElsewhere }
 
     public enum McpUpdateStatus { NotInstalled, UpToDate, Updated, Failed, Disabled }
 
@@ -53,13 +44,16 @@ namespace CodeCompliance.Core.Mcp
         public McpUpdateStatus Status { get; set; }
         public string Message { get; set; } = "";
         public Version? NewVersion { get; set; }
+        /// <summary>True when the Claude configuration was written as part of this update.</summary>
+        public bool ClaudeConfigured { get; set; }
     }
 
     /// <summary>
     /// Installs and updates the Revit MCP connector from the GitHub releases of
-    /// OmarEAbdelaal/revit-mcp: the MCP server (Node.js) and the Revit command sets.
-    /// Also writes the Claude Desktop configuration. No Revit API types here, so every
-    /// method can run on a background thread.
+    /// OmarEAbdelaal/revit-mcp: the MCP server (Node.js, with its own runtime) and the Revit
+    /// command sets. Node.js handling lives in <see cref="McpNode"/>, the Claude configuration
+    /// in <see cref="McpClaudeConfig"/>. No Revit API types here, so every method can run on a
+    /// background thread.
     /// </summary>
     public static class McpInstaller
     {
@@ -69,8 +63,6 @@ namespace CodeCompliance.Core.Mcp
         private const string LatestReleaseApi = "https://api.github.com/repos/" + Repo + "/releases/latest";
         private const string ServerAssetPrefix = "revit-mcp-server-";
         private const string CommandsAssetPrefix = "revit-mcp-commands-";
-        /// <summary>Key of the server entry inside claude_desktop_config.json.</summary>
-        public const string ClaudeServerKey = "revit-mcp";
         private const string UserAgent = "APG-Revit-Plugins-RevitMCP";
 
         // ── Local state ────────────────────────────────────────────────────────
@@ -182,7 +174,8 @@ namespace CodeCompliance.Core.Mcp
         // ── Install / update ───────────────────────────────────────────────────
 
         /// <summary>
-        /// Downloads and installs the server and the command sets of a release.
+        /// Downloads and installs the server and the command sets of a release, makes sure a
+        /// Node.js runtime is available and writes the Claude configuration.
         /// Command DLLs already loaded by a running MCP server cannot be replaced: stop the
         /// server (or restart Revit) first. Throws with a readable message on failure.
         /// </summary>
@@ -195,7 +188,7 @@ namespace CodeCompliance.Core.Mcp
             Directory.CreateDirectory(McpPaths.TempDir);
             var installed = ReadInstalled();
 
-            using (HttpClient client = CreateClient(600))
+            using (HttpClient client = CreateClient(900))
             {
                 progress?.Report("Downloading MCP server " + release.Tag + " ...");
                 string serverZip = await DownloadAsync(client, release.ServerZipUrl!, "server.zip").ConfigureAwait(false);
@@ -215,7 +208,17 @@ namespace CodeCompliance.Core.Mcp
 
                 TryDelete(serverZip);
                 TryDelete(commandsZip);
-                string summary = "Installed Revit MCP " + release.Tag + " (server " + installed.ServerVersion + ", " + sets + " command set(s)).";
+
+                // The server release normally carries its own Node.js; download one if it does not.
+                NodeInfo node = await McpNode.EnsureAsync(progress).ConfigureAwait(false);
+
+                // Point Claude at what was just installed, keeping every other connector.
+                progress?.Report("Updating the Claude configuration ...");
+                List<ClaudeConfigResult> claude = McpClaudeConfig.Apply(McpSettings.Load());
+
+                string summary = "Installed Revit MCP " + release.Tag + " (server " + installed.ServerVersion +
+                                 ", " + sets + " command set(s), Node.js " + (node.Version ?? "not found") + "). " +
+                                 string.Join(" ", claude.Where(c => !c.Skipped).Select(c => c.Message));
                 McpLog.Info(summary);
                 return summary;
             }
@@ -252,13 +255,28 @@ namespace CodeCompliance.Core.Mcp
                 }
                 catch (Exception)
                 {
-                    // Something holds a file open: move the old folder aside instead
+                    // Something holds a file open (Claude may be running the server): move it aside
                     string old = McpPaths.ServerDir + ".old-" + DateTime.Now.ToString("yyyyMMddHHmmss");
                     Directory.Move(McpPaths.ServerDir, old);
                 }
             }
             Directory.Move(root, McpPaths.ServerDir);
             TryDeleteDirectory(staging);
+            CleanOldServerFolders();
+        }
+
+        /// <summary>Removes server.old-* folders left behind when a running server locked files.</summary>
+        private static void CleanOldServerFolders()
+        {
+            try
+            {
+                foreach (string dir in Directory.GetDirectories(McpPaths.Root, "server.old-*"))
+                    TryDeleteDirectory(dir);
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         /// <summary>Extracts the command sets zip and replaces each set folder under Commands\.</summary>
@@ -311,20 +329,15 @@ namespace CodeCompliance.Core.Mcp
         }
 
         /// <summary>
-        /// Startup check: when the connector is installed and a newer release exists, install it.
-        /// Never throws. Server updates take effect the next time Claude starts the server;
-        /// command updates the next time the MCP server switch is turned on.
+        /// Startup check: installs a newer release when one exists, and makes sure the Claude
+        /// configuration points at this installation (Claude picks the change up on its next start).
+        /// Never throws. Command updates take effect the next time the MCP server switch is used.
         /// </summary>
         public static async Task<McpUpdateResult> AutoUpdateAsync(McpSettings settings)
         {
             var result = new McpUpdateResult();
             try
             {
-                if (!settings.AutoUpdate)
-                {
-                    result.Status = McpUpdateStatus.Disabled;
-                    return result;
-                }
                 McpInstalledInfo installed = ReadInstalled();
                 if (!installed.Any)
                 {
@@ -332,6 +345,25 @@ namespace CodeCompliance.Core.Mcp
                     result.Message = "Revit MCP is not installed yet. Use MCP Setup on the APG Revit Plugins tab.";
                     return result;
                 }
+
+                // Keep Claude pointing at this installation even when nothing needs updating:
+                // a moved profile, a new Node.js or a changed port would otherwise break it.
+                try
+                {
+                    result.ClaudeConfigured = McpClaudeConfig.EnsureConfigured(settings).Any(c => c.Changed);
+                }
+                catch (Exception ex)
+                {
+                    McpLog.Error("Claude configuration check failed", ex);
+                }
+
+                if (!settings.AutoUpdate)
+                {
+                    result.Status = McpUpdateStatus.Disabled;
+                    result.Message = "Automatic updates are switched off.";
+                    return result;
+                }
+
                 McpReleaseInfo? latest = await GetLatestReleaseAsync().ConfigureAwait(false);
                 if (latest == null || !latest.IsComplete)
                 {
@@ -355,6 +387,7 @@ namespace CodeCompliance.Core.Mcp
                 result.Message = await InstallAsync(latest).ConfigureAwait(false);
                 result.Status = McpUpdateStatus.Updated;
                 result.NewVersion = latest.Version;
+                result.ClaudeConfigured = true;
                 return result;
             }
             catch (Exception ex)
@@ -366,149 +399,13 @@ namespace CodeCompliance.Core.Mcp
             }
         }
 
-        // ── Node.js ────────────────────────────────────────────────────────────
+        // ── Convenience wrappers used by the UI ────────────────────────────────
 
-        /// <summary>Full path of node.exe (PATH first, then the usual install folders) or null.</summary>
-        public static string? FindNode()
-        {
-            var candidates = new List<string>();
-            try
-            {
-                var psi = new ProcessStartInfo("where.exe", "node.exe")
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-                using (Process? p = Process.Start(psi))
-                {
-                    if (p != null)
-                    {
-                        string output = p.StandardOutput.ReadToEnd();
-                        p.WaitForExit(5000);
-                        candidates.AddRange(output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
-                    }
-                }
-            }
-            catch
-            {
-                // where.exe missing or blocked
-            }
-            candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "nodejs", "node.exe"));
-            candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "nodejs", "node.exe"));
-            candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "nodejs", "node.exe"));
-            return candidates.Select(c => c.Trim()).FirstOrDefault(c => c.Length > 0 && File.Exists(c));
-        }
+        public static NodeInfo GetNode() => McpNode.Resolve();
 
-        /// <summary>Output of node --version (for example v22.14.0) or null.</summary>
-        public static string? GetNodeVersion(string nodeExe)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo(nodeExe, "--version")
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-                using (Process? p = Process.Start(psi))
-                {
-                    if (p == null)
-                        return null;
-                    string output = p.StandardOutput.ReadToEnd().Trim();
-                    p.WaitForExit(5000);
-                    return output.Length > 0 ? output : null;
-                }
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        public static Task<NodeInfo> EnsureNodeAsync(IProgress<string>? progress = null) => McpNode.EnsureAsync(progress);
 
-        public static readonly Version MinimumNodeVersion = new Version(22, 13, 0);
-
-        public static bool IsNodeVersionSupported(string? nodeVersion)
-        {
-            Version? v = ParseVersion(nodeVersion);
-            return v != null && v >= MinimumNodeVersion;
-        }
-
-        // ── Claude Desktop configuration ───────────────────────────────────────
-
-        public static ClaudeConfigState CheckClaudeConfig(out string details)
-        {
-            details = McpPaths.ClaudeConfigFile;
-            if (!File.Exists(McpPaths.ClaudeConfigFile))
-                return ClaudeConfigState.FileMissing;
-            try
-            {
-                JObject config = JObject.Parse(File.ReadAllText(McpPaths.ClaudeConfigFile));
-                JObject? entry = config["mcpServers"]?[ClaudeServerKey] as JObject;
-                if (entry == null)
-                    return ClaudeConfigState.NotConfigured;
-                string args = string.Join(" ", entry["args"]?.Select(a => a.ToString()) ?? Enumerable.Empty<string>());
-                details = (entry.Value<string>("command") ?? "") + " " + args;
-                return args.IndexOf(McpPaths.ServerEntry, StringComparison.OrdinalIgnoreCase) >= 0
-                    ? ClaudeConfigState.Configured
-                    : ClaudeConfigState.PointsElsewhere;
-            }
-            catch (Exception ex)
-            {
-                details = "Cannot read " + McpPaths.ClaudeConfigFile + ": " + ex.Message;
-                return ClaudeConfigState.NotConfigured;
-            }
-        }
-
-        /// <summary>The revit-mcp entry as JSON, for manual configuration of other MCP clients.</summary>
-        public static string ClaudeConfigSnippet(McpSettings settings)
-        {
-            return new JObject { ["mcpServers"] = new JObject { [ClaudeServerKey] = BuildServerEntry(settings) } }
-                .ToString(Formatting.Indented);
-        }
-
-        private static JObject BuildServerEntry(McpSettings settings)
-        {
-            string command = FindNode() ?? "node";
-            var env = new JObject { ["REVIT_MCP_PORT"] = settings.Port.ToString() };
-            return new JObject
-            {
-                ["command"] = command,
-                ["args"] = new JArray(McpPaths.ServerEntry),
-                ["env"] = env
-            };
-        }
-
-        /// <summary>
-        /// Adds or replaces the revit-mcp entry in claude_desktop_config.json, keeping every
-        /// other server. A .bak copy of the previous file is written next to it.
-        /// </summary>
-        public static string ConfigureClaude(McpSettings settings)
-        {
-            string path = McpPaths.ClaudeConfigFile;
-            JObject config = new JObject();
-            if (File.Exists(path))
-            {
-                string text = File.ReadAllText(path);
-                if (text.Trim().Length > 0)
-                    config = JObject.Parse(text);
-                File.Copy(path, path + ".bak", true);
-            }
-            else
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            }
-
-            if (!(config["mcpServers"] is JObject servers))
-            {
-                servers = new JObject();
-                config["mcpServers"] = servers;
-            }
-            servers[ClaudeServerKey] = BuildServerEntry(settings);
-            File.WriteAllText(path, config.ToString(Formatting.Indented));
-            McpLog.Info("Claude Desktop config updated: " + path);
-            return "Claude Desktop configured (" + path + "). Restart Claude Desktop to load the Revit tools.";
-        }
+        public static string ClaudeConfigSnippet(McpSettings settings) => McpClaudeConfig.Snippet(settings);
 
         // ── helpers ────────────────────────────────────────────────────────────
 
