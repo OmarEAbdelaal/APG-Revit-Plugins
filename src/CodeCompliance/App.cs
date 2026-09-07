@@ -144,6 +144,10 @@ namespace CodeCompliance
                         ? "\n\nRestart Claude Desktop so it loads the new MCP server. " +
                           "The new Revit commands are used the next time the MCP server is switched on."
                         : "\n\nRestart Claude Desktop so it picks the configuration up.";
+                    if (mcp.ClaudeMustRestart)
+                        tail += "\n\nClaude Desktop was open while this was written. Claude rewrites that file " +
+                                "from memory, so close and start it again (or use MCP Setup > Configure Claude) " +
+                                "to make the change stick.";
                     TaskDialog.Show(title, mcp.Message + tail);
                 }
                 catch

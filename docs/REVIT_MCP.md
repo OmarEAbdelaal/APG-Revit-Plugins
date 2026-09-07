@@ -50,7 +50,9 @@ two buttons: **MCP Server** and **MCP Setup**.
    `%LOCALAPPDATA%\APGRevitPlugins\RevitMCP\`, and **writes the Claude configuration for you**
    as the last step. The **Node.js** line then shows the runtime that came with the download.
 3. If you want to write the configuration again by hand (after changing the port, for example),
-   click **Configure Claude**. It adds or updates the `revit-mcp` entry in
+   click **Configure Claude**. If Claude Desktop is open it offers to close it, write, and start
+   it again — see [Why the entry must be written while Claude is closed](#why-the-entry-must-be-written-while-claude-is-closed).
+   It adds or updates the `revit-mcp` entry in
    `%APPDATA%\Claude\claude_desktop_config.json` and, when Claude Code is installed, in
    `%USERPROFILE%\.claude.json` — keeping every other MCP server and every other setting in
    those files. A `.bak` copy is written first, and the result is read back and verified.
@@ -73,6 +75,18 @@ two buttons: **MCP Server** and **MCP Setup**.
 4. **Restart Claude Desktop** so it reads the configuration: the **Restart Claude Desktop**
    button in MCP Setup does it for you, or quit Claude from the tray icon and start it again.
    The Revit tools then appear under the tools icon of the chat box.
+
+### Why the entry must be written while Claude is closed
+
+Claude Desktop reads `claude_desktop_config.json` when it starts and keeps it in memory. Every
+time one of its own settings changes it writes that copy back over the file — which silently
+undoes an entry added from outside meanwhile. The change looks applied (the file really does
+contain it) and then reappears without `revit-mcp` minutes later.
+
+The plugin therefore offers to close Claude Desktop, write the configuration and start it again.
+That is the only order that survives. If you choose to write anyway, MCP Setup says so plainly
+and you can close Claude and press **Configure Claude** once more. Other MCP connectors in the
+file are never affected either way: only the `revit-mcp` key is touched.
 
 ## 4. Daily use
 
@@ -151,6 +165,13 @@ README for the release workflow.
 ```
 
 ## 8. Troubleshooting
+
+**The `revit-mcp` entry disappears again after Configure Claude**
+- Claude Desktop was running: it rewrites the file from memory whenever one of its settings
+  changes and drops what was added from outside. Use **Configure Claude ▸ Restart Claude Desktop
+  and configure**, or quit Claude completely and press **Configure Claude** again.
+- The plugin never removes your other connectors: check the `.bak` copy next to the file if you
+  want to compare.
 
 **Claude says the Revit tools are unavailable / no hammer icon**
 - Claude Desktop must be fully restarted after the configuration was written (tray icon ▸ Quit,

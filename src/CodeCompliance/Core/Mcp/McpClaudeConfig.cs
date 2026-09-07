@@ -40,6 +40,27 @@ namespace CodeCompliance.Core.Mcp
         public bool Exists => File.Exists(Path);
     }
 
+    /// <summary>Whether Claude Desktop may be closed to make the change stick.</summary>
+    public enum ClaudeRestartMode
+    {
+        /// <summary>Write the file and leave Claude alone (it may revert the change later).</summary>
+        Never,
+        /// <summary>Close Claude Desktop, write, then start it again - the only reliable order.</summary>
+        RestartIfRunning
+    }
+
+    /// <summary>Result of configuring every Claude installation on this machine.</summary>
+    public sealed class ClaudeApplyOutcome
+    {
+        public List<ClaudeConfigResult> Results { get; } = new List<ClaudeConfigResult>();
+        public bool ClaudeWasRunning { get; set; }
+        public bool ClaudeRestarted { get; set; }
+        /// <summary>True when Claude Desktop kept running: it can overwrite what was just written.</summary>
+        public bool AtRiskOfRevert { get; set; }
+        public bool AnyChanged => Results.Any(r => r.Changed);
+        public string Summary { get; set; } = "";
+    }
+
     /// <summary>What <see cref="McpClaudeConfig.Apply"/> did to one configuration file.</summary>
     public sealed class ClaudeConfigResult
     {
@@ -63,6 +84,13 @@ namespace CodeCompliance.Core.Mcp
     /// afterwards, so a half-written configuration is detected instead of silently accepted;</item>
     /// <item>an unreadable file is never overwritten silently: it is copied aside first.</item>
     /// </list>
+    ///
+    /// <para><b>Claude Desktop owns its file while it runs.</b> It reads the configuration when
+    /// it starts and writes its in-memory copy back whenever one of its own settings changes,
+    /// which silently discards edits made from outside meanwhile. Writing therefore only sticks
+    /// when Claude Desktop is closed: <see cref="ClaudeRestartMode.RestartIfRunning"/> closes it,
+    /// writes, and starts it again. When it is left running the result is flagged with
+    /// <see cref="ClaudeApplyOutcome.AtRiskOfRevert"/> so the user can be told.</para>
     /// </summary>
     public static class McpClaudeConfig
     {
@@ -133,19 +161,52 @@ namespace CodeCompliance.Core.Mcp
         /// Writes the revit-mcp entry into every Claude configuration this machine has,
         /// keeping all other servers and settings. Claude Desktop's file is created when
         /// missing; Claude Code's is only updated when it already exists.
+        ///
+        /// With <see cref="ClaudeRestartMode.RestartIfRunning"/> a running Claude Desktop is
+        /// closed before writing and started again afterwards, because Claude overwrites the
+        /// file from memory while it runs.
         /// </summary>
-        public static List<ClaudeConfigResult> Apply(McpSettings settings, bool force = true)
+        public static ClaudeApplyOutcome Apply(
+            McpSettings settings,
+            ClaudeRestartMode restartMode = ClaudeRestartMode.Never,
+            bool force = true)
         {
-            var results = new List<ClaudeConfigResult>();
+            var outcome = new ClaudeApplyOutcome();
+            outcome.ClaudeWasRunning = IsClaudeDesktopRunning();
+
+            string? exePath = null;
+            if (outcome.ClaudeWasRunning && restartMode == ClaudeRestartMode.RestartIfRunning)
+            {
+                exePath = GetClaudeExecutablePath();
+                CloseClaudeDesktop();
+            }
+
             foreach (ClaudeConfigTarget target in AllTargets())
-                results.Add(ApplyTo(target, settings, force));
-            return results;
+                outcome.Results.Add(ApplyTo(target, settings, force));
+
+            if (outcome.ClaudeWasRunning && restartMode == ClaudeRestartMode.RestartIfRunning)
+            {
+                string startMessage = StartClaudeDesktop(exePath);
+                outcome.ClaudeRestarted = !IsClaudeDesktopRunning() ? false : true;
+                outcome.Summary = startMessage;
+            }
+
+            outcome.AtRiskOfRevert = outcome.ClaudeWasRunning && !outcome.ClaudeRestarted && outcome.AnyChanged;
+
+            string written = string.Join("  ", outcome.Results.Where(r => !r.Skipped).Select(r => r.Message));
+            if (outcome.Results.All(r => r.Skipped))
+                written = "No Claude configuration file was found on this computer.";
+            outcome.Summary = (written + "  " + outcome.Summary).Trim();
+            if (outcome.AtRiskOfRevert)
+                outcome.Summary += "  WARNING: Claude Desktop is running and rewrites this file from memory, " +
+                                   "which undoes the change. Close Claude Desktop and configure again, or use the restart option.";
+            return outcome;
         }
 
         /// <summary>Writes the entry only where it is missing or out of date (used after install and at startup).</summary>
-        public static List<ClaudeConfigResult> EnsureConfigured(McpSettings settings)
+        public static ClaudeApplyOutcome EnsureConfigured(McpSettings settings)
         {
-            return Apply(settings, force: false);
+            return Apply(settings, ClaudeRestartMode.Never, force: false);
         }
 
         private static ClaudeConfigResult ApplyTo(ClaudeConfigTarget target, McpSettings settings, bool force)
@@ -241,18 +302,127 @@ namespace CodeCompliance.Core.Mcp
 
         // ── Restarting Claude Desktop ──────────────────────────────────────────
 
-        public static bool IsClaudeDesktopRunning() => GetClaudeProcesses().Length > 0;
+        public static bool IsClaudeDesktopRunning() => GetClaudeProcesses().Count > 0;
 
-        private static Process[] GetClaudeProcesses()
+        /// <summary>
+        /// The Claude Desktop application processes. "claude.exe" is also the name of the
+        /// Claude Code command line tool (%APPDATA%\Claude\claude-code\...), which must never
+        /// be killed or started in place of the desktop app, so those are filtered out.
+        /// </summary>
+        private static List<Process> GetClaudeProcesses()
         {
+            var result = new List<Process>();
             try
             {
-                return Process.GetProcessesByName("claude");
+                foreach (Process p in Process.GetProcessesByName("claude"))
+                {
+                    if (IsDesktopApp(p))
+                        result.Add(p);
+                }
             }
             catch
             {
-                return new Process[0];
+                // process enumeration can fail under restricted rights
             }
+            return result;
+        }
+
+        private static bool IsDesktopApp(Process process)
+        {
+            string? path = TryGetPath(process);
+            if (path != null)
+            {
+                if (path.IndexOf("\\claude-code\\", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return false; // Claude Code CLI
+                if (path.IndexOf("WindowsApps", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    path.IndexOf("AnthropicClaude", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;  // Store or per-user install of the desktop app
+            }
+            try
+            {
+                // Fall back to "has a window": the CLI does not, the desktop app does.
+                return process.MainWindowHandle != IntPtr.Zero;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string? TryGetPath(Process process)
+        {
+            try
+            {
+                return process.MainModule?.FileName;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Path of the running Claude Desktop executable, when it can be read.</summary>
+        public static string? GetClaudeExecutablePath()
+        {
+            foreach (Process p in GetClaudeProcesses())
+            {
+                string? path = TryGetPath(p);
+                if (path != null)
+                    return path;
+            }
+            return null;
+        }
+
+        /// <summary>Ends every Claude Desktop process and waits for the file to be released.</summary>
+        public static void CloseClaudeDesktop()
+        {
+            foreach (Process p in GetClaudeProcesses())
+            {
+                try
+                {
+                    p.Kill();
+                    p.WaitForExit(8000);
+                }
+                catch
+                {
+                    // already gone
+                }
+            }
+            // Give the app a moment to finish flushing its own files before we write ours.
+            System.Threading.Thread.Sleep(700);
+        }
+
+        /// <summary>Starts Claude Desktop again (by path, else through the Start menu entry).</summary>
+        public static string StartClaudeDesktop(string? exePath)
+        {
+            if (exePath != null && File.Exists(exePath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = true });
+                    return "Claude Desktop was restarted; it loads the Revit tools now.";
+                }
+                catch
+                {
+                    // Store (MSIX) installs cannot always be started by path - fall through
+                }
+            }
+
+            string? appsFolderId = GetStoreAppId(exePath);
+            if (appsFolderId != null)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo("explorer.exe", "shell:AppsFolder\\" + appsFolderId) { UseShellExecute = true });
+                    return "Claude Desktop was restarted; it loads the Revit tools now.";
+                }
+                catch
+                {
+                    // fall through to the manual message
+                }
+            }
+
+            return "Claude Desktop was closed - start it again to load the Revit tools.";
         }
 
         /// <summary>
@@ -263,64 +433,11 @@ namespace CodeCompliance.Core.Mcp
         {
             try
             {
-                Process[] running = GetClaudeProcesses();
-                string? exePath = null;
-                foreach (Process p in running)
-                {
-                    try
-                    {
-                        exePath ??= p.MainModule?.FileName;
-                    }
-                    catch
-                    {
-                        // access denied for some processes; keep looking
-                    }
-                }
-
-                if (running.Length == 0)
-                    return "Claude Desktop is not running. Start it to pick up the new configuration.";
-
-                foreach (Process p in running)
-                {
-                    try
-                    {
-                        p.Kill();
-                        p.WaitForExit(5000);
-                    }
-                    catch
-                    {
-                        // already gone
-                    }
-                }
-
-                if (exePath != null && File.Exists(exePath))
-                {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = true });
-                        return "Claude Desktop was restarted; the Revit tools load with it.";
-                    }
-                    catch
-                    {
-                        // Store (MSIX) installs cannot always be started by path - fall through
-                    }
-                }
-
-                string? appsFolderId = GetStoreAppId(exePath);
-                if (appsFolderId != null)
-                {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo("explorer.exe", "shell:AppsFolder\\" + appsFolderId) { UseShellExecute = true });
-                        return "Claude Desktop was restarted; the Revit tools load with it.";
-                    }
-                    catch
-                    {
-                        // fall through to the manual message
-                    }
-                }
-
-                return "Claude Desktop was closed. Start it again to load the Revit tools.";
+                if (!IsClaudeDesktopRunning())
+                    return "Claude Desktop is not running. Start it to pick up the configuration.";
+                string? exePath = GetClaudeExecutablePath();
+                CloseClaudeDesktop();
+                return StartClaudeDesktop(exePath);
             }
             catch (Exception ex)
             {

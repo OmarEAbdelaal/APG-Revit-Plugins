@@ -120,6 +120,8 @@ namespace CodeCompliance.UI
             _claudeButton.Click += (_, _) => ConfigureClaude();
             compButtons.Children.Add(_claudeButton);
             _restartClaudeButton = ApgTheme.SecondaryButton("Restart Claude Desktop");
+            _restartClaudeButton.ToolTip = "Claude Desktop reads its configuration when it starts, " +
+                                           "and overwrites the file from memory while it runs.";
             _restartClaudeButton.Margin = new Thickness(0, 0, 8, 6);
             _restartClaudeButton.Click += (_, _) =>
             {
@@ -298,9 +300,13 @@ namespace CodeCompliance.UI
                         break;
                 }
             }
+            bool claudeRunning = McpClaudeConfig.IsClaudeDesktopRunning();
+            if (claudeRunning)
+                claudeLines.Add("Claude Desktop is open - it rewrites its configuration file while it runs, " +
+                                "so Configure Claude will offer to restart it");
             _claudeStatus.Text = string.Join("   ·   ", claudeLines);
             _claudeStatus.Foreground = anyProblem ? ApgTheme.Red : ApgTheme.Green;
-            _restartClaudeButton.IsEnabled = McpClaudeConfig.IsClaudeDesktopRunning();
+            _restartClaudeButton.IsEnabled = claudeRunning;
 
             _rows.Clear();
             foreach (McpCommandInfo info in infos.OrderBy(i => i.BuiltIn ? 0 : 1).ThenBy(i => i.SetName).ThenBy(i => i.Name))
@@ -415,13 +421,40 @@ namespace CodeCompliance.UI
                     Say("Install the MCP server first (Install / Update from GitHub), then configure Claude.");
                     return;
                 }
-                List<ClaudeConfigResult> results = McpClaudeConfig.Apply(_settings);
-                string message = string.Join("  ", results.Where(r => !r.Skipped).Select(r => r.Message));
-                if (results.All(r => r.Skipped))
-                    message = "No Claude configuration file was found on this computer.";
-                else if (results.Any(r => r.Changed))
-                    message += "  Restart Claude Desktop so it loads the Revit tools.";
-                Say(message);
+                // Claude Desktop keeps the configuration in memory and writes it back over ours
+                // whenever one of its own settings changes. Closing it first is the only order
+                // that survives, so offer exactly that.
+                ClaudeRestartMode mode = ClaudeRestartMode.Never;
+                if (McpClaudeConfig.IsClaudeDesktopRunning())
+                {
+                    var ask = new TaskDialog("Configure Claude")
+                    {
+                        MainInstruction = "Claude Desktop is running.",
+                        MainContent = "Claude reads this configuration when it starts and writes its own copy back " +
+                                      "while it runs, which undoes changes made from outside. Closing Claude, writing " +
+                                      "the configuration and starting it again is the only reliable order.\n\n" +
+                                      "Any Claude Code session running inside Claude Desktop is closed as well.",
+                        CommonButtons = TaskDialogCommonButtons.Cancel,
+                        DefaultButton = TaskDialogResult.CommandLink1
+                    };
+                    ask.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Restart Claude Desktop and configure",
+                        "Recommended: closes Claude, writes the configuration, starts Claude again.");
+                    ask.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Write the configuration anyway",
+                        "Claude keeps running and may overwrite the entry; you would then have to close it and try again.");
+                    TaskDialogResult answer = ask.Show();
+                    if (answer == TaskDialogResult.Cancel)
+                    {
+                        Say("Claude configuration unchanged.");
+                        return;
+                    }
+                    if (answer == TaskDialogResult.CommandLink1)
+                        mode = ClaudeRestartMode.RestartIfRunning;
+                }
+
+                ClaudeApplyOutcome outcome = McpClaudeConfig.Apply(_settings, mode);
+                Say(outcome.Summary + (outcome.AnyChanged && !outcome.ClaudeRestarted && !outcome.AtRiskOfRevert
+                        ? "  Start Claude Desktop to load the Revit tools."
+                        : ""));
             }
             catch (Exception ex)
             {

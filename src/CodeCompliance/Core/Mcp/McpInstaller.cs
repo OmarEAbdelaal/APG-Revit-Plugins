@@ -46,6 +46,8 @@ namespace CodeCompliance.Core.Mcp
         public Version? NewVersion { get; set; }
         /// <summary>True when the Claude configuration was written as part of this update.</summary>
         public bool ClaudeConfigured { get; set; }
+        /// <summary>True when Claude Desktop was running and can overwrite what was written.</summary>
+        public bool ClaudeMustRestart { get; set; }
     }
 
     /// <summary>
@@ -214,11 +216,11 @@ namespace CodeCompliance.Core.Mcp
 
                 // Point Claude at what was just installed, keeping every other connector.
                 progress?.Report("Updating the Claude configuration ...");
-                List<ClaudeConfigResult> claude = McpClaudeConfig.Apply(McpSettings.Load());
+                ClaudeApplyOutcome claude = McpClaudeConfig.Apply(McpSettings.Load());
 
                 string summary = "Installed Revit MCP " + release.Tag + " (server " + installed.ServerVersion +
                                  ", " + sets + " command set(s), Node.js " + (node.Version ?? "not found") + "). " +
-                                 string.Join(" ", claude.Where(c => !c.Skipped).Select(c => c.Message));
+                                 claude.Summary;
                 McpLog.Info(summary);
                 return summary;
             }
@@ -350,7 +352,9 @@ namespace CodeCompliance.Core.Mcp
                 // a moved profile, a new Node.js or a changed port would otherwise break it.
                 try
                 {
-                    result.ClaudeConfigured = McpClaudeConfig.EnsureConfigured(settings).Any(c => c.Changed);
+                    ClaudeApplyOutcome claude = McpClaudeConfig.EnsureConfigured(settings);
+                    result.ClaudeConfigured = claude.AnyChanged;
+                    result.ClaudeMustRestart = claude.AtRiskOfRevert;
                 }
                 catch (Exception ex)
                 {
