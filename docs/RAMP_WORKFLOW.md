@@ -48,9 +48,16 @@ code-governing line — not the overall ramp centre.
      so this choice doesn't apply.
    - Choose the ramp type, number of lanes (1–3), lane width and **floor type**
      (the floor type's thickness is used for the helical loop clearance check).
-     For an outline path, lanes/lane width are read-only, pre-filled with the
-     narrowest width found along the drawn outline (used for the Table B.9
-     width check and, unless overridden, the geometry).
+     For an outline path the drawing fixes the total width, so the **lane count is
+     still yours to choose** but the lane width is derived — the narrowest drawn
+     width divided by the lanes, which is what the Table B.9 width check uses.
+   - Choose the line the **slope and run are measured along**: the **inner lane
+     centreline** (default), the **left edge**, the **centre of the ramp** or the
+     **right edge**. On a curve the inner lane is the shortest line and therefore
+     the steepest for a given floor height, so it is the code-governing one; with a
+     single lane it is simply the ramp centreline. This applies to outline ramps
+     too, where the reference is taken as the matching proportion across the band,
+     so a lane stays on its own side of a ramp that widens or narrows.
    - Choose the **fixed end** — **start** or **end** of the sketch. The ramp is
      always built to exactly the computed run **R**: the fixed end stays where
      you drew it and the other end moves, extending along the drawn geometry

@@ -242,10 +242,15 @@ namespace CodeCompliance.Core
     /// </summary>
     public sealed class RampOutlineSegment : RampPathSegment
     {
-        private const int MidSamples = 64;
+        private const int LengthSamples = 64;
 
         private readonly RampPathSegment _left, _right;
         private readonly double _leftLen, _rightLen, _len;
+
+        // One-entry memo: the same reference line is asked for over and over while
+        // one ramp is stationed and built.
+        private double _cachedFraction = double.NaN;
+        private double _cachedLength;
 
         public RampOutlineSegment(RampPathSegment left, RampPathSegment right)
         {
@@ -253,7 +258,7 @@ namespace CodeCompliance.Core
             _right = right;
             _leftLen = left.DrawnLength;
             _rightLen = right.DrawnLength;
-            _len = MeasureMidLength();
+            _len = MeasureLength(0.5);
             if (_len < 1e-6)
                 _len = 1e-6;
         }
@@ -265,20 +270,38 @@ namespace CodeCompliance.Core
         public override double DrawnLength => _len;
         public override double PlanTurn => Math.Max(_left.PlanTurn, _right.PlanTurn);
 
-        public override (double X, double Y) Start => MidAt(0);
-        public override (double X, double Y) End => MidAt(1);
+        public override (double X, double Y) Start => PointAt(0, 0.5);
+        public override (double X, double Y) End => PointAt(1, 0.5);
 
         // Reversing the direction of travel swaps which edge is on the left.
         public override RampPathSegment Reversed()
             => new RampOutlineSegment(_right.Reversed(), _left.Reversed());
 
+        /// <summary>
+        /// Where the reference line sits across the ramp, as a fraction (0 = left
+        /// edge, 0.5 = middle, 1 = right edge). A drawn outline has no single width,
+        /// so a lateral offset in metres is read as the same proportion of the band
+        /// all the way along — which is what keeps a lane on "its" side of a ramp
+        /// that widens or narrows.
+        /// </summary>
+        public static double FractionFor(double width, double designOffset)
+        {
+            if (width <= 1e-9)
+                return 0.5;
+            double u = 0.5 - designOffset / width;
+            return u < 0 ? 0 : u > 1 ? 1 : u;
+        }
+
         public override double CenterlineLength(RampLineLocation location, double width, double designOffset = 0)
-            => _len;
+            => LengthAtFraction(FractionFor(width, designOffset));
 
         public override (double LX, double LY, double RX, double RY) EdgesAt(
             double s, RampLineLocation location, double width, double designOffset = 0)
         {
-            double t = s / _len;
+            // s runs along the chosen reference line; the edges returned are always
+            // the drawn ones — only the stationing moves with the reference.
+            double u = FractionFor(width, designOffset);
+            double t = s / LengthAtFraction(u);
             (double lx, double ly, _, _) = _left.EdgesAt(t * _leftLen, RampLineLocation.Center, 0);
             (double rx, double ry, _, _) = _right.EdgesAt(t * _rightLen, RampLineLocation.Center, 0);
             return (lx, ly, rx, ry);
@@ -324,32 +347,71 @@ namespace CodeCompliance.Core
             return Math.Min(left.Value, right.Value);
         }
 
-        /// <summary>Radius of the curve midway between the two edges, when both are arcs.</summary>
-        public double? CenterRadius()
+        /// <summary>
+        /// Which side of travel the tighter (inner) drawn edge is on: +1 = left,
+        /// -1 = right, 0 when the piece is straight. A straight edge counts as
+        /// infinite radius, so the curved one is the inner side.
+        /// </summary>
+        public int InnerSideOfTravel()
         {
             double? left = (_left as RampArcSegment)?.DrawnRadius;
             double? right = (_right as RampArcSegment)?.DrawnRadius;
-            return left.HasValue && right.HasValue ? (left.Value + right.Value) / 2.0 : (double?)null;
-        }
-
-        private (double X, double Y) MidAt(double t)
-        {
-            (double lx, double ly, _, _) = _left.EdgesAt(t * _leftLen, RampLineLocation.Center, 0);
-            (double rx, double ry, _, _) = _right.EdgesAt(t * _rightLen, RampLineLocation.Center, 0);
-            return ((lx + rx) / 2.0, (ly + ry) / 2.0);
+            if (!left.HasValue && !right.HasValue)
+                return 0;
+            if (!left.HasValue)
+                return -1;
+            if (!right.HasValue)
+                return 1;
+            return left.Value <= right.Value ? 1 : -1;
         }
 
         /// <summary>
-        /// Length of the midpoint curve, sampled finely enough that the polyline
-        /// error stays well under a millimetre even on a quarter-circle piece.
+        /// Radius of the line at lateral fraction u across the band (0 = left edge,
+        /// 1 = right edge), when both edges are arcs; null otherwise.
         /// </summary>
-        private double MeasureMidLength()
+        public double? RadiusAtFraction(double u)
+        {
+            double? left = (_left as RampArcSegment)?.DrawnRadius;
+            double? right = (_right as RampArcSegment)?.DrawnRadius;
+            return left.HasValue && right.HasValue
+                ? left.Value + (right.Value - left.Value) * u
+                : (double?)null;
+        }
+
+        /// <summary>Radius of the reference line for the given width and lateral offset.</summary>
+        public double? DesignRadius(double width, double designOffset)
+            => RadiusAtFraction(FractionFor(width, designOffset));
+
+        /// <summary>Point at length-fraction t along the ramp, u across it (0 = left edge, 1 = right).</summary>
+        private (double X, double Y) PointAt(double t, double u)
+        {
+            (double lx, double ly, _, _) = _left.EdgesAt(t * _leftLen, RampLineLocation.Center, 0);
+            (double rx, double ry, _, _) = _right.EdgesAt(t * _rightLen, RampLineLocation.Center, 0);
+            return (lx + (rx - lx) * u, ly + (ry - ly) * u);
+        }
+
+        private double LengthAtFraction(double u)
+        {
+            if (Math.Abs(u - 0.5) < 1e-9)
+                return _len;
+            if (Math.Abs(u - _cachedFraction) < 1e-9)
+                return _cachedLength;
+            _cachedFraction = u;
+            _cachedLength = Math.Max(MeasureLength(u), 1e-6);
+            return _cachedLength;
+        }
+
+        /// <summary>
+        /// Length of the line at lateral fraction u, sampled finely enough that the
+        /// polyline error stays well under a millimetre even on a quarter circle.
+        /// </summary>
+        private double MeasureLength(double u)
         {
             double total = 0;
-            (double X, double Y) previous = MidAt(0);
-            for (int i = 1; i <= MidSamples; i++)
+            (double X, double Y) previous = PointAt(0, u);
+            for (int i = 1; i <= LengthSamples; i++)
             {
-                (double X, double Y) current = MidAt((double)i / MidSamples);
+                (double X, double Y) current = PointAt((double)i / LengthSamples, u);
                 double dx = current.X - previous.X, dy = current.Y - previous.Y;
                 total += Math.Sqrt(dx * dx + dy * dy);
                 previous = current;
@@ -397,33 +459,57 @@ namespace CodeCompliance.Core
         /// </summary>
         public int InnerSide(RampLineLocation location, double width)
         {
-            RampArcSegment? tightest = null;
+            int side = 0;
             double best = double.MaxValue;
             foreach (RampPathSegment seg in Segments)
+            {
                 if (seg is RampArcSegment arc)
                 {
                     double r = arc.CenterlineRadius(location, width);
                     if (r < best)
                     {
                         best = r;
-                        tightest = arc;
+                        side = arc.CenterIsLeftOfTravel ? 1 : -1;
                     }
                 }
-            return tightest == null ? 0 : (tightest.CenterIsLeftOfTravel ? 1 : -1);
+                else if (seg is RampOutlineSegment outline)
+                {
+                    double? r = outline.InnerEdgeRadius();
+                    if (r.HasValue && r.Value < best)
+                    {
+                        best = r.Value;
+                        side = outline.InnerSideOfTravel();
+                    }
+                }
+            }
+            return side;
         }
 
         /// <summary>
-        /// Signed design-line offset (meters, + = left of travel) putting the
-        /// stationing/slope reference on the centreline of the innermost lane.
-        /// Zero for straight ramps, single-lane ramps, and drawn outlines (whose
-        /// lanes are already implied by the edges the user drew).
+        /// Signed lateral offset (meters, + = left of travel) of the line the slope
+        /// and run are measured along. <see cref="RampSlopeReference.InnerLane"/>
+        /// puts it on the centreline of the innermost lane — the code-governing line
+        /// on a curved ramp, and the same as the ramp centreline when there is one
+        /// lane or no curve. The other choices pin it to an edge or to the middle of
+        /// the ramp regardless of the lane count.
         /// </summary>
-        public double DesignOffsetFor(RampLineLocation location, double totalWidth, int lanes)
+        public double DesignOffsetFor(
+            RampLineLocation location, double totalWidth, int lanes, RampSlopeReference reference)
         {
-            if (lanes <= 1 || IsVariableWidth)
-                return 0;
-            double laneWidth = totalWidth / lanes;
-            return InnerSide(location, totalWidth) * (totalWidth - laneWidth) / 2.0;
+            switch (reference)
+            {
+                case RampSlopeReference.LeftEdge:
+                    return totalWidth / 2.0;
+                case RampSlopeReference.RightEdge:
+                    return -totalWidth / 2.0;
+                case RampSlopeReference.Center:
+                    return 0;
+                default:
+                    if (lanes <= 1)
+                        return 0;
+                    double laneWidth = totalWidth / lanes;
+                    return InnerSide(location, totalWidth) * (totalWidth - laneWidth) / 2.0;
+            }
         }
 
         /// <summary>
@@ -475,13 +561,13 @@ namespace CodeCompliance.Core
         public double? SingleArcDesignRadius(RampLineLocation location, double width, double designOffset = 0)
             => Segments.Count != 1 ? (double?)null
              : (Segments[0] as RampArcSegment)?.DesignRadius(location, width, designOffset)
-               ?? (Segments[0] as RampOutlineSegment)?.CenterRadius();
+               ?? (Segments[0] as RampOutlineSegment)?.DesignRadius(width, designOffset);
 
         /// <summary>Centreline radius when the whole path is one curve; null otherwise.</summary>
         public double? SingleArcCenterlineRadius(RampLineLocation location, double width)
             => Segments.Count != 1 ? (double?)null
              : (Segments[0] as RampArcSegment)?.CenterlineRadius(location, width)
-               ?? (Segments[0] as RampOutlineSegment)?.CenterRadius();
+               ?? (Segments[0] as RampOutlineSegment)?.RadiusAtFraction(0.5);
 
         /// <summary>
         /// Left/right edges at global design-line arc-length s. Outside the drawn

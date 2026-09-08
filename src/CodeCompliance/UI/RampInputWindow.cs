@@ -45,6 +45,7 @@ namespace CodeCompliance.UI
         private readonly Dictionary<RampLineLocation, RadioButton> _locationRadios = new Dictionary<RampLineLocation, RadioButton>();
         private readonly Dictionary<RampSolveTarget, RadioButton> _solveRadios = new Dictionary<RampSolveTarget, RadioButton>();
         private readonly Dictionary<RampEndAnchor, RadioButton> _anchorRadios = new Dictionary<RampEndAnchor, RadioButton>();
+        private readonly Dictionary<RampSlopeReference, RadioButton> _slopeRefRadios = new Dictionary<RampSlopeReference, RadioButton>();
         private readonly TextBox _hBox;
         private readonly TextBox _sBox;
         private readonly TextBox _rBox;
@@ -68,6 +69,9 @@ namespace CodeCompliance.UI
         /// drawn outline, whose width already varies as drawn).
         /// </summary>
         public double DesignOffset { get; private set; }
+
+        /// <summary>Which longitudinal line the slope and run are measured along.</summary>
+        public RampSlopeReference SlopeReference { get; private set; } = RampSlopeReference.InnerLane;
 
         /// <summary>Which end of the drawn path stays put when the ramp is built to exactly R.</summary>
         public RampEndAnchor Anchor { get; private set; } = RampEndAnchor.Start;
@@ -171,8 +175,11 @@ namespace CodeCompliance.UI
             left.Children.Add(_lanesBox);
             left.Children.Add(new TextBlock
             {
-                Text = "For multi-lane curved ramps, slope and run are measured along the " +
-                       "centreline of the innermost lane (nearest the inner curve).",
+                Text = _variableWidth
+                    ? "The drawn outline fixes the total width; the lane count splits it, which is " +
+                      "what puts the slope reference on the inner lane of a curve."
+                    : "The lane count sets the total ramp width and, on a curve, which lane the " +
+                      "slope reference sits in.",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Muted,
                 FontSize = 11,
@@ -180,16 +187,17 @@ namespace CodeCompliance.UI
             });
 
             left.Children.Add(FieldLabel(_variableWidth
-                ? "Lane width [m]  (from the drawn outline's narrowest point)"
+                ? "Lane width [m]  (drawn width at its narrowest ÷ lanes)"
                 : "Lane width [m]  (min per Table B.9)"));
             _laneWidthBox = NumberBox();
             left.Children.Add(_laneWidthBox);
             if (_variableWidth)
             {
-                _lanesBox.IsEnabled = false;
-                _lanesBox.SelectedIndex = 0;
+                // The outline already fixes the width, so it is derived, not typed —
+                // but the lane count stays the user's to choose.
                 _laneWidthBox.IsEnabled = false;
-                _laneWidthBox.Text = path.MinWidthAlongPath().ToString("F2", CultureInfo.InvariantCulture);
+                _lanesBox.SelectionChanged += (_, _) => UpdateOutlineLaneWidth();
+                UpdateOutlineLaneWidth();
             }
 
             left.Children.Add(FieldLabel("Floor type (ramp is built from floors)"));
@@ -229,6 +237,39 @@ namespace CodeCompliance.UI
                       "actual width and starting point (the left edge's start) come straight from the outline."
                     : "Left/right are relative to the direction the path was drawn (direction of " +
                       "travel, going up) — the ramp starts at that line's start point.",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Muted,
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
+
+            left.Children.Add(SectionHeader("Slope and run measured along"));
+            var slopeRefItems = new (RampSlopeReference Reference, string Text)[]
+            {
+                (RampSlopeReference.InnerLane, "Inner lane centreline (code-governing)"),
+                (RampSlopeReference.LeftEdge, "Left edge"),
+                (RampSlopeReference.Center, "Centre of the ramp"),
+                (RampSlopeReference.RightEdge, "Right edge"),
+            };
+            foreach ((RampSlopeReference reference, string text) in slopeRefItems)
+            {
+                var rb = new RadioButton
+                {
+                    Content = text,
+                    GroupName = "sloperef",
+                    Margin = new Thickness(0, 2, 0, 2),
+                    IsChecked = reference == RampSlopeReference.InnerLane
+                };
+                _slopeRefRadios[reference] = rb;
+                left.Children.Add(rb);
+            }
+            left.Children.Add(new TextBlock
+            {
+                Text = "On a curve the inner lane is the shortest line, so it is the steepest for a " +
+                       "given floor height — that is the line Table B.9 is checked against, and with " +
+                       "one lane it is simply the ramp centreline. Measuring along an edge or the " +
+                       "centre instead reads flatter on the inside, so pick those only when the ramp " +
+                       "is genuinely set out from that line.",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Muted,
                 FontSize = 11,
@@ -420,6 +461,28 @@ namespace CodeCompliance.UI
             }
         }
 
+        private RampSlopeReference SelectedSlopeReference
+        {
+            get
+            {
+                foreach (KeyValuePair<RampSlopeReference, RadioButton> kv in _slopeRefRadios)
+                    if (kv.Value.IsChecked == true)
+                        return kv.Key;
+                return RampSlopeReference.InnerLane;
+            }
+        }
+
+        /// <summary>
+        /// Outline mode: the drawing fixes the total width, so the lane width is the
+        /// narrowest drawn width shared between the chosen number of lanes.
+        /// </summary>
+        private void UpdateOutlineLaneWidth()
+        {
+            int lanes = _lanesBox.SelectedItem is int n ? n : 1;
+            _laneWidthBox.Text = (_path.MinWidthAlongPath() / lanes)
+                .ToString("F2", CultureInfo.InvariantCulture);
+        }
+
         private void OnTypeChanged()
         {
             if (!_variableWidth)
@@ -456,7 +519,7 @@ namespace CodeCompliance.UI
         private double EstimateDesignOffset(double totalWidth)
         {
             int lanes = _lanesBox.SelectedItem is int n ? n : 1;
-            return _path.DesignOffsetFor(SelectedLocation, totalWidth, lanes);
+            return _path.DesignOffsetFor(SelectedLocation, totalWidth, lanes, SelectedSlopeReference);
         }
 
         private double EstimateTotalWidth()
@@ -480,6 +543,7 @@ namespace CodeCompliance.UI
                 Lanes = _lanesBox.SelectedItem is int n ? n : 1;
                 Location = SelectedLocation;
                 Anchor = SelectedAnchor;
+                SlopeReference = SelectedSlopeReference;
 
                 double? laneWidth = TryParse(_laneWidthBox.Text);
                 if (!laneWidth.HasValue || laneWidth.Value <= 0)
@@ -489,7 +553,7 @@ namespace CodeCompliance.UI
                 if (FloorTypeId < 0)
                     throw new RampCalcException("Select a floor type.");
 
-                DesignOffset = _path.DesignOffsetFor(Location, TotalWidth, Lanes);
+                DesignOffset = _path.DesignOffsetFor(Location, TotalWidth, Lanes, SlopeReference);
 
                 RampSolveTarget solve = SelectedSolveTarget;
                 double? h = solve == RampSolveTarget.FloorHeight ? null : RequireValue(_hBox, "h");
