@@ -28,6 +28,26 @@ namespace CodeCompliance.Core
     }
 
     /// <summary>
+    /// Which longitudinal line the ramp's slope and run are measured along. On a
+    /// curved ramp the inner lane is the steepest line for a given floor height, so
+    /// it is the one the code governs — hence the default.
+    /// </summary>
+    public enum RampSlopeReference
+    {
+        /// <summary>Centreline of the innermost lane (ramp centreline when single-lane or straight).</summary>
+        InnerLane,
+
+        /// <summary>Left edge of the ramp band, relative to the direction of travel.</summary>
+        LeftEdge,
+
+        /// <summary>Middle of the ramp band, whatever the lane count.</summary>
+        Center,
+
+        /// <summary>Right edge of the ramp band, relative to the direction of travel.</summary>
+        RightEdge
+    }
+
+    /// <summary>
     /// Which end of the drawn path is held in place when the ramp is built to the
     /// exact computed run R. The other end moves: the ramp is extended along the
     /// drawn geometry when R is longer than the drawing, or stopped short when it

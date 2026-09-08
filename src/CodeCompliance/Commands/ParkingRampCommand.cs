@@ -378,7 +378,22 @@ namespace CodeCompliance.Commands
                 calc.H, calc.S, calc.T, calc.X, calc.XPrime, calc.R,
                 window.Location,
                 window.Anchor == RampEndAnchor.Start ? "start" : "end",
-                window.DesignOffset != 0 ? " | slope measured on inner-lane centreline" : "");
+                SlopeReferenceText(window.SlopeReference));
+        }
+
+        private static string SlopeReferenceText(RampSlopeReference reference)
+        {
+            switch (reference)
+            {
+                case RampSlopeReference.LeftEdge:
+                    return " | slope measured along the left edge";
+                case RampSlopeReference.RightEdge:
+                    return " | slope measured along the right edge";
+                case RampSlopeReference.Center:
+                    return " | slope measured along the ramp centreline";
+                default:
+                    return " | slope measured along the inner-lane centreline";
+            }
         }
 
         /// <summary>Allows picking only straight or arc model/detail lines.</summary>
