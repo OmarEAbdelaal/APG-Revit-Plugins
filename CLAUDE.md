@@ -39,10 +39,16 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
   names are a contract: `revit-mcp-server-v*.zip` and `revit-mcp-commands-v*.zip`.
 - `McpNode` resolves the Node.js runtime (bundled in the server release > downloaded by the
   plugin > installed on the machine) and can download the current LTS itself.
-- `McpClaudeConfig` owns everything Claude-related: it only ever touches the `revit-mcp` key
-  inside `mcpServers`, backs the file up, reads it back to verify, and covers Claude Desktop
-  (`claude_desktop_config.json`) plus Claude Code (`.claude.json`, only when it exists).
-  It is applied after every install and re-checked on Revit startup.
+- `McpClaudeConfig` owns the client configuration: it only ever touches the `revit-mcp` key
+  inside `mcpServers` (found case-insensitively and **merged**, never replaced), backs the file
+  up, writes through a temp file swapped in one step, then reads back and requires that every
+  other connector is still there — otherwise the `.bak` is restored. A file that exists but does
+  not parse is **never** overwritten (its connectors are invisible to us). It covers Claude
+  Desktop (`claude_desktop_config.json`) plus Claude Code (`.claude.json`, only when it exists);
+  it is applied after every install and re-checked on Revit startup.
+- The MCP server is client-agnostic: ChatGPT and other MCP clients take the same entry via
+  "Copy config JSON". User-facing text says "Claude and ChatGPT", not "Claude" alone — only
+  text about the Claude config files or restarting Claude Desktop is Claude-specific.
 - Newtonsoft.Json is compile-time only (`ExcludeAssets="runtime"`): Revit ships it.
 - Local builds work when a .NET SDK is present (`dotnet build -c "Release R24"` etc.);
   otherwise rely on CI as before.

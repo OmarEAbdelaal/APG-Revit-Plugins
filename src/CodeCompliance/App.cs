@@ -241,7 +241,7 @@ namespace CodeCompliance
                 "Appendix B element attributes and DM's own IDS rule set, object naming, " +
                 "geo-referencing and export readiness. The dashboard lists every element that has to " +
                 "be modified and the type of modification, frames them in a 3D section box, and gives " +
-                "you the prompt that lets Claude fix them over the Revit MCP connection."));
+                "you the prompt that lets Claude or ChatGPT fix them over the Revit MCP connection."));
 
             dmPanel.AddItem(Button(
                 "CodeCompliance_DmReport", "DM\nReport",
@@ -279,25 +279,25 @@ namespace CodeCompliance
                 "Re-running the command replaces what it placed before, and stairs, ramps and wet " +
                 "areas that deserve a callout are listed as suggestions."));
 
-            // ── Plugin 5: Revit MCP (Claude ↔ Revit) ────────────────────────────
+            // ── Plugin 5: Revit MCP (Claude / ChatGPT ↔ Revit) ──────────────────
             RibbonPanel mcpPanel = application.CreateRibbonPanel(TabName, McpPanelName);
 
             mcpPanel.AddItem(Button(
                 "CodeCompliance_McpServer", "MCP\nServer",
                 assemblyPath, "CodeCompliance.Commands.McpServerCommand", "McpServer",
-                "Switch the Revit MCP server on or off so Claude can read and drive this Revit session.",
+                "Switch the Revit MCP server on or off so Claude or ChatGPT can read and drive this Revit session.",
                 "Starts a local JSON-RPC service (port 8080 by default) that the Revit MCP server " +
-                "launched by Claude Desktop connects to. While it is on, Claude can query the model, " +
+                "launched by Claude or ChatGPT connects to. While it is on, the AI can query the model, " +
                 "create and modify elements, tag, color, export data and run C# code in Revit. " +
                 "Click again to switch it off."));
 
             mcpPanel.AddItem(Button(
                 "CodeCompliance_McpSetup", "MCP\nSetup",
                 assemblyPath, "CodeCompliance.Commands.McpSetupCommand", "McpSetup",
-                "Install or update the MCP server and Revit command sets from GitHub and configure Claude Desktop.",
+                "Install or update the MCP server and Revit command sets from GitHub and configure Claude Desktop and Claude Code.",
                 "One-stop setup: downloads the latest Revit MCP server (Node.js) and Revit command " +
                 "sets from github.com/OmarEAbdelaal/revit-mcp, writes the Claude Desktop configuration, " +
-                "shows Node.js and connection status and lets you choose which commands Claude may use. " +
+                "shows Node.js and connection status and lets you choose which commands the AI may use. " +
                 "Updates are installed automatically on Revit startup."));
 
             // ── Suite panel ─────────────────────────────────────────────────────

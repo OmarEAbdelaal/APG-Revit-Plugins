@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace CodeCompliance.Core.Mcp
 {
-    /// <summary>State of the revit-mcp entry in a Claude configuration file.</summary>
+    /// <summary>State of the revit-mcp entry in an AI client configuration file.</summary>
     public enum ClaudeConfigState
     {
-        /// <summary>The configuration file does not exist (Claude not installed / never started).</summary>
+        /// <summary>The configuration file does not exist (client not installed / never started).</summary>
         FileMissing,
         /// <summary>The file exists but has no revit-mcp entry.</summary>
         NotConfigured,
@@ -23,7 +24,7 @@ namespace CodeCompliance.Core.Mcp
         Unreadable
     }
 
-    /// <summary>One Claude configuration file the plugin can write.</summary>
+    /// <summary>One configuration file the plugin can write.</summary>
     public sealed class ClaudeConfigTarget
     {
         public ClaudeConfigTarget(string name, string path, bool createIfMissing)
@@ -58,6 +59,8 @@ namespace CodeCompliance.Core.Mcp
         /// <summary>True when Claude Desktop kept running: it can overwrite what was just written.</summary>
         public bool AtRiskOfRevert { get; set; }
         public bool AnyChanged => Results.Any(r => r.Changed);
+        /// <summary>True when at least one file could not be written; the caller must not report success.</summary>
+        public bool AnyFailed => Results.Any(r => r.Failed);
         public string Summary { get; set; } = "";
     }
 
@@ -65,8 +68,12 @@ namespace CodeCompliance.Core.Mcp
     public sealed class ClaudeConfigResult
     {
         public string Target { get; set; } = "";
+        /// <summary>Full path of the file, so the user can check it themselves.</summary>
+        public string Path { get; set; } = "";
         public bool Changed { get; set; }
         public bool Skipped { get; set; }
+        /// <summary>The file was left untouched because writing it was impossible or unsafe.</summary>
+        public bool Failed { get; set; }
         public string Message { get; set; } = "";
         public List<string> PreservedServers { get; } = new List<string>();
     }
@@ -74,15 +81,21 @@ namespace CodeCompliance.Core.Mcp
     /// <summary>
     /// Reads and writes the MCP configuration of Claude Desktop
     /// (<c>%APPDATA%\Claude\claude_desktop_config.json</c>) and, when it exists, of Claude Code
-    /// (<c>%USERPROFILE%\.claude.json</c>).
+    /// (<c>%USERPROFILE%\.claude.json</c>). ChatGPT and any other MCP client take the same
+    /// entry, which <see cref="Snippet"/> produces for copying by hand.
     ///
     /// Rules that must never be broken:
     /// <list type="bullet">
     /// <item>only the <c>revit-mcp</c> entry inside <c>mcpServers</c> is touched — every other
-    /// connector and every other top-level setting is written back exactly as found;</item>
-    /// <item>a .bak copy is written before any change, and the file is read back and compared
-    /// afterwards, so a half-written configuration is detected instead of silently accepted;</item>
-    /// <item>an unreadable file is never overwritten silently: it is copied aside first.</item>
+    /// connector and every other top-level setting is written back exactly as found. The entry
+    /// is <i>merged</i>, not replaced, so keys the client or the user added inside it survive,
+    /// and the key keeps whatever spelling it already had (<c>Revit-MCP</c> is not duplicated
+    /// as a second <c>revit-mcp</c>);</item>
+    /// <item>a file that exists but cannot be parsed is never overwritten: the other connectors
+    /// in it are invisible to us and would be destroyed, so the write is refused instead;</item>
+    /// <item>the new content goes to a temporary file that replaces the original in one step,
+    /// after a .bak copy; the result is read back and every connector that was there before
+    /// must still be there, otherwise the backup is restored.</item>
     /// </list>
     ///
     /// <para><b>Claude Desktop owns its file while it runs.</b> It reads the configuration when
@@ -96,6 +109,9 @@ namespace CodeCompliance.Core.Mcp
     {
         /// <summary>Key of the server entry inside mcpServers.</summary>
         public const string ServerKey = "revit-mcp";
+
+        /// <summary>JSON files are written as UTF-8 without a byte order mark: clients trip over a BOM.</summary>
+        private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
 
         public static ClaudeConfigTarget Desktop => new ClaudeConfigTarget("Claude Desktop", McpPaths.ClaudeConfigFile, true);
         public static ClaudeConfigTarget Code => new ClaudeConfigTarget("Claude Code", McpPaths.ClaudeCodeConfigFile, false);
@@ -126,33 +142,59 @@ namespace CodeCompliance.Core.Mcp
                 return ClaudeConfigState.Unreadable;
             }
 
-            if (!(config["mcpServers"] is JObject servers) || !(servers[ServerKey] is JObject entry))
+            if (!(config["mcpServers"] is JObject servers) || !(FindServerEntry(servers)?.Value is JObject entry))
                 return ClaudeConfigState.NotConfigured;
 
             details = entry.Value<string>("command") + " " +
                       string.Join(" ", entry["args"]?.Select(a => a.ToString()) ?? Enumerable.Empty<string>());
-            return JToken.DeepEquals(entry, BuildEntry(settings))
+            return Matches(entry, settings)
                 ? ClaudeConfigState.Configured
                 : ClaudeConfigState.PointsElsewhere;
         }
 
-        /// <summary>The entry as JSON, for pasting into any other MCP client.</summary>
+        /// <summary>The entry as JSON, for pasting into ChatGPT or any other MCP client.</summary>
         public static string Snippet(McpSettings settings)
         {
             return new JObject { ["mcpServers"] = new JObject { [ServerKey] = BuildEntry(settings) } }
                 .ToString(Formatting.Indented);
         }
 
-        /// <summary>The revit-mcp entry this installation needs.</summary>
-        public static JObject BuildEntry(McpSettings settings)
+        /// <summary>
+        /// The revit-mcp entry this installation needs. When <paramref name="existing"/> is given
+        /// the plugin only overwrites what it owns — command, args and REVIT_MCP_PORT — so extra
+        /// environment variables or client-specific keys inside that entry are kept.
+        /// </summary>
+        public static JObject BuildEntry(McpSettings settings, JObject? existing = null)
         {
             NodeInfo node = McpNode.Resolve();
-            return new JObject
+            JObject entry = existing != null ? (JObject)existing.DeepClone() : new JObject();
+            entry["command"] = node.Path ?? "node";
+            entry["args"] = new JArray(McpPaths.ServerEntry);
+            if (!(entry["env"] is JObject env))
             {
-                ["command"] = node.Path ?? "node",
-                ["args"] = new JArray(McpPaths.ServerEntry),
-                ["env"] = new JObject { ["REVIT_MCP_PORT"] = settings.Port.ToString() }
-            };
+                env = new JObject();
+                entry["env"] = env;
+            }
+            env["REVIT_MCP_PORT"] = settings.Port.ToString();
+            return entry;
+        }
+
+        /// <summary>True when the fields the plugin owns already hold the right values.</summary>
+        private static bool Matches(JObject entry, McpSettings settings)
+        {
+            // BuildEntry(entry) is "entry with our fields corrected": equal means nothing to correct.
+            return JToken.DeepEquals(entry, BuildEntry(settings, entry));
+        }
+
+        /// <summary>
+        /// The revit-mcp property whatever case it was written in. Claude does not care about the
+        /// case of the key, so writing a second entry with our own spelling would give the user
+        /// two Revit connectors instead of one.
+        /// </summary>
+        private static JProperty? FindServerEntry(JObject servers)
+        {
+            return servers.Properties()
+                .FirstOrDefault(p => string.Equals(p.Name, ServerKey, StringComparison.OrdinalIgnoreCase));
         }
 
         // ── Writing ────────────────────────────────────────────────────────────
@@ -184,11 +226,16 @@ namespace CodeCompliance.Core.Mcp
             foreach (ClaudeConfigTarget target in AllTargets())
                 outcome.Results.Add(ApplyTo(target, settings, force));
 
+            string restartMessage = "";
             if (outcome.ClaudeWasRunning && restartMode == ClaudeRestartMode.RestartIfRunning)
             {
-                string startMessage = StartClaudeDesktop(exePath);
-                outcome.ClaudeRestarted = !IsClaudeDesktopRunning() ? false : true;
-                outcome.Summary = startMessage;
+                restartMessage = StartClaudeDesktop(exePath);
+                // Claude Desktop needs a few seconds to show up in the process list; asking
+                // straight after Process.Start always answered "not running" and produced a
+                // warning about a change that had in fact been applied.
+                outcome.ClaudeRestarted = WaitForClaudeDesktop(TimeSpan.FromSeconds(12));
+                if (!outcome.ClaudeRestarted)
+                    restartMessage = "Claude Desktop was closed - start it again to load the Revit tools.";
             }
 
             outcome.AtRiskOfRevert = outcome.ClaudeWasRunning && !outcome.ClaudeRestarted && outcome.AnyChanged;
@@ -196,7 +243,7 @@ namespace CodeCompliance.Core.Mcp
             string written = string.Join("  ", outcome.Results.Where(r => !r.Skipped).Select(r => r.Message));
             if (outcome.Results.All(r => r.Skipped))
                 written = "No Claude configuration file was found on this computer.";
-            outcome.Summary = (written + "  " + outcome.Summary).Trim();
+            outcome.Summary = (written + "  " + restartMessage).Trim();
             if (outcome.AtRiskOfRevert)
                 outcome.Summary += "  WARNING: Claude Desktop is running and rewrites this file from memory, " +
                                    "which undoes the change. Close Claude Desktop and configure again, or use the restart option.";
@@ -211,7 +258,7 @@ namespace CodeCompliance.Core.Mcp
 
         private static ClaudeConfigResult ApplyTo(ClaudeConfigTarget target, McpSettings settings, bool force)
         {
-            var result = new ClaudeConfigResult { Target = target.Name };
+            var result = new ClaudeConfigResult { Target = target.Name, Path = target.Path };
             try
             {
                 if (!target.Exists && !target.CreateIfMissing)
@@ -221,7 +268,7 @@ namespace CodeCompliance.Core.Mcp
                     return result;
                 }
 
-                JObject config = new JObject();
+                JObject config;
                 if (target.Exists)
                 {
                     try
@@ -230,18 +277,23 @@ namespace CodeCompliance.Core.Mcp
                     }
                     catch (Exception ex)
                     {
-                        // Never destroy something we could not understand: keep a dated copy.
+                        // The connectors this file holds are invisible to us while it does not
+                        // parse, so replacing it would silently delete them. Refuse instead.
                         string aside = target.Path + ".unreadable-" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".bak";
-                        File.Copy(target.Path, aside, true);
+                        TryCopy(target.Path, aside);
                         McpLog.Error("Unreadable " + target.Name + " configuration, copied to " + aside, ex);
-                        result.Message = target.Name + ": the existing configuration is not valid JSON. A copy was saved as " +
-                                         Path.GetFileName(aside) + " and a fresh configuration was written.";
-                        config = new JObject();
+                        result.Failed = true;
+                        result.Message = target.Name + ": " + target.Path + " is not valid JSON (" + ex.Message +
+                                         "), so it was left untouched - overwriting it would have deleted the other " +
+                                         "connectors in it. A copy is at " + Path.GetFileName(aside) +
+                                         ". Repair the file (or delete it) and configure again.";
+                        return result;
                     }
                 }
                 else
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(target.Path)!);
+                    config = new JObject();
                 }
 
                 if (!(config["mcpServers"] is JObject servers))
@@ -250,46 +302,64 @@ namespace CodeCompliance.Core.Mcp
                     config["mcpServers"] = servers;
                 }
 
+                JProperty? existingProperty = FindServerEntry(servers);
+                string key = existingProperty?.Name ?? ServerKey;
+                JObject? existingEntry = existingProperty?.Value as JObject;
+
                 result.PreservedServers.AddRange(servers.Properties()
                     .Select(p => p.Name)
-                    .Where(n => !string.Equals(n, ServerKey, StringComparison.OrdinalIgnoreCase)));
+                    .Where(n => !string.Equals(n, key, StringComparison.Ordinal)));
 
-                JObject desired = BuildEntry(settings);
-                bool alreadyCorrect = servers[ServerKey] is JObject existing && JToken.DeepEquals(existing, desired);
+                JObject desired = BuildEntry(settings, existingEntry);
+                bool alreadyCorrect = existingEntry != null && JToken.DeepEquals(existingEntry, desired);
                 if (alreadyCorrect && !force)
                 {
                     result.Message = target.Name + " already points at this MCP server.";
                     return result;
                 }
 
-                bool wasPresent = servers[ServerKey] != null;
-                servers[ServerKey] = desired;
+                bool wasPresent = existingEntry != null;
+                servers[key] = desired;
 
                 if (target.Exists)
-                    File.Copy(target.Path, target.Path + ".bak", true);
-                File.WriteAllText(target.Path, config.ToString(Formatting.Indented));
+                    TryCopy(target.Path, target.Path + ".bak");
+                WriteAtomic(target.Path, config.ToString(Formatting.Indented));
 
-                // Read back and compare: proves the file on disk really holds the entry.
+                // Read back and compare: proves the file on disk really holds the entry, and
+                // that nothing else was lost on the way.
                 JObject verify = ReadJson(target.Path);
-                JObject? written = (verify["mcpServers"] as JObject)?[ServerKey] as JObject;
+                JObject? verifyServers = verify["mcpServers"] as JObject;
+                JObject? written = verifyServers == null ? null : FindServerEntry(verifyServers)?.Value as JObject;
                 if (written == null || !JToken.DeepEquals(written, desired))
                     throw new IOException("the file was written but does not contain the expected entry");
 
-                int preserved = ((JObject)verify["mcpServers"]!).Properties().Count() - 1;
+                List<string> lost = result.PreservedServers
+                    .Where(n => verifyServers!.Property(n) == null)
+                    .ToList();
+                if (lost.Count > 0)
+                {
+                    if (File.Exists(target.Path + ".bak"))
+                        File.Copy(target.Path + ".bak", target.Path, true);
+                    throw new IOException("the write would have removed other connectors (" +
+                                          string.Join(", ", lost) + "); the previous file was restored");
+                }
+
+                int preserved = result.PreservedServers.Count;
                 result.Changed = !alreadyCorrect;
-                result.Message = target.Name + ": revit-mcp " + (wasPresent ? "updated" : "added") +
-                                 " in " + Path.GetFileName(target.Path) +
+                result.Message = target.Name + ": " + key + " " + (wasPresent ? "updated" : "added") +
+                                 " in " + target.Path +
                                  (preserved > 0
                                      ? "; " + preserved + " other connector" + (preserved == 1 ? "" : "s") + " kept (" +
                                        string.Join(", ", result.PreservedServers) + ")"
                                      : "");
-                McpLog.Info(result.Message + " -> " + target.Path);
+                McpLog.Info(result.Message);
                 return result;
             }
             catch (Exception ex)
             {
                 McpLog.Error("Could not configure " + target.Name, ex);
-                result.Message = target.Name + ": could not write the configuration - " + ex.Message;
+                result.Failed = true;
+                result.Message = target.Name + ": could not write " + target.Path + " - " + ex.Message;
                 return result;
             }
         }
@@ -300,9 +370,77 @@ namespace CodeCompliance.Core.Mcp
             return text.Trim().Length == 0 ? new JObject() : JObject.Parse(text);
         }
 
+        /// <summary>
+        /// Writes through a temporary file in the same folder and swaps it in as one operation,
+        /// so a failure half-way leaves the original configuration intact. Claude Desktop and
+        /// Claude Code hold the file open for short moments, hence the retries.
+        /// </summary>
+        private static void WriteAtomic(string path, string text)
+        {
+            string temp = path + ".apg-tmp";
+            Exception? last = null;
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                try
+                {
+                    File.WriteAllText(temp, text, Utf8NoBom);
+                    if (File.Exists(path))
+                        File.Replace(temp, path, null, true);
+                    else
+                        File.Move(temp, path);
+                    return;
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                {
+                    last = ex;
+                    TryDelete(temp);
+                    System.Threading.Thread.Sleep(250 * (attempt + 1));
+                }
+            }
+            throw last ?? new IOException("could not write " + path);
+        }
+
+        private static void TryCopy(string from, string to)
+        {
+            try
+            {
+                File.Copy(from, to, true);
+            }
+            catch (Exception ex)
+            {
+                McpLog.Error("Could not back up " + from, ex);
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            catch
+            {
+                // nothing to do
+            }
+        }
+
         // ── Restarting Claude Desktop ──────────────────────────────────────────
 
         public static bool IsClaudeDesktopRunning() => GetClaudeProcesses().Count > 0;
+
+        /// <summary>Waits for Claude Desktop to appear in the process list after starting it.</summary>
+        private static bool WaitForClaudeDesktop(TimeSpan timeout)
+        {
+            DateTime until = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < until)
+            {
+                if (IsClaudeDesktopRunning())
+                    return true;
+                System.Threading.Thread.Sleep(500);
+            }
+            return false;
+        }
 
         /// <summary>
         /// The Claude Desktop application processes. "claude.exe" is also the name of the
@@ -437,7 +575,10 @@ namespace CodeCompliance.Core.Mcp
                     return "Claude Desktop is not running. Start it to pick up the configuration.";
                 string? exePath = GetClaudeExecutablePath();
                 CloseClaudeDesktop();
-                return StartClaudeDesktop(exePath);
+                string message = StartClaudeDesktop(exePath);
+                return WaitForClaudeDesktop(TimeSpan.FromSeconds(12))
+                    ? message
+                    : "Claude Desktop was closed - start it again to load the Revit tools.";
             }
             catch (Exception ex)
             {

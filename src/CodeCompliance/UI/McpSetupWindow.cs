@@ -41,6 +41,7 @@ namespace CodeCompliance.UI
         private readonly TextBlock _latestStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
         private readonly TextBlock _nodeStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
         private readonly TextBlock _claudeStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        private readonly TextBlock _claudeFile = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = ApgTheme.Muted };
         private readonly TextBlock _message = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = ApgTheme.Muted };
         private readonly Button _toggleButton;
         private readonly Button _installButton;
@@ -71,7 +72,7 @@ namespace CodeCompliance.UI
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            var header = ApgTheme.CreateHeader("Revit MCP", "Connect Claude to Revit  ·  Revit " + _revitVersion);
+            var header = ApgTheme.CreateHeader("Revit MCP", "Connect Claude and ChatGPT to Revit  ·  Revit " + _revitVersion);
             Grid.SetRow((FrameworkElement)header, 0);
             root.Children.Add(header);
 
@@ -101,12 +102,14 @@ namespace CodeCompliance.UI
             body.Children.Add(ApgTheme.Card(serverPanel));
 
             // ── 2. Components ───────────────────────────────────────────────────
-            body.Children.Add(ApgTheme.SectionHeader("2. Server, command sets and Claude"));
+            body.Children.Add(ApgTheme.SectionHeader("2. Server, command sets and AI clients"));
             var comp = new StackPanel();
             comp.Children.Add(Row("Installed", _installedStatus));
             comp.Children.Add(Row("GitHub", _latestStatus));
             comp.Children.Add(Row("Node.js", _nodeStatus));
             comp.Children.Add(Row("Claude", _claudeStatus));
+            _claudeFile.Text = McpPaths.ClaudeConfigFile;
+            comp.Children.Add(Row("File", _claudeFile));
             _autoUpdate.IsChecked = _settings.AutoUpdate;
             _autoUpdate.Margin = new Thickness(0, 6, 0, 0);
             comp.Children.Add(_autoUpdate);
@@ -134,9 +137,14 @@ namespace CodeCompliance.UI
             copy.Click += (_, _) =>
             {
                 Clipboard.SetText(McpClaudeConfig.Snippet(_settings));
-                Say("MCP configuration copied to the clipboard - paste it into any MCP client configuration.");
+                Say("MCP configuration copied to the clipboard - paste it into ChatGPT or any other MCP client.");
             };
             compButtons.Children.Add(copy);
+            var showConfig = ApgTheme.SecondaryButton("Show config file");
+            showConfig.ToolTip = McpPaths.ClaudeConfigFile;
+            showConfig.Margin = new Thickness(0, 0, 8, 6);
+            showConfig.Click += (_, _) => Reveal(McpPaths.ClaudeConfigFile);
+            compButtons.Children.Add(showConfig);
             var folder = ApgTheme.SecondaryButton("Open folder");
             folder.Margin = new Thickness(0, 0, 8, 6);
             folder.Click += (_, _) =>
@@ -153,7 +161,7 @@ namespace CodeCompliance.UI
             body.Children.Add(ApgTheme.Card(comp));
 
             // ── 3. Commands ─────────────────────────────────────────────────────
-            body.Children.Add(ApgTheme.SectionHeader("3. Commands exposed to Claude (Revit " + _revitVersion + ")"));
+            body.Children.Add(ApgTheme.SectionHeader("3. Commands exposed to Claude and ChatGPT (Revit " + _revitVersion + ")"));
             var cmdPanel = new StackPanel();
             _grid = new DataGrid
             {
@@ -225,14 +233,14 @@ namespace CodeCompliance.UI
             {
                 _serverStatus.Text = "RUNNING on port " + service.Port + " with " + service.CommandCount +
                                      " commands (since " + service.StartedAt?.ToString("HH:mm") + ", " +
-                                     service.RequestsServed + " requests served). Claude can drive this Revit session.";
+                                     service.RequestsServed + " requests served). Claude and ChatGPT can drive this Revit session.";
                 _serverStatus.Foreground = ApgTheme.Green;
                 _toggleButton.Content = "Stop";
                 _portBox.IsEnabled = false;
             }
             else
             {
-                _serverStatus.Text = "STOPPED. Start it so the MCP server launched by Claude can reach Revit.";
+                _serverStatus.Text = "STOPPED. Start it so the MCP server launched by Claude or ChatGPT can reach Revit.";
                 _serverStatus.Foreground = ApgTheme.Red;
                 _toggleButton.Content = "Start";
                 _portBox.IsEnabled = true;
@@ -300,6 +308,7 @@ namespace CodeCompliance.UI
                         break;
                 }
             }
+            _claudeFile.Text = McpPaths.ClaudeConfigFile;
             bool claudeRunning = McpClaudeConfig.IsClaudeDesktopRunning();
             if (claudeRunning)
                 claudeLines.Add("Claude Desktop is open - it rewrites its configuration file while it runs, " +
@@ -452,9 +461,11 @@ namespace CodeCompliance.UI
                 }
 
                 ClaudeApplyOutcome outcome = McpClaudeConfig.Apply(_settings, mode);
-                Say(outcome.Summary + (outcome.AnyChanged && !outcome.ClaudeRestarted && !outcome.AtRiskOfRevert
+                Say(outcome.Summary + (outcome.AnyChanged && !outcome.AnyFailed && !outcome.ClaudeRestarted && !outcome.AtRiskOfRevert
                         ? "  Start Claude Desktop to load the Revit tools."
                         : ""));
+                if (outcome.AnyFailed)
+                    Reveal(McpPaths.ClaudeConfigFile);
             }
             catch (Exception ex)
             {
@@ -490,6 +501,22 @@ namespace CodeCompliance.UI
         {
             _message.Text = text;
             McpLog.Info("[setup] " + text);
+        }
+
+        /// <summary>Opens Explorer with the configuration file selected, so it can be checked by hand.</summary>
+        private static void Reveal(string path)
+        {
+            try
+            {
+                if (System.IO.File.Exists(path))
+                    Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + path + "\"") { UseShellExecute = true });
+                else
+                    Open(System.IO.Path.GetDirectoryName(path)!);
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         private static void Open(string target)

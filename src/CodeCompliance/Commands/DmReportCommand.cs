@@ -68,7 +68,7 @@ namespace CodeCompliance.Commands
                 MainInstruction = "DM BIM compliance audit complete",
                 MainContent = summary.ToString(),
                 FooterText = "Use DM Compliance for the interactive dashboard, the 3D section box highlight " +
-                             "and the Claude fix prompts.",
+                             "and the AI fix prompts.",
                 CommonButtons = TaskDialogCommonButtons.Close
             };
             dialog.Show();

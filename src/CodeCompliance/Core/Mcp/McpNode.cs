@@ -25,7 +25,7 @@ namespace CodeCompliance.Core.Mcp
         SystemInstallation
     }
 
-    /// <summary>The Node.js runtime the plugin will hand to Claude.</summary>
+    /// <summary>The Node.js runtime the plugin will hand to the AI client.</summary>
     public sealed class NodeInfo
     {
         public NodeInfo(string? path, string? version, NodeSource source)

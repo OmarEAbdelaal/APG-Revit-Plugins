@@ -7,7 +7,7 @@ using System.Text;
 namespace CodeCompliance.Core.Dm
 {
     /// <summary>
-    /// Turns a finding into a prompt the user can paste into Claude while the Revit MCP
+    /// Turns a finding into a prompt the user can paste into Claude or ChatGPT while the Revit MCP
     /// connector is running, so the fix is applied to the very elements the audit flagged.
     /// The prompts are deliberately explicit about what may and may not be changed.
     /// </summary>

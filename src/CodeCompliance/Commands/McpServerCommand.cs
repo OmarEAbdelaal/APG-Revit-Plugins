@@ -9,7 +9,7 @@ namespace CodeCompliance.Commands
 {
     /// <summary>
     /// Ribbon toggle for the Revit MCP socket service: starts it (loading the command sets
-    /// for this Revit version) or stops it. While it runs, the MCP server launched by Claude
+    /// for this Revit version) or stops it. While it runs, the MCP server launched by Claude or ChatGPT
     /// can read and drive this Revit session.
     /// </summary>
     [Transaction(TransactionMode.Manual)]
@@ -24,7 +24,7 @@ namespace CodeCompliance.Commands
                 if (service.IsRunning)
                 {
                     service.Stop();
-                    TaskDialog.Show("Revit MCP", "MCP server switched OFF.\n\nClaude can no longer reach this Revit session.");
+                    TaskDialog.Show("Revit MCP", "MCP server switched OFF.\n\nClaude and ChatGPT can no longer reach this Revit session.");
                     return Result.Succeeded;
                 }
 
@@ -49,10 +49,11 @@ namespace CodeCompliance.Commands
                 var dialog = new TaskDialog("Revit MCP")
                 {
                     MainInstruction = "MCP server switched ON (port " + service.Port + ").",
-                    MainContent = service.CommandCount + " commands are available to Claude for Revit " +
+                    MainContent = service.CommandCount + " commands are available to Claude and ChatGPT for Revit " +
                                   commandData.Application.Application.VersionNumber + ".\n\n" +
                                   "In Claude Desktop the Revit tools appear once Claude has been configured " +
-                                  "(MCP Setup > Configure Claude Desktop) and restarted.",
+                                  "(MCP Setup > Configure Claude) and restarted. For ChatGPT and other " +
+                                  "MCP clients, use MCP Setup > Copy config JSON.",
                     FooterText = "Log: " + McpLog.CurrentFile,
                     CommonButtons = TaskDialogCommonButtons.Close
                 };

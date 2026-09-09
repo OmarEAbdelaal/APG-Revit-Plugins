@@ -1,15 +1,20 @@
-# Revit MCP — connect Claude to Revit
+# Revit MCP — connect Claude and ChatGPT to Revit
 
-The **Revit MCP** plugin of the APG Revit Plugins suite lets Claude (Claude Desktop or
-Claude Code) read and drive an open Revit session through the
-[Model Context Protocol](https://modelcontextprotocol.io). Three pieces work together:
+The **Revit MCP** plugin of the APG Revit Plugins suite lets an AI assistant — Claude
+(Claude Desktop or Claude Code), ChatGPT, or any other MCP client — read and drive an open
+Revit session through the [Model Context Protocol](https://modelcontextprotocol.io).
+Three pieces work together:
 
 ```
-Claude Desktop ──stdio──▶ MCP server (Node.js)  ──TCP 8080──▶ Revit
+Claude / ChatGPT ─stdio─▶ MCP server (Node.js)  ──TCP 8080──▶ Revit
                           revit-mcp/build/index.js            APG Revit Plugins ▸ Revit MCP
-                          exposes ~26 "tools" to Claude       JSON-RPC service + command sets
+                          exposes ~26 "tools" to the AI       JSON-RPC service + command sets
                                                                (RevitMCPCommandSet.dll, RevitMCPExtraCommands.dll)
 ```
+
+The plugin writes the configuration of **Claude Desktop** and **Claude Code** itself. Every
+other MCP client — ChatGPT included — takes exactly the same entry: **MCP Setup ▸ Copy config
+JSON** puts it on the clipboard.
 
 | Piece | Where it lives | Who installs / updates it |
 |---|---|---|
@@ -26,7 +31,8 @@ new tools reach every user automatically (see [Updates](#updates)).
 ## 1. Requirements
 
 - Windows 10/11, Revit 2024, 2025, 2026 or 2027.
-- **Claude Desktop** (<https://claude.ai/download>) or Claude Code.
+- **Claude Desktop** (<https://claude.ai/download>), Claude Code, ChatGPT, or any other
+  MCP client.
 - Internet access to `github.com` for the one-time install and for updates.
 
 **Node.js is not a prerequisite.** The MCP server is a Node program, but the download from
@@ -70,8 +76,9 @@ two buttons: **MCP Server** and **MCP Setup**.
    }
    ```
 
-   For Claude Code or another MCP client, click **Copy config JSON** and paste it into that
-   client's configuration (Claude Code: `claude mcp add-json revit-mcp '<the pasted object>'`).
+   For ChatGPT or another MCP client, click **Copy config JSON** and paste the entry into that
+   client's MCP configuration (Claude Code: `claude mcp add-json revit-mcp '<the pasted object>'`).
+   The entry is the same everywhere — it is the command line that starts the local MCP server.
 4. **Restart Claude Desktop** so it reads the configuration: the **Restart Claude Desktop**
    button in MCP Setup does it for you, or quit Claude from the tray icon and start it again.
    The Revit tools then appear under the tools icon of the chat box.
@@ -85,8 +92,31 @@ contain it) and then reappears without `revit-mcp` minutes later.
 
 The plugin therefore offers to close Claude Desktop, write the configuration and start it again.
 That is the only order that survives. If you choose to write anyway, MCP Setup says so plainly
-and you can close Claude and press **Configure Claude** once more. Other MCP connectors in the
-file are never affected either way: only the `revit-mcp` key is touched.
+and you can close Claude and press **Configure Claude** once more.
+
+### What the plugin guarantees about your configuration file
+
+Your other connectors are never affected. Concretely, when the plugin writes
+`claude_desktop_config.json`:
+
+- it reads the existing file and writes it back whole — every other entry in `mcpServers`
+  (`Revit Connector`, `onenote`, …) and every other top-level setting (`preferences`,
+  `coworkUserFilesPath`, …) is kept exactly as it was;
+- only the `revit-mcp` entry is changed, and it is **merged**, not replaced: `command`, `args`
+  and `REVIT_MCP_PORT` are set, anything else you put inside that entry stays;
+- an entry already spelled differently (`Revit-MCP`) is updated in place instead of a second,
+  lower-case entry being added next to it;
+- a file that exists but is **not valid JSON is never overwritten** — the connectors in it
+  cannot be read, so replacing it would delete them. MCP Setup reports the parse error and
+  leaves the file alone (a dated `.unreadable-*.bak` copy is made so you can repair it);
+- the new content is written to a temporary file in the same folder and swapped in one step,
+  after a `.bak` copy of the original; a write that is blocked by a running client is retried;
+- the result is read back before it is accepted: the `revit-mcp` entry must be there **and**
+  every connector that was there before must still be there, otherwise the `.bak` is restored
+  and MCP Setup reports the failure.
+
+MCP Setup shows the full path of the file it writes on the **File** line, and **Show config
+file** opens it in Explorer.
 
 ## 4. Daily use
 
@@ -166,18 +196,29 @@ README for the release workflow.
 
 ## 8. Troubleshooting
 
-**The `revit-mcp` entry disappears again after Configure Claude**
+**`claude_desktop_config.json` does not contain `revit-mcp` after Configure Claude**
 - Claude Desktop was running: it rewrites the file from memory whenever one of its settings
   changes and drops what was added from outside. Use **Configure Claude ▸ Restart Claude Desktop
   and configure**, or quit Claude completely and press **Configure Claude** again.
-- The plugin never removes your other connectors: check the `.bak` copy next to the file if you
-  want to compare.
+- Check the **File** line in MCP Setup: it shows the exact file being written. If your Claude
+  profile lives under another Windows account than the one running Revit, that is the file the
+  plugin writes and Claude reads another one. **Show config file** opens it.
+- If the message says the file *is not valid JSON*, the plugin deliberately left it untouched
+  rather than lose your other connectors. Repair the JSON (a dated `.unreadable-*.bak` copy is
+  next to it) and press **Configure Claude** again.
+- The plugin never removes your other connectors — it restores the `.bak` copy rather than
+  write a file that lost one.
+
+**ChatGPT does not see the Revit tools**
+- ChatGPT is not configured by the plugin: click **Copy config JSON** in MCP Setup and paste the
+  entry into ChatGPT's MCP/connector configuration, then restart it.
+- The Revit side is the same for every client: **MCP Server** must be switched ON in Revit.
 
 **Claude says the Revit tools are unavailable / no hammer icon**
 - Claude Desktop must be fully restarted after the configuration was written (tray icon ▸ Quit,
   or the **Restart Claude Desktop** button).
 - Check the **Claude** line in MCP Setup: it says *configured* only when the entry in the file
-  matches this installation.
+  matches this installation, and the **File** line shows which file that is.
 - Check **MCP Setup ▸ Node.js**: it must show a runtime (normally *bundled with the MCP server*).
 - Claude Desktop ▸ Settings ▸ Developer shows the server log if the server fails to start.
 

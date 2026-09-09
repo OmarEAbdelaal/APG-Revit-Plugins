@@ -6,8 +6,9 @@ namespace CodeCompliance.Commands
 {
     /// <summary>
     /// Opens the Revit MCP setup window: install / update the MCP server and command sets
-    /// from GitHub, configure Claude Desktop, start or stop the server and choose which
-    /// commands are exposed to the AI.
+    /// from GitHub, configure Claude Desktop and Claude Code (ChatGPT and other MCP clients
+    /// take the same entry from "Copy config JSON"), start or stop the server and choose
+    /// which commands are exposed to the AI.
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]

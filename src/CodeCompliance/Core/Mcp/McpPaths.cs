@@ -10,7 +10,7 @@ namespace CodeCompliance.Core.Mcp
     ///
     /// <code>
     /// RevitMCP\
-    ///   server\build\index.js        MCP server (Node.js) launched by Claude
+    ///   server\build\index.js        MCP server (Node.js) launched by the AI client
     ///   server\runtime\node.exe      Node.js bundled with the server release
     ///   runtime\node.exe             Node.js downloaded by the plugin (survives server updates)
     ///   Commands\&lt;Set&gt;\command.json   one folder per command set

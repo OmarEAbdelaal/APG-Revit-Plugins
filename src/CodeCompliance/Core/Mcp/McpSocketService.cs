@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 namespace CodeCompliance.Core.Mcp
 {
     /// <summary>
-    /// TCP JSON-RPC 2.0 endpoint the MCP server (Node.js, launched by Claude) connects to.
+    /// TCP JSON-RPC 2.0 endpoint the MCP server (Node.js, launched by Claude or ChatGPT) connects to.
     /// Request:  {"jsonrpc":"2.0","method":"command_name","params":{...},"id":"..."}
     /// Response: {"jsonrpc":"2.0","result":...,"id":"..."} or {"jsonrpc":"2.0","error":{...},"id":"..."}
     ///

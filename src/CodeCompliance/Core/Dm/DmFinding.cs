@@ -50,7 +50,7 @@ namespace CodeCompliance.Core.Dm
 
     /// <summary>
     /// One compliance issue: what is wrong, which elements are affected, what kind of change
-    /// fixes it, and the ready-made prompt that asks Claude to fix it over the Revit MCP link.
+    /// fixes it, and the ready-made prompt that asks the AI to fix it over the Revit MCP link.
     /// Findings are grouped per check and per category so the dashboard stays readable even on
     /// models with tens of thousands of elements.
     /// </summary>
@@ -122,7 +122,7 @@ namespace CodeCompliance.Core.Dm
         /// </summary>
         public string FixScript { get; set; } = "";
 
-        /// <summary>Prompt to paste into Claude with the Revit MCP connector running.</summary>
+        /// <summary>Prompt to paste into Claude or ChatGPT with the Revit MCP connector running.</summary>
         public string McpPrompt { get; set; } = "";
 
         /// <summary>

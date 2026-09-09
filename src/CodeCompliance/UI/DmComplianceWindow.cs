@@ -74,7 +74,7 @@ namespace CodeCompliance.UI
     /// The DM BIM Compliance dashboard: runs the audit over the open model, shows every issue
     /// with the elements it affects and the type of modification it needs, lets any single
     /// element be picked and framed in a 3D section box, and hands out the Revit MCP prompt
-    /// that lets Claude do the fix.
+    /// that lets Claude or ChatGPT do the fix.
     ///
     /// The window is <b>modeless</b>: Revit stays fully usable next to it, so an element can be
     /// highlighted, inspected and edited in Revit without ever closing the dashboard. Because
@@ -532,7 +532,7 @@ namespace CodeCompliance.UI
             var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
 
             _fix.Margin = new Thickness(0, 0, 8, 0);
-            _fix.ToolTip = "Apply this finding's fix to the open model now — no Claude, no MCP link needed. " +
+            _fix.ToolTip = "Apply this finding's fix to the open model now — no AI assistant, no MCP link needed. " +
                            "One transaction, so Ctrl+Z reverts it. Values that cannot be derived from the model " +
                            "are left alone rather than guessed.";
             _fix.Click += (_, _) => ApplyFix();
@@ -555,7 +555,7 @@ namespace CodeCompliance.UI
 
             Button copyScript = ApgTheme.SecondaryButton("Copy script only");
             copyScript.Margin = new Thickness(0, 0, 8, 0);
-            copyScript.ToolTip = "The C# the prompt asks Claude to send with send_code_to_revit.";
+            copyScript.ToolTip = "The C# the prompt asks the AI to send with send_code_to_revit.";
             copyScript.Click += (_, _) => CopyScript();
             buttons.Children.Add(copyScript);
 
@@ -612,7 +612,7 @@ namespace CodeCompliance.UI
             left.Children.Add(clear);
 
             _mcp.Margin = new Thickness(0, 0, 8, 0);
-            _mcp.ToolTip = "Switch the Revit MCP server on without leaving the dashboard, so Claude can pick up " +
+            _mcp.ToolTip = "Switch the Revit MCP server on without leaving the dashboard, so Claude or ChatGPT can pick up " +
                            "the prompt of a finding this tool cannot fix on its own.";
             _mcp.Click += (_, _) => StartMcpServer();
             left.Children.Add(_mcp);
@@ -1076,7 +1076,7 @@ namespace CodeCompliance.UI
         // ── applying the fix ────────────────────────────────────────────────────
 
         /// <summary>
-        /// Applies the selected finding's fix to the model directly — no Claude, no MCP link.
+        /// Applies the selected finding's fix to the model directly — no AI assistant, no MCP link.
         /// The change is confirmed first, runs in a single named transaction and is followed by
         /// a fresh audit so the finding disappears (or shows what is left).
         /// </summary>
@@ -1095,7 +1095,7 @@ namespace CodeCompliance.UI
                 Say(DmFixService.WhyNot(finding));
                 MessageBox.Show(this,
                     DmFixService.WhyNot(finding) +
-                    "\n\nUse \"Copy prompt\" and let Claude do it over the Revit MCP link instead.",
+                    "\n\nUse \"Copy prompt\" and let Claude or ChatGPT do it over the Revit MCP link instead.",
                     "This one is not applied automatically",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -1157,14 +1157,14 @@ namespace CodeCompliance.UI
 
         /// <summary>
         /// Switches the Revit MCP server on from here, so a finding this tool does not fix on
-        /// its own can be handed to Claude without going back to the ribbon.
+        /// its own can be handed to the AI assistant without going back to the ribbon.
         /// </summary>
         private void StartMcpServer()
         {
             if (McpSocketService.Instance.IsRunning)
             {
                 Say("The MCP server is already running on port " + McpSocketService.Instance.Port +
-                    " with " + McpSocketService.Instance.CommandCount + " command(s). Paste the prompt into Claude.");
+                    " with " + McpSocketService.Instance.CommandCount + " command(s). Paste the prompt into Claude or ChatGPT.");
                 UpdateMcpButton();
                 return;
             }
@@ -1183,7 +1183,7 @@ namespace CodeCompliance.UI
                     message = "MCP server ON, port " + McpSocketService.Instance.Port + ", " +
                               McpSocketService.Instance.CommandCount + " command(s)" +
                               (McpInstaller.IsCommandsInstalled
-                                  ? ". Paste the prompt into Claude — the Revit tools are live."
+                                  ? ". Paste the prompt into Claude or ChatGPT — the Revit tools are live."
                                   : ". The downloaded command sets are missing, so only the built-in commands are " +
                                     "available: run MCP Setup ▸ Install / Update.");
                 }
@@ -1223,7 +1223,7 @@ namespace CodeCompliance.UI
             DmFinding? finding = Selected;
             if (finding == null)
                 return;
-            Copy(finding.McpPrompt, "Prompt copied. Paste it into Claude with the Revit MCP server running.");
+            Copy(finding.McpPrompt, "Prompt copied. Paste it into Claude or ChatGPT with the Revit MCP server running.");
         }
 
         private void CopyScript()
@@ -1245,7 +1245,7 @@ namespace CodeCompliance.UI
             if (_result == null)
                 return;
             Copy(DmPromptBuilder.ForAudit(_result),
-                 "Fix-all prompt copied (" + _result.Findings.Count + " findings). Paste it into Claude.");
+                 "Fix-all prompt copied (" + _result.Findings.Count + " findings). Paste it into Claude or ChatGPT.");
         }
 
         /// <summary>
