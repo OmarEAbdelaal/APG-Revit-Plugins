@@ -38,7 +38,10 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
   `McpInstaller` (MCP Setup button + silent auto-update at Revit startup). Release asset
   names are a contract: `revit-mcp-server-v*.zip` and `revit-mcp-commands-v*.zip`.
 - `McpNode` resolves the Node.js runtime (bundled in the server release > downloaded by the
-  plugin > installed on the machine) and can download the current LTS itself.
+  plugin > installed on the machine) and can download the current LTS itself. Anything that
+  writes a client configuration uses `EnsureOwnAsync`, not `EnsureAsync`: the entry must name a
+  runtime under the current account's profile, never `C:\Program Files\nodejs\node.exe`, which
+  the plugin does not control and which does not exist on the next machine.
 - `McpClaudeConfig` owns the client configuration: it only ever touches the `revit-mcp` key
   inside `mcpServers` (found case-insensitively and **merged**, never replaced), backs the file
   up, writes through a temp file swapped in one step, then reads back and requires that every

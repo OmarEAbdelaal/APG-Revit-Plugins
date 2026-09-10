@@ -117,6 +117,25 @@ Everything else in the entry, and every other connector, is left alone.
 The **File** line in MCP Setup shows the full path being written, including the user name, so on
 a shared machine you can see at a glance which profile is configured.
 
+### Which Node.js the entry names
+
+The `command` in the entry is always a runtime the plugin owns, inside the profile of the
+account being configured:
+
+```
+%LOCALAPPDATA%\APGRevitPlugins\RevitMCP\server\runtime\node.exe   bundled in the server release
+%LOCALAPPDATA%\APGRevitPlugins\RevitMCP\runtime\node.exe           downloaded by the plugin
+```
+
+**Configure Claude** makes sure one of those exists before it writes - downloading Node.js if
+neither does - so the entry never names `C:\Program Files\nodejs\node.exe`. A machine-wide
+install is outside the plugin's control: it disappears when someone uninstalls Node, moves with
+an upgrade, and is absent on the next computer. An installation from before the bundled runtime
+that still points there is moved onto its own runtime and rewritten at the next Revit start.
+
+A machine-wide Node.js is used only if the download fails and one is already present - better a
+working entry than none.
+
 ### What the plugin guarantees about your configuration file
 
 Your other connectors are never affected. Concretely, when the plugin writes

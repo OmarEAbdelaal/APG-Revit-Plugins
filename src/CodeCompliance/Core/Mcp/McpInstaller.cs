@@ -222,7 +222,9 @@ namespace CodeCompliance.Core.Mcp
                 TryDelete(commandsZip);
 
                 // The server release normally carries its own Node.js; download one if it does not.
-                NodeInfo node = await McpNode.EnsureAsync(progress).ConfigureAwait(false);
+                // EnsureOwn, not Ensure: the entry must name a runtime under this account's own
+                // profile, never a machine-wide install that can be removed or upgraded.
+                NodeInfo node = await McpNode.EnsureOwnAsync(progress).ConfigureAwait(false);
 
                 // Point Claude at what was just installed, keeping every other connector.
                 progress?.Report("Updating the Claude configuration ...");
@@ -401,6 +403,27 @@ namespace CodeCompliance.Core.Mcp
                     Version current = installed.Version ?? new Version(0, 0, 0);
                     if (latest.Version <= current)
                     {
+                        // Nothing to install, but an installation from before the bundled runtime
+                        // may still point at a machine-wide Node.js. Move it onto a runtime of our
+                        // own under this account's profile and rewrite the entry once.
+                        if (McpNode.Resolve().Source == NodeSource.SystemInstallation)
+                        {
+                            NodeInfo own = await McpNode.EnsureOwnAsync().ConfigureAwait(false);
+                            if (own.Source != NodeSource.SystemInstallation)
+                            {
+                                try
+                                {
+                                    ClaudeApplyOutcome moved = McpClaudeConfig.EnsureConfigured(settings);
+                                    result.ClaudeConfigured |= moved.AnyChanged;
+                                    result.ClaudeMustRestart |= moved.AtRiskOfRevert;
+                                }
+                                catch (Exception ex)
+                                {
+                                    McpLog.Error("Rewriting the configuration onto our own Node.js failed", ex);
+                                }
+                            }
+                        }
+
                         result.Status = McpUpdateStatus.UpToDate;
                         result.Message = "Revit MCP " + current.ToString(3) + " is up to date.";
                         return result;
@@ -434,7 +457,7 @@ namespace CodeCompliance.Core.Mcp
 
         public static NodeInfo GetNode() => McpNode.Resolve();
 
-        public static Task<NodeInfo> EnsureNodeAsync(IProgress<string>? progress = null) => McpNode.EnsureAsync(progress);
+        public static Task<NodeInfo> EnsureNodeAsync(IProgress<string>? progress = null) => McpNode.EnsureOwnAsync(progress);
 
         public static string ClaudeConfigSnippet(McpSettings settings) => McpClaudeConfig.Snippet(settings);
 
