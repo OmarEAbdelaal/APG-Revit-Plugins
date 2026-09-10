@@ -252,7 +252,9 @@ namespace CodeCompliance.UI
             int total = infos.Count(i => !i.BuiltIn);
             if (!McpInstaller.IsServerInstalled && !McpInstaller.IsCommandsInstalled)
             {
-                _installedStatus.Text = "Nothing installed yet - click Install / Update from GitHub.";
+                _installedStatus.Text = "Nothing installed yet for the Windows user \"" + Environment.UserName +
+                                        "\" - click Install / Update from GitHub. Each account on this computer " +
+                                        "gets its own copy under its own profile.";
                 _installedStatus.Foreground = ApgTheme.Red;
             }
             else

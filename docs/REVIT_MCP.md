@@ -94,6 +94,29 @@ The plugin therefore offers to close Claude Desktop, write the configuration and
 That is the only order that survives. If you choose to write anyway, MCP Setup says so plainly
 and you can close Claude and press **Configure Claude** once more.
 
+### Several Windows accounts on one computer
+
+Everything the connector needs lives under the profile of the account running Revit — the
+server and command sets in `%LOCALAPPDATA%`, the settings, and the Claude configuration in
+that account's `%APPDATA%\Claude`. Nothing is shared between accounts and nothing is baked in
+at build time: **every path written into the configuration is resolved from the account running
+Revit at that moment**, so one user's folder can never end up in another user's file.
+
+The practical consequence is that each account provisions itself. The first time Revit starts
+under an account that has never used Revit MCP, the plugin downloads the server, the command
+sets and Node.js for that account and writes its Claude configuration, then says so — you do not
+have to find MCP Setup on each account. It needs GitHub access and the *Update server and
+commands automatically* option (on by default); with either missing it says the connector is not
+set up for that user yet and retries at the next Revit start.
+
+If an account's configuration already holds a `revit-mcp` entry pointing at **another** user's
+profile — a copied `claude_desktop_config.json`, a roaming profile, a machine that was cloned —
+the plugin rewrites `command` and `args` to that account's own paths at the next Revit start.
+Everything else in the entry, and every other connector, is left alone.
+
+The **File** line in MCP Setup shows the full path being written, including the user name, so on
+a shared machine you can see at a glance which profile is configured.
+
 ### What the plugin guarantees about your configuration file
 
 Your other connectors are never affected. Concretely, when the plugin writes

@@ -48,6 +48,12 @@ namespace CodeCompliance.Core.Mcp
         public bool ClaudeConfigured { get; set; }
         /// <summary>True when Claude Desktop was running and can overwrite what was written.</summary>
         public bool ClaudeMustRestart { get; set; }
+        /// <summary>
+        /// True when this was the first setup for the Windows account running Revit, rather than
+        /// an update of an existing one. Everything the connector needs lives under the user's own
+        /// profile, so each account on a shared computer provisions itself the first time.
+        /// </summary>
+        public bool FirstRun { get; set; }
     }
 
     /// <summary>
@@ -59,6 +65,10 @@ namespace CodeCompliance.Core.Mcp
     /// </summary>
     public static class McpInstaller
     {
+        /// <summary>Said when the connector has never been set up for the current Windows account.</summary>
+        private static string NotSetUpForThisUser =>
+            "Revit MCP is not set up yet for the Windows user \"" + Environment.UserName + "\".";
+
         public const string Repo = "OmarEAbdelaal/revit-mcp";
         public const string RepoUrl = "https://github.com/" + Repo;
         public const string ReleasesUrl = RepoUrl + "/releases";
@@ -334,6 +344,14 @@ namespace CodeCompliance.Core.Mcp
         /// Startup check: installs a newer release when one exists, and makes sure the Claude
         /// configuration points at this installation (Claude picks the change up on its next start).
         /// Never throws. Command updates take effect the next time the MCP server switch is used.
+        ///
+        /// <para>Everything the connector needs — the server, the command sets, the Node.js runtime,
+        /// the settings and the Claude configuration — lives under the profile of the Windows
+        /// account running Revit. On a computer with several accounts the second account therefore
+        /// starts with nothing, so when nothing is installed for it this performs the first install
+        /// itself instead of waiting for the user to find MCP Setup. Every path written into the
+        /// Claude configuration is resolved at that moment from this account's own profile, so no
+        /// other user's folder can end up in it.</para>
         /// </summary>
         public static async Task<McpUpdateResult> AutoUpdateAsync(McpSettings settings)
         {
@@ -341,46 +359,52 @@ namespace CodeCompliance.Core.Mcp
             try
             {
                 McpInstalledInfo installed = ReadInstalled();
-                if (!installed.Any)
-                {
-                    result.Status = McpUpdateStatus.NotInstalled;
-                    result.Message = "Revit MCP is not installed yet. Use MCP Setup on the APG Revit Plugins tab.";
-                    return result;
-                }
+                result.FirstRun = !installed.Any;
 
                 // Keep Claude pointing at this installation even when nothing needs updating:
-                // a moved profile, a new Node.js or a changed port would otherwise break it.
-                try
+                // a moved profile, another account's path, a new Node.js or a changed port would
+                // otherwise break it. Skipped on a first run: there is nothing to point at yet.
+                if (!result.FirstRun)
                 {
-                    ClaudeApplyOutcome claude = McpClaudeConfig.EnsureConfigured(settings);
-                    result.ClaudeConfigured = claude.AnyChanged;
-                    result.ClaudeMustRestart = claude.AtRiskOfRevert;
-                }
-                catch (Exception ex)
-                {
-                    McpLog.Error("Claude configuration check failed", ex);
+                    try
+                    {
+                        ClaudeApplyOutcome claude = McpClaudeConfig.EnsureConfigured(settings);
+                        result.ClaudeConfigured = claude.AnyChanged;
+                        result.ClaudeMustRestart = claude.AtRiskOfRevert;
+                    }
+                    catch (Exception ex)
+                    {
+                        McpLog.Error("Claude configuration check failed", ex);
+                    }
                 }
 
                 if (!settings.AutoUpdate)
                 {
-                    result.Status = McpUpdateStatus.Disabled;
-                    result.Message = "Automatic updates are switched off.";
+                    result.Status = result.FirstRun ? McpUpdateStatus.NotInstalled : McpUpdateStatus.Disabled;
+                    result.Message = result.FirstRun
+                        ? NotSetUpForThisUser + " Automatic setup is switched off, so use MCP Setup on the APG Revit Plugins tab."
+                        : "Automatic updates are switched off.";
                     return result;
                 }
 
                 McpReleaseInfo? latest = await GetLatestReleaseAsync().ConfigureAwait(false);
                 if (latest == null || !latest.IsComplete)
                 {
-                    result.Status = McpUpdateStatus.Failed;
-                    result.Message = "Could not check GitHub for updates.";
+                    result.Status = result.FirstRun ? McpUpdateStatus.NotInstalled : McpUpdateStatus.Failed;
+                    result.Message = result.FirstRun
+                        ? NotSetUpForThisUser + " GitHub could not be reached to set it up now - it is retried the next time Revit starts."
+                        : "Could not check GitHub for updates.";
                     return result;
                 }
-                Version current = installed.Version ?? new Version(0, 0, 0);
-                if (latest.Version <= current)
+                if (!result.FirstRun)
                 {
-                    result.Status = McpUpdateStatus.UpToDate;
-                    result.Message = "Revit MCP " + current.ToString(3) + " is up to date.";
-                    return result;
+                    Version current = installed.Version ?? new Version(0, 0, 0);
+                    if (latest.Version <= current)
+                    {
+                        result.Status = McpUpdateStatus.UpToDate;
+                        result.Message = "Revit MCP " + current.ToString(3) + " is up to date.";
+                        return result;
+                    }
                 }
                 if (McpSocketService.Instance.IsRunning)
                 {
@@ -388,6 +412,9 @@ namespace CodeCompliance.Core.Mcp
                     result.Message = "Update " + latest.Tag + " is available but the MCP server is running. Switch it off and open MCP Setup to update.";
                     return result;
                 }
+
+                // InstallAsync writes the Claude configuration itself, with the paths of the
+                // account running Revit right now.
                 result.Message = await InstallAsync(latest).ConfigureAwait(false);
                 result.Status = McpUpdateStatus.Updated;
                 result.NewVersion = latest.Version;

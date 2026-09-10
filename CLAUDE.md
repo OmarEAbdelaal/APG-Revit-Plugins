@@ -46,6 +46,11 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
   not parse is **never** overwritten (its connectors are invisible to us). It covers Claude
   Desktop (`claude_desktop_config.json`) plus Claude Code (`.claude.json`, only when it exists);
   it is applied after every install and re-checked on Revit startup.
+- **Everything is per Windows account** (`%LOCALAPPDATA%` server/commands/settings, that
+  account's `%APPDATA%\Claude`), and every path in the entry is resolved at write time from the
+  account running Revit — never baked in. `McpInstaller.AutoUpdateAsync` therefore performs the
+  *first* install itself when nothing is installed for the current account, so each user on a
+  shared computer provisions itself at the next Revit start instead of hunting for MCP Setup.
 - The MCP server is client-agnostic: ChatGPT and other MCP clients take the same entry via
   "Copy config JSON". User-facing text says "Claude and ChatGPT", not "Claude" alone — only
   text about the Claude config files or restarting Claude Desktop is Claude-specific.

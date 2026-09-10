@@ -139,11 +139,17 @@ namespace CodeCompliance
             {
                 try
                 {
-                    string title = mcp.Status == McpUpdateStatus.Updated ? "Revit MCP updated" : "Revit MCP reconnected to Claude";
-                    string tail = mcp.Status == McpUpdateStatus.Updated
-                        ? "\n\nRestart Claude Desktop so it loads the new MCP server. " +
-                          "The new Revit commands are used the next time the MCP server is switched on."
-                        : "\n\nRestart Claude Desktop so it picks the configuration up.";
+                    string title = mcp.FirstRun
+                        ? "Revit MCP set up for " + Environment.UserName
+                        : mcp.Status == McpUpdateStatus.Updated ? "Revit MCP updated" : "Revit MCP reconnected to Claude";
+                    string tail = mcp.FirstRun
+                        ? "\n\nThis is the first time Revit MCP runs under the Windows user \"" + Environment.UserName +
+                          "\", so the server, the command sets and the Claude configuration were set up for this " +
+                          "account with its own paths.\n\nRestart Claude Desktop so it loads the MCP server."
+                        : mcp.Status == McpUpdateStatus.Updated
+                            ? "\n\nRestart Claude Desktop so it loads the new MCP server. " +
+                              "The new Revit commands are used the next time the MCP server is switched on."
+                            : "\n\nRestart Claude Desktop so it picks the configuration up.";
                     if (mcp.ClaudeMustRestart)
                         tail += "\n\nClaude Desktop was open while this was written. Claude rewrites that file " +
                                 "from memory, so close and start it again (or use MCP Setup > Configure Claude) " +
