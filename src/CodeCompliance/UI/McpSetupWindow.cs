@@ -120,7 +120,7 @@ namespace CodeCompliance.UI
             compButtons.Children.Add(_installButton);
             _claudeButton = ApgTheme.SecondaryButton("Configure Claude");
             _claudeButton.Margin = new Thickness(0, 0, 8, 6);
-            _claudeButton.Click += (_, _) => ConfigureClaude();
+            _claudeButton.Click += async (_, _) => await ConfigureClaudeAsync();
             compButtons.Children.Add(_claudeButton);
             _restartClaudeButton = ApgTheme.SecondaryButton("Restart Claude Desktop");
             _restartClaudeButton.ToolTip = "Claude Desktop reads its configuration when it starts, " +
@@ -422,14 +422,31 @@ namespace CodeCompliance.UI
             }
         }
 
-        private void ConfigureClaude()
+        /// <summary>
+        /// Writes the revit-mcp entry for the Windows account running Revit. Every path in it is
+        /// resolved here and now from this account's own profile, so the same button produces the
+        /// right file on every computer and for every user - nothing is carried over from whoever
+        /// built the plugin.
+        /// </summary>
+        private async System.Threading.Tasks.Task ConfigureClaudeAsync()
         {
+            _claudeButton.IsEnabled = false;
             try
             {
                 SaveSettings(false);
                 if (!McpInstaller.IsServerInstalled)
                 {
                     Say("Install the MCP server first (Install / Update from GitHub), then configure Claude.");
+                    return;
+                }
+
+                // Make sure the runtime the entry will name is one of ours, under this account's
+                // profile, rather than a machine-wide Node.js that may be removed or upgraded.
+                NodeInfo node = await McpNode.EnsureOwnAsync(new Progress<string>(Say));
+                if (!node.Found)
+                {
+                    Say("No Node.js runtime is available and one could not be downloaded. " +
+                        "Check your internet connection, or install Node.js " + McpNode.MinimumVersion + " or newer.");
                     return;
                 }
                 // Claude Desktop keeps the configuration in memory and writes it back over ours
@@ -463,9 +480,12 @@ namespace CodeCompliance.UI
                 }
 
                 ClaudeApplyOutcome outcome = McpClaudeConfig.Apply(_settings, mode);
-                Say(outcome.Summary + (outcome.AnyChanged && !outcome.AnyFailed && !outcome.ClaudeRestarted && !outcome.AtRiskOfRevert
-                        ? "  Start Claude Desktop to load the Revit tools."
-                        : ""));
+                string tail = outcome.AnyChanged && !outcome.AnyFailed && !outcome.ClaudeRestarted && !outcome.AtRiskOfRevert
+                    ? "  Start Claude Desktop to load the Revit tools."
+                    : "";
+                if (!outcome.AnyFailed)
+                    tail += "  The entry runs " + node.Path + ".";
+                Say(outcome.Summary + tail);
                 if (outcome.AnyFailed)
                     Reveal(McpPaths.ClaudeConfigFile);
             }
@@ -473,6 +493,10 @@ namespace CodeCompliance.UI
             {
                 McpLog.Error("Claude configuration failed", ex);
                 Say("Could not write the Claude configuration: " + ex.Message);
+            }
+            finally
+            {
+                _claudeButton.IsEnabled = true;
             }
             Refresh();
         }

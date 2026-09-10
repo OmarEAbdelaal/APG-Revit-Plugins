@@ -170,6 +170,43 @@ namespace CodeCompliance.Core.Mcp
             return Resolve();
         }
 
+        /// <summary>
+        /// Ensures a runtime the plugin itself owns: bundled with the server release, or
+        /// downloaded into this Windows account's own RevitMCP\runtime folder.
+        ///
+        /// <para><see cref="EnsureAsync"/> is happy with a Node.js installed on the machine, which
+        /// is why a configuration could end up pointing at <c>C:\Program Files\nodejs\node.exe</c>.
+        /// That path is outside the plugin's control: it disappears when someone uninstalls Node,
+        /// changes with a Node upgrade, and does not exist at all on the next computer. The entry
+        /// written into the client configuration should instead point inside the profile of the
+        /// account being configured, so it is correct for that user and only for that user.</para>
+        ///
+        /// <para>Never throws: if the download fails, whatever was already resolved is returned so
+        /// the caller can still write a working entry.</para>
+        /// </summary>
+        public static async Task<NodeInfo> EnsureOwnAsync(IProgress<string>? progress = null)
+        {
+            NodeInfo current = Resolve();
+            if (current.Found && current.IsSupported && current.Source != NodeSource.SystemInstallation)
+                return current;
+
+            progress?.Report(current.Source == NodeSource.SystemInstallation
+                ? "Getting a Node.js runtime of our own so the entry does not depend on " + current.Path + " ..."
+                : "Node.js was not found; downloading it from nodejs.org ...");
+            try
+            {
+                await DownloadLatestLtsAsync(progress).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                McpLog.Error("Could not download a private Node.js runtime", ex);
+                return current;   // a machine-wide Node.js still beats nothing
+            }
+
+            NodeInfo resolved = Resolve();
+            return resolved.Found ? resolved : current;
+        }
+
         /// <summary>Downloads the latest Node.js LTS for Windows x64 into RevitMCP\runtime.</summary>
         public static async Task<string> DownloadLatestLtsAsync(IProgress<string>? progress = null)
         {
