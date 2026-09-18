@@ -1,0 +1,56 @@
+APG PROPRIETARY INTERNAL-USE LICENSE
+Version 1.0
+
+Copyright (c) 2026 APG - Omar Elsayed. All rights reserved.
+
+1. Scope and ownership
+This license applies to the APG-owned source code, documentation, artwork,
+and other materials in this repository, and APG-owned compiled distributions
+of those materials (the "Software"). APG and the respective rights holders
+retain ownership and all rights not expressly granted below.
+
+2. Limited internal-use permission
+APG employees and contractors expressly authorized by APG may access, copy,
+build, install, run, and modify the Software solely to perform APG's internal
+business activities and APG project work, within the scope and duration of
+their authorization. Contractors may use it only on APG's behalf. Providing
+ordinary project deliverables produced using the Software does not, by itself,
+constitute distribution of the Software or grant rights to the Software.
+
+3. Restrictions
+Unless APG separately authorizes it in writing, you may not distribute,
+publish, sell, sublicense, rent, or transfer the Software or modified versions;
+provide it as a service to third parties; or use it for another organization's
+business or for personal projects. Preserve copyright, attribution, license,
+and third-party notices in authorized copies. Access to a public repository,
+a release, or a download is not APG authorization for these uses.
+
+4. Third-party materials and existing rights
+Third-party software, APIs, dependencies, data, standards, trademarks, and
+other materials remain subject to their respective owners' terms. This
+license does not claim ownership of, relicense, or restrict rights granted
+under those terms. Obtain any separate licenses required for Autodesk Revit
+and other dependencies. This license does not revoke rights validly granted
+under a prior license or override rights that cannot be excluded by law.
+Where GitHub hosts the repository publicly, GitHub users retain the rights
+to view and fork it within GitHub under GitHub's applicable Terms of Service;
+that does not grant additional permission to use or distribute the Software.
+
+5. End of authorization
+Permission ends when APG withdraws authorization, your authorized relationship
+with APG ends, or you breach these terms. Stop using the Software and return
+or delete copies under your control, except copies required by applicable law
+or APG's authorized retention requirements. Retained copies may not be used
+for any other purpose.
+
+6. No warranty; limitation of liability
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED "AS IS",
+WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. TO THE EXTENT PERMITTED
+BY APPLICABLE LAW, APG AND THE CONTRIBUTORS ARE NOT LIABLE FOR CLAIMS, DAMAGES,
+OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE. NOTHING HERE EXCLUDES
+LIABILITY OR STATUTORY RIGHTS THAT CANNOT LAWFULLY BE EXCLUDED.
+
+7. Other permissions
+Use outside this license requires separate written permission from APG.
+Contact the repository maintainer through the contact information in README.md.
