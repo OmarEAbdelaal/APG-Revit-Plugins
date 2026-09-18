@@ -22,6 +22,7 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
+LicenseFile=..\LICENSE
 ; Per-user install: no UAC prompt, no admin rights required
 PrivilegesRequired=lowest
 ; {app} only stores the uninstaller; the add-in itself goes to the Revit Addins folders
@@ -39,6 +40,7 @@ UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={uninstallexe}
 
 [Files]
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 ; Each block ships only if that Revit version's build output exists,
 ; and installs only if that Revit version is detected on the user's machine
 ; (or no Revit was detected at all, in which case everything is installed).

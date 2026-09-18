@@ -5,6 +5,16 @@ one installer — currently shipping five plugins, with more to come.
 
 Supports **Revit 2024, 2025, 2026 and 2027** from a single code base.
 
+## License and security
+
+**Proprietary - APG internal use only.** Installation, use, and modification require
+APG authorization under the [LICENSE](LICENSE). Public availability does not grant
+general reuse or redistribution rights. Third-party materials retain their own terms.
+
+Report vulnerabilities privately using [SECURITY.md](SECURITY.md).
+See [repository security and access responsibilities](docs/REPOSITORY_SECURITY.md)
+for code ownership, pull-request rules, and access limitations.
+
 ## The plugins
 
 After installing and starting Revit you will see the **APG Revit Plugins** ribbon tab:

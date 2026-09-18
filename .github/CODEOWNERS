@@ -1,0 +1,10 @@
+# Code ownership requests review; it does not grant repository access.
+* @OmarEAbdelaal
+
+# Explicit ownership of security, automation, and distribution.
+/.github/ @OmarEAbdelaal
+/LICENSE @OmarEAbdelaal
+/SECURITY.md @OmarEAbdelaal
+/docs/REPOSITORY_SECURITY.md @OmarEAbdelaal
+/installer/ @OmarEAbdelaal
+/install/ @OmarEAbdelaal

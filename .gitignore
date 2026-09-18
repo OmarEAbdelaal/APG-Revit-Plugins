@@ -19,3 +19,13 @@ packages/
 # OS
 Thumbs.db
 .DS_Store
+
+# Local credentials and signing material (does not remove already tracked files)
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pfx
+*.p12
+*.key
+*.pem
