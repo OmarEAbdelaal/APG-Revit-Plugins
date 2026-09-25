@@ -26,7 +26,8 @@ Revit 2024 (net48), 2025/2026 (net8.0-windows), 2027 (net10.0-windows).
 ## Docs
 
 `docs/ARCHITECTURE.md` (design), `docs/EGRESS_WORKFLOW.md` (user workflow),
-`docs/INSTALLATION.md` (install/troubleshooting).
+`docs/INSTALLATION.md` (install/troubleshooting), `docs/EVAL_CAPTURE.md`
+(measuring the MCP connector — design only, not yet implemented).
 
 ## Revit MCP module (src/CodeCompliance/Core/Mcp, docs/REVIT_MCP.md)
 
