@@ -28,6 +28,51 @@ namespace CodeCompliance.Core
     }
 
     /// <summary>
+    /// How far the usable ("clear") ramp sits inside the drawn one on each side.
+    /// A sketch is normally the concrete slab, so an upstand beam, kerb or pavement
+    /// eats into it — and Table B.9 governs what is left to drive on. Positive moves
+    /// an edge INWARD (a narrower clear ramp, a larger inner radius); negative moves
+    /// it outward, for a sketch drawn at the inner face of something.
+    ///
+    /// The ramp is still modelled on the drawn geometry — the concrete is what gets
+    /// built; only the code dimensions are taken on the clear band.
+    /// </summary>
+    public sealed class RampEdgeOffsets
+    {
+        public static readonly RampEdgeOffsets None = new RampEdgeOffsets(0, 0);
+
+        public RampEdgeOffsets(double left, double right)
+        {
+            Left = left;
+            Right = right;
+        }
+
+        /// <summary>Offset of the left edge, relative to the direction of travel (+ = inward).</summary>
+        public double Left { get; }
+
+        /// <summary>Offset of the right edge, relative to the direction of travel (+ = inward).</summary>
+        public double Right { get; }
+
+        /// <summary>Total width taken off the drawn ramp.</summary>
+        public double Total => Left + Right;
+
+        public bool IsZero => Math.Abs(Left) < 1e-9 && Math.Abs(Right) < 1e-9;
+
+        /// <summary>
+        /// Where the clear band's centre sits relative to the drawn centre
+        /// (meters, + = toward the left of travel). Uneven offsets shift it.
+        /// </summary>
+        public double CenterShift => (Right - Left) / 2.0;
+
+        /// <summary>
+        /// The offset on the inner side of a curve, given which side that is
+        /// (+1 = left is inner, -1 = right is inner, 0 = straight).
+        /// </summary>
+        public double Inner(int innerSide)
+            => innerSide > 0 ? Left : innerSide < 0 ? Right : 0;
+    }
+
+    /// <summary>
     /// Which longitudinal line the ramp's slope and run are measured along. On a
     /// curved ramp the inner lane is the steepest line for a given floor height, so
     /// it is the one the code governs — hence the default.

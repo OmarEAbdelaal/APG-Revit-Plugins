@@ -51,6 +51,14 @@ code-governing line — not the overall ramp centre.
      For an outline path the drawing fixes the total width, so the **lane count is
      still yours to choose** but the lane width is derived — the narrowest drawn
      width divided by the lanes, which is what the Table B.9 width check uses.
+   - Set the **clear ramp offsets** — how far the usable ramp sits inside each drawn
+     edge (positive inward, negative outward). A sketch is normally the concrete
+     slab, so an upstand beam, kerb or pavement takes width off an edge. The ramp is
+     still **modelled on what you drew**; the offsets only set the band the **code
+     dimensions** are taken on: the clear lane width, the **minimum inner radius**
+     (pulling the inner edge in moves it away from the centre of the curve, so the
+     clear radius is larger than the drawn one), and the band the lanes and the
+     slope reference divide.
    - Choose the line the **slope and run are measured along**: the **inner lane
      centreline** (default), the **left edge**, the **centre of the ramp** or the
      **right edge**. On a curve the inner lane is the shortest line and therefore
@@ -76,8 +84,12 @@ code-governing line — not the overall ramp centre.
 3. The ramp — entry transition + main run + exit transition — is created as ONE
    continuous floor slab, following the drawn geometry exactly (straight edges
    stay straight, curved edges stay true arcs, subdivided into ~30° boundary
-   pieces on the same circle). Only a path that turns past ~170° is split into
-   several floors, since a Revit sketch cannot overlap itself. Boundary vertices
+   pieces on the same circle). How far the path turns does not matter — a U-turn,
+   an S-curve or any mix of straights and curves stays one floor. The ramp is only
+   split where its outline would actually **cross itself in plan** (a helix past a
+   full turn, whose second loop lies over the first), because one Revit floor
+   sketch cannot overlap itself; the pieces share their joint so the surface stays
+   continuous. Boundary vertices
    are raised with the slab shape editor to match the profile, so the floors can
    be edited afterwards with **Modify Sub Elements**.
 
@@ -93,6 +105,9 @@ code-governing line — not the overall ramp centre.
 For an outline path the inner radius is read straight off the drawing: it is the
 radius of the tighter of the two drawn edge arcs at each curve, so a radius drawn
 to the code minimum checks out as compliant.
+
+Every dimension in the table is checked on the **clear** ramp — the drawing less the
+edge offsets. With no offsets the clear ramp is the drawn one and nothing changes.
 
 Transition zones follow Table B.10 (X interpolated from S; T = S/2).
 

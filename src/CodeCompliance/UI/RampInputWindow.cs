@@ -42,6 +42,8 @@ namespace CodeCompliance.UI
         private readonly ComboBox _lanesBox;
         private readonly TextBox _laneWidthBox;
         private readonly ComboBox _floorTypeBox;
+        private readonly TextBox _leftOffsetBox;
+        private readonly TextBox _rightOffsetBox;
         private readonly Dictionary<RampLineLocation, RadioButton> _locationRadios = new Dictionary<RampLineLocation, RadioButton>();
         private readonly Dictionary<RampSolveTarget, RadioButton> _solveRadios = new Dictionary<RampSolveTarget, RadioButton>();
         private readonly Dictionary<RampEndAnchor, RadioButton> _anchorRadios = new Dictionary<RampEndAnchor, RadioButton>();
@@ -60,7 +62,17 @@ namespace CodeCompliance.UI
         public int Lanes { get; private set; } = 1;
         public double LaneWidth { get; private set; }
         public RampLineLocation Location { get; private set; } = RampLineLocation.Center;
+        /// <summary>Total width of the DRAWN (concrete) ramp — what gets modelled.</summary>
         public double TotalWidth => LaneWidth * Lanes;
+
+        /// <summary>How much of each drawn edge is taken by a beam, kerb or pavement.</summary>
+        public RampEdgeOffsets EdgeOffsets { get; private set; } = RampEdgeOffsets.None;
+
+        /// <summary>Usable width left between the offsets — what Table B.9 is checked on.</summary>
+        public double ClearWidth => Math.Max(TotalWidth - EdgeOffsets.Total, 0);
+
+        /// <summary>Clear width per lane, the value the Table B.9 minimum applies to.</summary>
+        public double ClearLaneWidth => ClearWidth / Math.Max(Lanes, 1);
 
         /// <summary>
         /// Signed lateral offset (m, + = left of travel) of the slope/stationing
@@ -187,8 +199,8 @@ namespace CodeCompliance.UI
             });
 
             left.Children.Add(FieldLabel(_variableWidth
-                ? "Lane width [m]  (drawn width at its narrowest ÷ lanes)"
-                : "Lane width [m]  (min per Table B.9)"));
+                ? "Lane width [m] — drawn (narrowest drawn width ÷ lanes)"
+                : "Lane width [m] — drawn concrete (Table B.9 applies to the clear width below)"));
             _laneWidthBox = NumberBox();
             left.Children.Add(_laneWidthBox);
             if (_variableWidth)
@@ -237,6 +249,28 @@ namespace CodeCompliance.UI
                       "actual width and starting point (the left edge's start) come straight from the outline."
                     : "Left/right are relative to the direction the path was drawn (direction of " +
                       "travel, going up) — the ramp starts at that line's start point.",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Muted,
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
+
+            left.Children.Add(SectionHeader("Clear ramp — offsets from the drawn edges"));
+            left.Children.Add(FieldLabel("Left edge offset [m]  (+ inward, − outward)"));
+            _leftOffsetBox = NumberBox();
+            _leftOffsetBox.Text = "0.00";
+            left.Children.Add(_leftOffsetBox);
+            left.Children.Add(FieldLabel("Right edge offset [m]  (+ inward, − outward)"));
+            _rightOffsetBox = NumberBox();
+            _rightOffsetBox.Text = "0.00";
+            left.Children.Add(_rightOffsetBox);
+            left.Children.Add(new TextBlock
+            {
+                Text = "A sketch is usually the concrete slab, so an upstand beam, kerb or pavement " +
+                       "takes width off an edge. The ramp is still modelled on what you drew — these " +
+                       "offsets only set the clear ramp the code dimensions are taken on: the clear " +
+                       "lane width, the minimum inner radius (pulling the inner edge in makes the " +
+                       "radius larger), and the band the lanes and the slope reference divide.",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Muted,
                 FontSize = 11,
@@ -367,9 +401,10 @@ namespace CodeCompliance.UI
             AddResultRow(right, "Xp", "Main ramp run X'");
             AddResultRow(right, "R", "Total horizontal run R");
             AddResultRow(right, "ratio", "Slope ratio (1 : n)");
-            AddResultRow(right, "W", "Total ramp width W");
+            AddResultRow(right, "W", "Drawn ramp width W (concrete)");
+            AddResultRow(right, "Wc", "Clear ramp width (after offsets)");
             if (path.HasArc)
-                AddResultRow(right, "ri", "Min inner radius (from drawing)");
+                AddResultRow(right, "ri", "Min inner radius (clear ramp)");
             if (_singleArc)
             {
                 AddResultRow(right, "rc", "Centreline radius");
@@ -519,7 +554,10 @@ namespace CodeCompliance.UI
         private double EstimateDesignOffset(double totalWidth)
         {
             int lanes = _lanesBox.SelectedItem is int n ? n : 1;
-            return _path.DesignOffsetFor(SelectedLocation, totalWidth, lanes, SelectedSlopeReference);
+            var offsets = new RampEdgeOffsets(
+                TryParse(_leftOffsetBox.Text) ?? 0, TryParse(_rightOffsetBox.Text) ?? 0);
+            return _path.DesignOffsetFor(
+                SelectedLocation, totalWidth, lanes, SelectedSlopeReference, offsets);
         }
 
         private double EstimateTotalWidth()
@@ -550,10 +588,20 @@ namespace CodeCompliance.UI
                     throw new RampCalcException("Enter a valid lane width.");
                 LaneWidth = laneWidth.Value;
 
+                EdgeOffsets = new RampEdgeOffsets(
+                    TryParse(_leftOffsetBox.Text) ?? 0, TryParse(_rightOffsetBox.Text) ?? 0);
+                if (ClearWidth < 0.5)
+                    throw new RampCalcException(string.Format(
+                        CultureInfo.CurrentCulture,
+                        "The edge offsets leave only {0:F2} m of clear ramp out of {1:F2} m drawn. " +
+                        "Check the offsets — they are taken off each side.",
+                        ClearWidth, TotalWidth));
+
                 if (FloorTypeId < 0)
                     throw new RampCalcException("Select a floor type.");
 
-                DesignOffset = _path.DesignOffsetFor(Location, TotalWidth, Lanes, SlopeReference);
+                DesignOffset = _path.DesignOffsetFor(
+                    Location, TotalWidth, Lanes, SlopeReference, EdgeOffsets);
 
                 RampSolveTarget solve = SelectedSolveTarget;
                 double? h = solve == RampSolveTarget.FloorHeight ? null : RequireValue(_hBox, "h");
@@ -606,10 +654,14 @@ namespace CodeCompliance.UI
             SetResult("W", _variableWidth
                 ? $"{_path.MinWidthAlongPath():F2}-{_path.MaxWidthAlongPath():F2} m (varies, from outline)"
                 : $"{w:F2} m  ({Lanes} x {LaneWidth:F2} m)");
+            SetResult("Wc", EdgeOffsets.IsZero
+                ? $"{ClearWidth:F2} m  (no offsets)"
+                : $"{ClearWidth:F2} m  ({Lanes} x {ClearLaneWidth:F2} m, " +
+                  $"−{EdgeOffsets.Left:F2} left / −{EdgeOffsets.Right:F2} right)");
 
             if (_path.HasArc)
             {
-                double? ri = _path.MinInnerRadius(Location, w);
+                double? ri = _path.MinInnerRadius(Location, w, EdgeOffsets);
                 if (ri.HasValue)
                     SetResult("ri", $"{ri.Value:F2} m");
             }
@@ -639,13 +691,15 @@ namespace CodeCompliance.UI
                         : $"FAIL  {res.S:F2}% > {regs.MaxSlopePercent:F0}%");
             ok &= slopeOk;
 
-            bool widthOk = LaneWidth >= regs.MinLaneWidth - 1e-9;
+            // Table B.9 governs the clear ramp, which is the drawn one less the offsets.
+            bool widthOk = ClearLaneWidth >= regs.MinLaneWidth - 1e-9;
+            string widthNote = EdgeOffsets.IsZero ? "" : " clear";
             SetCompliance("width", widthOk,
-                widthOk ? $"OK  {LaneWidth:F2} m >= {regs.MinLaneWidth:F1} m"
-                        : $"FAIL  {LaneWidth:F2} m < {regs.MinLaneWidth:F1} m");
+                widthOk ? $"OK  {ClearLaneWidth:F2} m{widthNote} >= {regs.MinLaneWidth:F1} m"
+                        : $"FAIL  {ClearLaneWidth:F2} m{widthNote} < {regs.MinLaneWidth:F1} m");
             ok &= widthOk;
 
-            double? minInner = _path.MinInnerRadius(Location, TotalWidth);
+            double? minInner = _path.MinInnerRadius(Location, TotalWidth, EdgeOffsets);
             if (minInner.HasValue && regs.MinInnerRadius.HasValue)
             {
                 bool radiusOk = minInner.Value >= regs.MinInnerRadius.Value - 1e-9;

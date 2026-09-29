@@ -50,7 +50,7 @@ namespace CodeCompliance.Core
 
     public static class RampFloorBuilder
     {
-        private const double MaxChunkSweep = 170.0 * Math.PI / 180.0;   // max plan sweep per floor
+        private const double OrientTol = 1e-9;                          // m², crossing test tolerance
         private const double ArcPieceSweepExact = 30.0 * Math.PI / 180.0;  // per true-arc boundary piece
         private const double ArcPieceSweepChord = 10.0 * Math.PI / 180.0;  // per chord in fallback mode
         private const double StationMergeTol = 0.01;                  // m, dedup stations
@@ -95,7 +95,7 @@ namespace CodeCompliance.Core
                 calc, location, widthM, designOffsetM, ranges, exactArcEdges, startStationM);
 
             var created = new List<RampFloorPiece>();
-            foreach (List<double> chunk in ChunkStations(ranges, stations))
+            foreach (List<double> chunk in ChunkStations(ranges, stations, location, widthM, designOffsetM))
             {
                 created.Add(BuildOneFloor(
                     doc, calc, widthM, location, floorTypeId,
@@ -203,49 +203,207 @@ namespace CodeCompliance.Core
         }
 
         /// <summary>
-        /// Splits the station list into floor pieces only when the path turns so far
-        /// that one sketch would overlap itself in plan (helical ramps). Straight
-        /// and moderately curved paths yield a single chunk = one floor slab.
+        /// Splits the station list into separate floors ONLY where one sketch would
+        /// genuinely cross itself in plan — a helix that runs past a full turn, whose
+        /// second loop lies over the first. A U-turn, an S-curve or any mix of
+        /// straights and curves that does not cross itself builds as ONE floor
+        /// however far it turns: a turn angle alone never forces a split.
+        ///
+        /// Each floor is grown one station interval at a time and closed just before
+        /// its outline would cross itself; the next floor starts at that station, so
+        /// the surface stays continuous across the joint.
         /// </summary>
         private static IEnumerable<List<double>> ChunkStations(
-            List<(RampPathSegment Seg, double Start, double Len)> ranges, List<double> stations)
+            List<(RampPathSegment Seg, double Start, double Len)> ranges, List<double> stations,
+            RampLineLocation location, double widthM, double designOffset)
         {
-            double[] turn = new double[stations.Count];
-            for (int i = 1; i < stations.Count; i++)
+            int n = stations.Count;
+            var at = new (double LX, double LY, double RX, double RY)[n];
+            var mid = new (double LX, double LY, double RX, double RY)[Math.Max(n - 1, 0)];
+            for (int i = 0; i < n; i++)
+                at[i] = EdgesOnPath(ranges, stations[i], location, widthM, designOffset);
+            for (int i = 0; i < n - 1; i++)
+                mid[i] = EdgesOnPath(ranges, (stations[i] + stations[i + 1]) / 2.0, location, widthM, designOffset);
+
+            // Greedy pass: each floor runs as far as it can before crossing itself.
+            var bounds = new List<int> { 0 };
+            int first = 0;
+            while (first < n - 1)
             {
-                double s0 = stations[i - 1], s1 = stations[i], sweep = 0;
-                for (int r = 0; r < ranges.Count; r++)
+                var body = new List<PlanSegment>(); // left and right edge chords laid so far
+                int last = first;
+                while (last < n - 1 && FitsWithoutCrossing(body, at, mid, first, last))
                 {
-                    (RampPathSegment seg, double start, double len) = ranges[r];
-                    // Sweep per unit length is constant along a curve, so an extension
-                    // past the drawn ends keeps turning at the same rate.
-                    double segTurn = seg.PlanTurn;
-                    if (segTurn <= 1e-6 || len <= 1e-9)
-                        continue;
-                    double from = r == 0 ? double.NegativeInfinity : start;
-                    double to = r == ranges.Count - 1 ? double.PositiveInfinity : start + len;
-                    double lo = Math.Max(s0, from), hi = Math.Min(s1, to);
-                    if (hi > lo)
-                        sweep += (hi - lo) / len * segTurn;
+                    AddInterval(body, at, mid, last);
+                    last++;
                 }
-                turn[i] = turn[i - 1] + sweep;
+                if (last == first)
+                    last = first + 1; // one interval always fits — never stall
+                bounds.Add(last);
+                first = last;
             }
 
-            var chunk = new List<double> { stations[0] };
-            double chunkStartTurn = 0;
-            for (int i = 1; i < stations.Count; i++)
+            // A helix split greedily leaves a sliver floor at the end; share the run out
+            // evenly across the same number of floors instead, when every piece fits.
+            int pieces = bounds.Count - 1;
+            if (pieces > 1)
             {
-                if (turn[i] - chunkStartTurn > MaxChunkSweep && chunk.Count >= 2)
-                {
-                    yield return chunk;
-                    chunk = new List<double> { stations[i - 1] };
-                    chunkStartTurn = turn[i - 1];
-                }
-                chunk.Add(stations[i]);
+                List<int>? even = EvenBounds(stations, pieces);
+                if (even != null && AllFit(even, at, mid))
+                    bounds = even;
             }
-            if (chunk.Count >= 2)
-                yield return chunk;
+
+            for (int k = 0; k < bounds.Count - 1; k++)
+                yield return stations.GetRange(bounds[k], bounds[k + 1] - bounds[k] + 1);
         }
+
+        /// <summary>Station indices splitting the run into <paramref name="pieces"/> near-equal lengths.</summary>
+        private static List<int>? EvenBounds(List<double> stations, int pieces)
+        {
+            int n = stations.Count;
+            double s0 = stations[0], s1 = stations[n - 1];
+            var bounds = new List<int> { 0 };
+            for (int j = 1; j < pieces; j++)
+            {
+                double target = s0 + (s1 - s0) * j / pieces;
+                int best = -1;
+                for (int i = bounds[bounds.Count - 1] + 1; i < n - 1; i++)
+                    if (best < 0 || Math.Abs(stations[i] - target) < Math.Abs(stations[best] - target))
+                        best = i;
+                if (best < 0)
+                    return null; // too few stations to spread out
+                bounds.Add(best);
+            }
+            bounds.Add(n - 1);
+            return bounds;
+        }
+
+        private static bool AllFit(
+            List<int> bounds,
+            (double LX, double LY, double RX, double RY)[] at,
+            (double LX, double LY, double RX, double RY)[] mid)
+        {
+            for (int k = 0; k < bounds.Count - 1; k++)
+            {
+                var body = new List<PlanSegment>();
+                for (int i = bounds[k]; i < bounds[k + 1]; i++)
+                {
+                    if (!FitsWithoutCrossing(body, at, mid, bounds[k], i))
+                        return false;
+                    AddInterval(body, at, mid, i);
+                }
+            }
+            return true;
+        }
+
+        /// <summary>A straight chord of the plan outline, in meters.</summary>
+        private readonly struct PlanSegment
+        {
+            public PlanSegment((double X, double Y) a, (double X, double Y) b)
+            {
+                A = a;
+                B = b;
+            }
+
+            public (double X, double Y) A { get; }
+            public (double X, double Y) B { get; }
+        }
+
+        private static (double LX, double LY, double RX, double RY) EdgesOnPath(
+            List<(RampPathSegment Seg, double Start, double Len)> ranges, double s,
+            RampLineLocation location, double widthM, double designOffset)
+        {
+            (RampPathSegment seg, double start, double _) = RangeFor(ranges, s);
+            return seg.EdgesAt(s - start, location, widthM, designOffset);
+        }
+
+        /// <summary>
+        /// The four edge chords of interval i (two per edge, through its midpoint, so a
+        /// curve is followed closely enough to tell a real crossing from a near miss).
+        /// </summary>
+        private static IEnumerable<PlanSegment> IntervalChords(
+            (double LX, double LY, double RX, double RY)[] at,
+            (double LX, double LY, double RX, double RY)[] mid, int i)
+        {
+            yield return new PlanSegment((at[i].LX, at[i].LY), (mid[i].LX, mid[i].LY));
+            yield return new PlanSegment((mid[i].LX, mid[i].LY), (at[i + 1].LX, at[i + 1].LY));
+            yield return new PlanSegment((at[i].RX, at[i].RY), (mid[i].RX, mid[i].RY));
+            yield return new PlanSegment((mid[i].RX, mid[i].RY), (at[i + 1].RX, at[i + 1].RY));
+        }
+
+        private static void AddInterval(
+            List<PlanSegment> body,
+            (double LX, double LY, double RX, double RY)[] at,
+            (double LX, double LY, double RX, double RY)[] mid, int i)
+            => body.AddRange(IntervalChords(at, mid, i));
+
+        /// <summary>
+        /// Whether interval <paramref name="next"/> can join the floor that starts at
+        /// station <paramref name="first"/> without its outline crossing itself: the
+        /// new edge chords must not cross the edges or start cap already laid, and the
+        /// end cap they would create must not cross anything either.
+        /// </summary>
+        private static bool FitsWithoutCrossing(
+            List<PlanSegment> body,
+            (double LX, double LY, double RX, double RY)[] at,
+            (double LX, double LY, double RX, double RY)[] mid,
+            int first, int next)
+        {
+            var startCap = new PlanSegment((at[first].LX, at[first].LY), (at[first].RX, at[first].RY));
+            var endCap = new PlanSegment((at[next + 1].LX, at[next + 1].LY), (at[next + 1].RX, at[next + 1].RY));
+            var added = new List<PlanSegment>(IntervalChords(at, mid, next));
+
+            for (int i = 0; i < added.Count; i++)
+            {
+                if (Crosses(added[i], startCap))
+                    return false;
+                foreach (PlanSegment laid in body)
+                    if (Crosses(added[i], laid))
+                        return false;
+                for (int j = i + 1; j < added.Count; j++)
+                    if (Crosses(added[i], added[j]))
+                        return false;
+            }
+
+            if (next > first && Crosses(endCap, startCap))
+                return false;
+            foreach (PlanSegment laid in body)
+                if (Crosses(endCap, laid))
+                    return false;
+            return true;
+        }
+
+        /// <summary>
+        /// True when two chords cross or touch. Touching counts: drawings use round
+        /// dimensions, so a leg that crosses another often passes exactly through one
+        /// of its station vertices, and a strict test would miss that. Only chords
+        /// sharing an endpoint — consecutive pieces of an edge, or an edge and a cap,
+        /// which are meant to meet — are left out.
+        /// </summary>
+        private static bool Crosses(PlanSegment p, PlanSegment q)
+        {
+            if (Same(p.A, q.A) || Same(p.A, q.B) || Same(p.B, q.A) || Same(p.B, q.B))
+                return false;
+
+            double d1 = Orient(q.A, q.B, p.A), d2 = Orient(q.A, q.B, p.B);
+            double d3 = Orient(p.A, p.B, q.A), d4 = Orient(p.A, p.B, q.B);
+            if ((d1 > OrientTol && d2 > OrientTol) || (d1 < -OrientTol && d2 < -OrientTol))
+                return false; // p lies wholly on one side of q
+            if ((d3 > OrientTol && d4 > OrientTol) || (d3 < -OrientTol && d4 < -OrientTol))
+                return false; // q lies wholly on one side of p
+
+            // They meet, or are collinear: only a real contact if their extents overlap.
+            return Math.Min(p.A.X, p.B.X) <= Math.Max(q.A.X, q.B.X) + OrientTol
+                && Math.Min(q.A.X, q.B.X) <= Math.Max(p.A.X, p.B.X) + OrientTol
+                && Math.Min(p.A.Y, p.B.Y) <= Math.Max(q.A.Y, q.B.Y) + OrientTol
+                && Math.Min(q.A.Y, q.B.Y) <= Math.Max(p.A.Y, p.B.Y) + OrientTol;
+        }
+
+        private static bool Same((double X, double Y) a, (double X, double Y) b)
+            => Math.Abs(a.X - b.X) < 1e-9 && Math.Abs(a.Y - b.Y) < 1e-9;
+
+        private static double Orient((double X, double Y) a, (double X, double Y) b, (double X, double Y) c)
+            => (b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X);
 
         /// <summary>One boundary piece between two consecutive stations.</summary>
         private sealed class EdgeInterval
