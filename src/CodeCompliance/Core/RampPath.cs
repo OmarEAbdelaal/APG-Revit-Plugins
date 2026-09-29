@@ -494,21 +494,29 @@ namespace CodeCompliance.Core
         /// the ramp regardless of the lane count.
         /// </summary>
         public double DesignOffsetFor(
-            RampLineLocation location, double totalWidth, int lanes, RampSlopeReference reference)
+            RampLineLocation location, double totalWidth, int lanes,
+            RampSlopeReference reference, RampEdgeOffsets? offsets = null)
         {
+            // Lanes divide the CLEAR ramp, not the concrete one, so every reference
+            // is measured inside the clear band and then expressed as an offset from
+            // the drawn centreline (which is what the geometry is stationed on).
+            RampEdgeOffsets clear = offsets ?? RampEdgeOffsets.None;
+            double clearWidth = Math.Max(totalWidth - clear.Total, 1e-6);
+            double shift = clear.CenterShift;
+
             switch (reference)
             {
                 case RampSlopeReference.LeftEdge:
-                    return totalWidth / 2.0;
+                    return shift + clearWidth / 2.0;
                 case RampSlopeReference.RightEdge:
-                    return -totalWidth / 2.0;
+                    return shift - clearWidth / 2.0;
                 case RampSlopeReference.Center:
-                    return 0;
+                    return shift;
                 default:
                     if (lanes <= 1)
-                        return 0;
-                    double laneWidth = totalWidth / lanes;
-                    return InnerSide(location, totalWidth) * (totalWidth - laneWidth) / 2.0;
+                        return shift;
+                    double laneWidth = clearWidth / lanes;
+                    return shift + InnerSide(location, totalWidth) * (clearWidth - laneWidth) / 2.0;
             }
         }
 
@@ -517,13 +525,27 @@ namespace CodeCompliance.Core
         /// For a drawn outline this is the tighter of the two drawn edge radii — the
         /// radius the user actually drew, not an estimate.
         /// </summary>
-        public double? MinInnerRadius(RampLineLocation location, double width)
+        public double? MinInnerRadius(
+            RampLineLocation location, double width, RampEdgeOffsets? offsets = null)
         {
+            RampEdgeOffsets clear = offsets ?? RampEdgeOffsets.None;
             double? min = null;
             foreach (RampPathSegment seg in Segments)
             {
-                double? radius = seg is RampArcSegment arc ? arc.InnerRadius(location, width)
-                               : (seg as RampOutlineSegment)?.InnerEdgeRadius();
+                double? radius = null;
+                if (seg is RampArcSegment arc)
+                {
+                    // Pulling the inner edge into the ramp moves it away from the
+                    // centre of the curve, so the clear radius grows.
+                    radius = arc.InnerRadius(location, width)
+                           + clear.Inner(arc.CenterIsLeftOfTravel ? 1 : -1);
+                }
+                else if (seg is RampOutlineSegment outline)
+                {
+                    double? drawn = outline.InnerEdgeRadius();
+                    if (drawn.HasValue)
+                        radius = drawn.Value + clear.Inner(outline.InnerSideOfTravel());
+                }
                 if (radius.HasValue && (!min.HasValue || radius.Value < min.Value))
                     min = radius;
             }

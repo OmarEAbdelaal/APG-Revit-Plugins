@@ -378,7 +378,18 @@ namespace CodeCompliance.Commands
                 calc.H, calc.S, calc.T, calc.X, calc.XPrime, calc.R,
                 window.Location,
                 window.Anchor == RampEndAnchor.Start ? "start" : "end",
-                SlopeReferenceText(window.SlopeReference));
+                SlopeReferenceText(window.SlopeReference) + ClearRampText(window));
+        }
+
+        /// <summary>Notes the clear ramp when the drawn edges were offset for beams or kerbs.</summary>
+        private static string ClearRampText(RampInputWindow window)
+        {
+            if (window.EdgeOffsets.IsZero)
+                return "";
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                " | clear ramp {0:F2} m (drawn less {1:F2} m left / {2:F2} m right)",
+                window.ClearWidth, window.EdgeOffsets.Left, window.EdgeOffsets.Right);
         }
 
         private static string SlopeReferenceText(RampSlopeReference reference)
