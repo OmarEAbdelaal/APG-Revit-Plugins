@@ -113,7 +113,9 @@ namespace CodeCompliance.Commands
             TaskDialog.Show("Parking Ramp",
                 (pieces.Count == 1
                     ? "Ramp created as one continuous floor slab.\n\n"
-                    : $"Ramp created as {pieces.Count} floor slabs (a sketch cannot sweep past ~170°).\n\n") +
+                    : $"Ramp created as {pieces.Count} floor slabs — the path crosses over itself in " +
+                      "plan (a helix past a full turn), and one Revit floor sketch cannot overlap " +
+                      "itself, so it is split exactly where each loop would lie over the last.\n\n") +
                 BuildSummary(calc, window) +
                 fallbackNote +
                 "\n\nAll Table B.9 checks passed at the input step. " +

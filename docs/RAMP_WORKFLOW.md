@@ -84,8 +84,12 @@ code-governing line — not the overall ramp centre.
 3. The ramp — entry transition + main run + exit transition — is created as ONE
    continuous floor slab, following the drawn geometry exactly (straight edges
    stay straight, curved edges stay true arcs, subdivided into ~30° boundary
-   pieces on the same circle). Only a path that turns past ~170° is split into
-   several floors, since a Revit sketch cannot overlap itself. Boundary vertices
+   pieces on the same circle). How far the path turns does not matter — a U-turn,
+   an S-curve or any mix of straights and curves stays one floor. The ramp is only
+   split where its outline would actually **cross itself in plan** (a helix past a
+   full turn, whose second loop lies over the first), because one Revit floor
+   sketch cannot overlap itself; the pieces share their joint so the surface stays
+   continuous. Boundary vertices
    are raised with the slab shape editor to match the profile, so the floors can
    be edited afterwards with **Modify Sub Elements**.
 
